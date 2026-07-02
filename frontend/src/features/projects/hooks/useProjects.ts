@@ -27,10 +27,10 @@ export function useProjects() {
   const createProject = useCallback(
     async (input: CreateProjectInput) => {
       const project = await projectService.create(input);
-      await fetchProjects();
+      await fetchProjects(data?.pagination.page ?? 1);
       return project;
     },
-    [fetchProjects],
+    [fetchProjects, data?.pagination.page],
   );
 
   useEffect(() => {
