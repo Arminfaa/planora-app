@@ -38,6 +38,7 @@ export interface UpdateTaskInput {
   description?: string;
   priority?: TaskPriority;
   columnId?: string;
+  position?: number;
   dueDate?: string | null;
 }
 

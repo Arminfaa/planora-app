@@ -3,8 +3,11 @@
 import { useCallback, useState } from 'react';
 import dynamic from 'next/dynamic';
 import Link from 'next/link';
+import { DndContext, DragOverlay, closestCorners } from '@dnd-kit/core';
 import type { Board, BoardTask } from '../types';
 import { KanbanColumn } from './KanbanColumn';
+import { TaskCard } from './TaskCard';
+import { useKanbanDnd } from '../hooks/useKanbanDnd';
 import { taskService } from '@/features/tasks/services/task.service';
 import { getApiErrorMessage } from '@/lib/api';
 import { LoadingSpinner } from '@/shared/components/feedback/LoadingSpinner';
@@ -23,6 +26,19 @@ interface KanbanBoardProps {
 export function KanbanBoard({ board, projectId, onRefresh }: KanbanBoardProps) {
   const [selectedTask, setSelectedTask] = useState<BoardTask | null>(null);
   const [actionError, setActionError] = useState('');
+
+  const handleError = useCallback((message: string) => {
+    setActionError(message);
+  }, []);
+
+  const {
+    columns,
+    activeTask,
+    sensors,
+    handleDragStart,
+    handleDragOver,
+    handleDragEnd,
+  } = useKanbanDnd(board.columns ?? [], handleError, onRefresh);
 
   const handleAddTask = useCallback(
     async (columnId: string, title: string) => {
@@ -47,7 +63,6 @@ export function KanbanBoard({ board, projectId, onRefresh }: KanbanBoardProps) {
     setSelectedTask(null);
   }, [onRefresh]);
 
-  const columns = board.columns ?? [];
   const totalTasks = columns.reduce(
     (sum, col) => sum + (col.tasks?.length ?? 0),
     0,
@@ -68,6 +83,9 @@ export function KanbanBoard({ board, projectId, onRefresh }: KanbanBoardProps) {
           <p className="mt-1 text-sm text-gray-600">
             {columns.length} columns · {totalTasks} tasks
           </p>
+          <p className="mt-1 text-xs text-gray-400">
+            Drag tasks to reorder or move between columns
+          </p>
         </div>
       </div>
 
@@ -77,16 +95,30 @@ export function KanbanBoard({ board, projectId, onRefresh }: KanbanBoardProps) {
         </div>
       )}
 
-      <div className="flex gap-4 overflow-x-auto pb-6">
-        {columns.map((column) => (
-          <KanbanColumn
-            key={column.id}
-            column={column}
-            onTaskClick={setSelectedTask}
-            onAddTask={handleAddTask}
-          />
-        ))}
-      </div>
+      <DndContext
+        sensors={sensors}
+        collisionDetection={closestCorners}
+        onDragStart={handleDragStart}
+        onDragOver={handleDragOver}
+        onDragEnd={handleDragEnd}
+      >
+        <div className="flex gap-4 overflow-x-auto pb-6">
+          {columns.map((column) => (
+            <KanbanColumn
+              key={column.id}
+              column={column}
+              onTaskClick={setSelectedTask}
+              onAddTask={handleAddTask}
+            />
+          ))}
+        </div>
+
+        <DragOverlay>
+          {activeTask ? (
+            <TaskCard task={activeTask} onClick={() => {}} isDragOverlay />
+          ) : null}
+        </DragOverlay>
+      </DndContext>
 
       {selectedTask && (
         <TaskModal
