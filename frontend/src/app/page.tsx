@@ -16,20 +16,15 @@ export default function HomePage() {
             href="/login"
             className="rounded-lg bg-primary-600 px-6 py-3 text-sm font-medium text-white shadow-sm transition hover:bg-primary-700"
           >
-            Get Started
+            Sign In
           </Link>
-          <a
-            href="http://localhost:5000/api/v1/health"
-            target="_blank"
-            rel="noopener noreferrer"
+          <Link
+            href="/register"
             className="rounded-lg border border-gray-300 bg-white px-6 py-3 text-sm font-medium text-gray-700 shadow-sm transition hover:bg-gray-50"
           >
-            API Health
-          </a>
+            Register
+          </Link>
         </div>
-        <p className="mt-12 text-sm text-gray-400">
-          Step 3 — Project Configuration complete
-        </p>
       </div>
     </main>
   );

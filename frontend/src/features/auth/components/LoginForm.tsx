@@ -1,0 +1,73 @@
+'use client';
+
+import { useForm } from 'react-hook-form';
+import { zodResolver } from '@hookform/resolvers/zod';
+import Link from 'next/link';
+import { useState } from 'react';
+import { useAuth } from '../hooks/useAuth';
+import { loginSchema, type LoginFormData } from '../types';
+import { Button } from '@/shared/components/ui/Button';
+import { Input } from '@/shared/components/ui/Input';
+import { getApiErrorMessage } from '@/lib/api';
+
+export function LoginForm() {
+  const { login } = useAuth();
+  const [error, setError] = useState('');
+
+  const {
+    register,
+    handleSubmit,
+    formState: { errors, isSubmitting },
+  } = useForm<LoginFormData>({
+    resolver: zodResolver(loginSchema),
+  });
+
+  const onSubmit = async (data: LoginFormData) => {
+    setError('');
+    try {
+      await login(data);
+    } catch (err) {
+      setError(getApiErrorMessage(err));
+    }
+  };
+
+  return (
+    <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
+      {error && (
+        <div className="rounded-lg bg-red-50 px-4 py-3 text-sm text-red-700">
+          {error}
+        </div>
+      )}
+
+      <Input
+        label="Email"
+        type="email"
+        autoComplete="email"
+        error={errors.email?.message}
+        {...register('email')}
+      />
+
+      <Input
+        label="Password"
+        type="password"
+        autoComplete="current-password"
+        error={errors.password?.message}
+        {...register('password')}
+      />
+
+      <Button type="submit" className="w-full" isLoading={isSubmitting}>
+        Sign In
+      </Button>
+
+      <p className="text-center text-sm text-gray-600">
+        Don&apos;t have an account?{' '}
+        <Link
+          href="/register"
+          className="font-medium text-primary-600 hover:text-primary-700"
+        >
+          Register
+        </Link>
+      </p>
+    </form>
+  );
+}

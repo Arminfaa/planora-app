@@ -79,7 +79,7 @@ All endpoints are versioned under `/api/v1`.
 4. ✅ Database
 5. ✅ Authentication
 6. ✅ API
-7. ⏳ Frontend
+7. ✅ Frontend
 8. ⏳ Dashboard
 9. ⏳ Board
 10. ⏳ Drag & Drop
