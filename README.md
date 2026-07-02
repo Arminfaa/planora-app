@@ -81,7 +81,7 @@ All endpoints are versioned under `/api/v1`.
 6. ✅ API
 7. ✅ Frontend
 8. ✅ Dashboard
-9. ⏳ Board
+9. ✅ Board
 10. ⏳ Drag & Drop
 11. ⏳ Real Time
 12. ⏳ Search
