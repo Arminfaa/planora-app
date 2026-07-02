@@ -2,8 +2,11 @@ import { Router } from 'express';
 import { checkDatabaseHealth } from '../../config';
 import { ApiResponse } from '../../utils/ApiResponse';
 import { asyncHandler } from '../../utils/asyncHandler';
+import authRoutes from './auth.routes';
 
 const router = Router();
+
+router.use('/auth', authRoutes);
 
 router.get(
   '/health',

@@ -77,7 +77,7 @@ All endpoints are versioned under `/api/v1`.
 2. ✅ Dependencies Installation
 3. ✅ Project Configuration
 4. ✅ Database
-5. ⏳ Authentication
+5. ✅ Authentication
 6. ⏳ API
 7. ⏳ Frontend
 8. ⏳ Dashboard
