@@ -1,0 +1,11 @@
+node_modules
+dist
+build
+.next
+out
+coverage
+*.log
+package-lock.json
+backend/logs
+backend/src/uploads/images/*
+backend/src/uploads/files/*

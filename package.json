@@ -17,12 +17,32 @@
     "start:backend": "npm run start -w backend",
     "start:frontend": "npm run start -w frontend",
     "lint": "npm run lint -w backend && npm run lint -w frontend",
+    "format": "prettier --write .",
+    "format:check": "prettier --check .",
+    "prepare": "husky",
     "prisma:generate": "npm run prisma:generate -w backend",
     "prisma:migrate": "npm run prisma:migrate -w backend",
     "prisma:studio": "npm run prisma:studio -w backend"
   },
+  "lint-staged": {
+    "backend/**/*.ts": [
+      "eslint --fix --config backend/eslint.config.mjs --no-warn-ignored",
+      "prettier --write"
+    ],
+    "frontend/**/*.{ts,tsx}": [
+      "prettier --write"
+    ],
+    "*.{json,md,css,mjs}": [
+      "prettier --write"
+    ]
+  },
   "devDependencies": {
-    "concurrently": "^9.1.2"
+    "@commitlint/cli": "^19.8.0",
+    "@commitlint/config-conventional": "^19.8.0",
+    "concurrently": "^9.1.2",
+    "husky": "^9.1.7",
+    "lint-staged": "^15.5.0",
+    "prettier": "^3.5.3"
   },
   "engines": {
     "node": ">=20.0.0"
