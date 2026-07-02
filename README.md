@@ -7,7 +7,7 @@ A full-stack project management platform with Kanban boards, real-time collabora
 | Layer         | Technologies                                       |
 | ------------- | -------------------------------------------------- |
 | **Frontend**  | React, Next.js, React Hook Form, Zod, Tailwind CSS |
-| **Backend**   | Node.js, Express, Prisma, PostgreSQL               |
+| **Backend**   | Node.js, Express, Prisma, MongoDB                  |
 | **Auth**      | JWT                                                |
 | **Real-time** | Socket.io                                          |
 | **Quality**   | ESLint, Prettier, Husky, Lint-staged               |
@@ -76,7 +76,7 @@ All endpoints are versioned under `/api/v1`.
 1. ✅ Folder Structure
 2. ✅ Dependencies Installation
 3. ✅ Project Configuration
-4. ⏳ Database
+4. ✅ Database
 5. ⏳ Authentication
 6. ⏳ API
 7. ⏳ Frontend

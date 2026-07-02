@@ -8,7 +8,10 @@ const envSchema = z.object({
     .enum(['development', 'production', 'test'])
     .default('development'),
   PORT: z.coerce.number().default(5000),
-  DATABASE_URL: z.string().optional(),
+  DATABASE_URL: z
+    .string()
+    .min(1, 'DATABASE_URL is required')
+    .default('mongodb://127.0.0.1:27018/project_management?replicaSet=rs0'),
   JWT_SECRET: z.string().min(1).default('dev-secret-change-in-production'),
   JWT_EXPIRES_IN: z.string().default('7d'),
   CORS_ORIGIN: z.string().default('http://localhost:3000'),

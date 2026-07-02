@@ -22,7 +22,10 @@
     "prepare": "husky",
     "prisma:generate": "npm run prisma:generate -w backend",
     "prisma:migrate": "npm run prisma:migrate -w backend",
-    "prisma:studio": "npm run prisma:studio -w backend"
+    "prisma:studio": "npm run prisma:studio -w backend",
+    "db:init": "npm run db:init -w backend",
+    "db:seed": "npm run db:seed -w backend",
+    "db:setup": "npm run db:init -w backend && npm run prisma:push -w backend && npm run db:seed -w backend"
   },
   "lint-staged": {
     "backend/**/*.ts": [

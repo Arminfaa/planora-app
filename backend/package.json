@@ -10,9 +10,16 @@
     "start": "node dist/server.js",
     "lint": "eslint src",
     "prisma:generate": "prisma generate",
-    "prisma:migrate": "prisma migrate dev",
+    "prisma:migrate": "prisma db push",
+    "prisma:migrate:deploy": "prisma db push",
     "prisma:studio": "prisma studio",
-    "prisma:push": "prisma db push"
+    "prisma:push": "prisma db push",
+    "db:seed": "tsx prisma/seed.ts",
+    "db:init": "tsx prisma/init-replica-set.ts",
+    "db:start": "mongod --config mongo/mongod-rs.cfg"
+  },
+  "prisma": {
+    "seed": "tsx prisma/seed.ts"
   },
   "dependencies": {
     "@prisma/client": "^6.5.0",
@@ -23,6 +30,7 @@
     "express-rate-limit": "^7.5.0",
     "helmet": "^8.0.0",
     "jsonwebtoken": "^9.0.2",
+    "mongodb": "^7.4.0",
     "morgan": "^1.10.0",
     "multer": "^1.4.5-lts.2",
     "sanitize-html": "^2.14.0",

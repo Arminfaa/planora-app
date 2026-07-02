@@ -1,0 +1,12 @@
+services:
+  mongodb:
+    image: mongo:7
+    container_name: pmp-mongodb
+    restart: unless-stopped
+    ports:
+      - '27017:27017'
+    volumes:
+      - pmp_mongo_data:/data/db
+
+volumes:
+  pmp_mongo_data:

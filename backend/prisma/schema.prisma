@@ -1,0 +1,197 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "mongodb"
+  url      = env("DATABASE_URL")
+}
+
+// ─── Enums ───────────────────────────────────────────────
+
+enum ProjectRole {
+  OWNER
+  ADMIN
+  MEMBER
+}
+
+enum TaskPriority {
+  LOW
+  MEDIUM
+  HIGH
+  URGENT
+}
+
+enum AttachmentType {
+  IMAGE
+  FILE
+}
+
+// ─── User ────────────────────────────────────────────────
+
+model User {
+  id        String   @id @default(auto()) @map("_id") @db.ObjectId
+  email     String   @unique
+  name      String
+  password  String
+  avatar    String?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  ownedProjects Project[]       @relation("ProjectOwner")
+  memberships   ProjectMember[]
+  assignedTasks Task[]          @relation("TaskAssignee")
+  createdTasks  Task[]          @relation("TaskCreator")
+  comments      Comment[]
+
+  @@map("users")
+}
+
+// ─── Project ─────────────────────────────────────────────
+
+model Project {
+  id          String   @id @default(auto()) @map("_id") @db.ObjectId
+  name        String
+  slug        String   @unique
+  description String?
+  ownerId     String   @db.ObjectId
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  owner   User            @relation("ProjectOwner", fields: [ownerId], references: [id])
+  members ProjectMember[]
+  boards  Board[]
+  labels  Label[]
+
+  @@map("projects")
+}
+
+model ProjectMember {
+  id        String      @id @default(auto()) @map("_id") @db.ObjectId
+  projectId String      @db.ObjectId
+  userId    String      @db.ObjectId
+  role      ProjectRole @default(MEMBER)
+  joinedAt  DateTime    @default(now())
+
+  project Project @relation(fields: [projectId], references: [id])
+  user    User    @relation(fields: [userId], references: [id])
+
+  @@unique([projectId, userId])
+  @@map("project_members")
+}
+
+// ─── Board (Kanban) ──────────────────────────────────────
+
+model Board {
+  id        String   @id @default(auto()) @map("_id") @db.ObjectId
+  name      String
+  projectId String   @db.ObjectId
+  position  Int      @default(0)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  project Project  @relation(fields: [projectId], references: [id])
+  columns Column[]
+
+  @@map("boards")
+}
+
+model Column {
+  id        String   @id @default(auto()) @map("_id") @db.ObjectId
+  name      String
+  boardId   String   @db.ObjectId
+  position  Int      @default(0)
+  color     String?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  board Board  @relation(fields: [boardId], references: [id])
+  tasks Task[]
+
+  @@map("columns")
+}
+
+// ─── Task ────────────────────────────────────────────────
+
+model Task {
+  id          String       @id @default(auto()) @map("_id") @db.ObjectId
+  title       String
+  description String?
+  columnId    String       @db.ObjectId
+  position    Int          @default(0)
+  priority    TaskPriority @default(MEDIUM)
+  dueDate     DateTime?
+  assigneeId  String?      @db.ObjectId
+  createdById String       @db.ObjectId
+  createdAt   DateTime     @default(now())
+  updatedAt   DateTime     @updatedAt
+
+  column      Column       @relation(fields: [columnId], references: [id])
+  assignee    User?        @relation("TaskAssignee", fields: [assigneeId], references: [id])
+  createdBy   User         @relation("TaskCreator", fields: [createdById], references: [id])
+  labels      TaskLabel[]
+  comments    Comment[]
+  attachments Attachment[]
+
+  @@map("tasks")
+}
+
+// ─── Label ───────────────────────────────────────────────
+
+model Label {
+  id        String @id @default(auto()) @map("_id") @db.ObjectId
+  name      String
+  color     String @default("#6B7280")
+  projectId String @db.ObjectId
+
+  project Project     @relation(fields: [projectId], references: [id])
+  tasks   TaskLabel[]
+
+  @@unique([projectId, name])
+  @@map("labels")
+}
+
+model TaskLabel {
+  id      String @id @default(auto()) @map("_id") @db.ObjectId
+  taskId  String @db.ObjectId
+  labelId String @db.ObjectId
+
+  task  Task  @relation(fields: [taskId], references: [id])
+  label Label @relation(fields: [labelId], references: [id])
+
+  @@unique([taskId, labelId])
+  @@map("task_labels")
+}
+
+// ─── Comment ─────────────────────────────────────────────
+
+model Comment {
+  id        String   @id @default(auto()) @map("_id") @db.ObjectId
+  content   String
+  taskId    String   @db.ObjectId
+  authorId  String   @db.ObjectId
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  task   Task @relation(fields: [taskId], references: [id])
+  author User @relation(fields: [authorId], references: [id])
+
+  @@map("comments")
+}
+
+// ─── Attachment ──────────────────────────────────────────
+
+model Attachment {
+  id        String         @id @default(auto()) @map("_id") @db.ObjectId
+  filename  String
+  url       String
+  mimeType  String
+  size      Int
+  type      AttachmentType
+  taskId    String         @db.ObjectId
+  createdAt DateTime       @default(now())
+
+  task Task @relation(fields: [taskId], references: [id])
+
+  @@map("attachments")
+}
