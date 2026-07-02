@@ -74,7 +74,7 @@ All endpoints are versioned under `/api/v1`.
 ## Development Roadmap
 
 1. ✅ Folder Structure
-2. ⏳ Dependencies Installation
+2. ✅ Dependencies Installation
 3. ⏳ Project Configuration
 4. ⏳ Database
 5. ⏳ Authentication
@@ -90,4 +90,16 @@ All endpoints are versioned under `/api/v1`.
 
 ## Getting Started
 
-> Setup instructions will be added in Step 2 (Dependencies).
+```bash
+# Install all dependencies (root + workspaces)
+npm install
+
+# Run both servers (after Step 3 configuration)
+npm run dev
+
+# Run individually
+npm run dev:backend   # http://localhost:5000
+npm run dev:frontend  # http://localhost:3000
+```
+
+See [docs/dependencies.md](docs/dependencies.md) for the full package reference.
