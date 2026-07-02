@@ -3,10 +3,21 @@ import { checkDatabaseHealth } from '../../config';
 import { ApiResponse } from '../../utils/ApiResponse';
 import { asyncHandler } from '../../utils/asyncHandler';
 import authRoutes from './auth.routes';
+import { boardRouter, projectBoardRoutes } from './board.routes';
+import { boardColumnRouter, columnRouter } from './column.routes';
+import projectRoutes from './project.routes';
+import { columnTaskRouter, taskRouter } from './task.routes';
 
 const router = Router();
 
 router.use('/auth', authRoutes);
+router.use('/projects', projectRoutes);
+router.use('/projects/:projectId/boards', projectBoardRoutes);
+router.use('/boards', boardRouter);
+router.use('/boards/:boardId/columns', boardColumnRouter);
+router.use('/columns', columnRouter);
+router.use('/columns/:columnId/tasks', columnTaskRouter);
+router.use('/tasks', taskRouter);
 
 router.get(
   '/health',
