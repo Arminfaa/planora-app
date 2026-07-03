@@ -14,6 +14,13 @@ const taskInclude = {
 } satisfies Prisma.TaskInclude;
 
 export class TaskRepository extends BaseRepository {
+  async findByBoardAndSlug(boardId: string, slug: string) {
+    return this.db.task.findUnique({
+      where: { boardId_slug: { boardId, slug } },
+      include: taskInclude,
+    });
+  }
+
   async findById(id: string) {
     return this.db.task.findUnique({
       where: { id },
@@ -44,8 +51,10 @@ export class TaskRepository extends BaseRepository {
 
   async create(data: {
     title: string;
+    slug: string;
     description?: string;
     columnId: string;
+    boardId: string;
     position?: number;
     priority?: Prisma.TaskCreateInput['priority'];
     dueDate?: Date;

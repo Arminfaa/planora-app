@@ -11,6 +11,7 @@ export interface BoardColumn {
 
 export interface BoardTask {
   id: string;
+  slug: string;
   title: string;
   description: string | null;
   columnId: string;

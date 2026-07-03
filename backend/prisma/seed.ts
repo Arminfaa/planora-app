@@ -142,8 +142,10 @@ async function main() {
       data: [
         {
           title: 'Set up project repository',
+          slug: 'set-up-project-repository',
           description: 'Initialize the monorepo structure',
           columnId: doneCol.id,
+          boardId: board.id,
           position: 0,
           priority: TaskPriority.HIGH,
           createdById: admin.id,
@@ -151,8 +153,10 @@ async function main() {
         },
         {
           title: 'Design database schema',
+          slug: 'design-database-schema',
           description: 'Create Prisma models for all entities',
           columnId: doneCol.id,
+          boardId: board.id,
           position: 1,
           priority: TaskPriority.HIGH,
           createdById: admin.id,
@@ -160,8 +164,10 @@ async function main() {
         },
         {
           title: 'Implement authentication',
+          slug: 'implement-authentication',
           description: 'JWT login and register endpoints',
           columnId: inProgressCol.id,
+          boardId: board.id,
           position: 0,
           priority: TaskPriority.MEDIUM,
           createdById: admin.id,
@@ -169,8 +175,10 @@ async function main() {
         },
         {
           title: 'Build Kanban board UI',
+          slug: 'build-kanban-board-ui',
           description: 'Drag and drop task management',
           columnId: todoCol.id,
+          boardId: board.id,
           position: 0,
           priority: TaskPriority.MEDIUM,
           createdById: admin.id,

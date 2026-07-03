@@ -67,11 +67,11 @@ export function GlobalSearch() {
   const handleTaskSelect = (
     projectSlug: string,
     boardSlug: string,
-    taskId: string,
+    taskSlug: string,
   ) => {
     close();
     router.push(
-      `/dashboard/projects/${projectSlug}/boards/${boardSlug}?task=${taskId}`,
+      `/dashboard/projects/${projectSlug}/boards/${boardSlug}?task=${taskSlug}`,
     );
   };
 
@@ -205,7 +205,7 @@ export function GlobalSearch() {
                           handleTaskSelect(
                             task.projectSlug,
                             task.boardSlug,
-                            task.id,
+                            task.slug,
                           )
                         }
                         className="flex w-full flex-col gap-0.5 px-4 py-2.5 text-left transition hover:bg-gray-50"

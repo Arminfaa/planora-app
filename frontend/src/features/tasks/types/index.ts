@@ -2,6 +2,7 @@ export type TaskPriority = 'LOW' | 'MEDIUM' | 'HIGH' | 'URGENT';
 
 export interface Task {
   id: string;
+  slug: string;
   title: string;
   description: string | null;
   columnId: string;

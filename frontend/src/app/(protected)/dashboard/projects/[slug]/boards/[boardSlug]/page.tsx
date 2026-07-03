@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { useParams, useSearchParams } from 'next/navigation';
+import { useParams } from 'next/navigation';
 import { KanbanBoard } from '@/features/board/components/KanbanBoard';
 import { useBoard } from '@/features/board/hooks/useBoard';
 import { projectService } from '@/features/projects/services/project.service';
@@ -10,8 +10,6 @@ import { LoadingSpinner } from '@/shared/components/feedback/LoadingSpinner';
 
 export default function BoardPage() {
   const params = useParams<{ slug: string; boardSlug: string }>();
-  const searchParams = useSearchParams();
-  const taskId = searchParams.get('task');
   const { board, isLoading, error, refetch, revision } = useBoard(
     params.slug,
     params.boardSlug,
@@ -51,7 +49,6 @@ export default function BoardPage() {
       projectSlug={params.slug}
       revision={revision}
       onRefresh={refetch}
-      initialTaskId={taskId}
       canDeleteColumns={canDeleteColumns}
     />
   );

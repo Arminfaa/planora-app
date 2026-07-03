@@ -1,4 +1,5 @@
 import { ApiError } from '../utils/ApiError';
+import { toSlug } from '../utils/slug';
 import { buildPagination } from '../utils/pagination';
 import { boardRepository } from '../repositories/board.repository';
 import { columnRepository } from '../repositories/column.repository';
@@ -11,6 +12,20 @@ import type {
 } from '../validators/task.validator';
 
 export class TaskService {
+  private async generateUniqueSlug(
+    boardId: string,
+    title: string,
+  ): Promise<string> {
+    let slug = toSlug(title) || `task-${Date.now()}`;
+    const existing = await taskRepository.findByBoardAndSlug(boardId, slug);
+
+    if (existing) {
+      slug = `${slug}-${Date.now()}`;
+    }
+
+    return slug;
+  }
+
   private async resolveProjectIdFromColumn(columnId: string): Promise<string> {
     const boardId = await columnRepository.getBoardId(columnId);
     if (!boardId) {
@@ -78,6 +93,11 @@ export class TaskService {
   }
 
   async create(userId: string, columnId: string, input: CreateTaskInput) {
+    const boardId = await columnRepository.getBoardId(columnId);
+    if (!boardId) {
+      throw new ApiError(404, 'Column not found');
+    }
+
     const projectId = await this.resolveProjectIdFromColumn(columnId);
     await projectAccessService.ensureMember(userId, projectId);
 
@@ -85,10 +105,14 @@ export class TaskService {
       await this.ensureAssigneeIsMember(projectId, input.assigneeId);
     }
 
+    const slug = await this.generateUniqueSlug(boardId, input.title);
+
     return taskRepository.create({
       title: input.title,
+      slug,
       description: input.description,
       columnId,
+      boardId,
       position: input.position,
       priority: input.priority,
       dueDate: input.dueDate,

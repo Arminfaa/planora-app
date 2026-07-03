@@ -118,8 +118,10 @@ model Column {
 model Task {
   id          String       @id @default(auto()) @map("_id") @db.ObjectId
   title       String
+  slug        String
   description String?
   columnId    String       @db.ObjectId
+  boardId     String       @db.ObjectId
   position    Int          @default(0)
   priority    TaskPriority @default(MEDIUM)
   dueDate     DateTime?
@@ -135,6 +137,7 @@ model Task {
   comments    Comment[]
   attachments Attachment[]
 
+  @@unique([boardId, slug])
   @@map("tasks")
 }
 

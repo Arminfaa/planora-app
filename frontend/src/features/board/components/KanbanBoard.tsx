@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import dynamic from 'next/dynamic';
 import Link from 'next/link';
+import { usePathname, useRouter, useSearchParams } from 'next/navigation';
 import { DndContext, DragOverlay, closestCorners } from '@dnd-kit/core';
 import type { Board, BoardColumn, BoardTask } from '../types';
 import { KanbanColumn } from './KanbanColumn';
@@ -38,7 +39,6 @@ interface KanbanBoardProps {
   projectSlug: string;
   revision: number;
   onRefresh: (options?: { silent?: boolean }) => Promise<void>;
-  initialTaskId?: string | null;
   canDeleteColumns?: boolean;
 }
 
@@ -48,9 +48,12 @@ export function KanbanBoard({
   projectSlug,
   revision,
   onRefresh,
-  initialTaskId = null,
   canDeleteColumns = false,
 }: KanbanBoardProps) {
+  const router = useRouter();
+  const pathname = usePathname();
+  const searchParams = useSearchParams();
+  const activeTaskSlug = searchParams.get('task');
   const [selectedTask, setSelectedTask] = useState<BoardTask | null>(null);
   const [editingColumn, setEditingColumn] = useState<BoardColumn | null>(null);
   const [showCreateColumn, setShowCreateColumn] = useState(false);
@@ -59,7 +62,7 @@ export function KanbanBoard({
   const [boardFilters, setBoardFilters] =
     useState<TaskFilters>(defaultTaskFilters);
   const [highlightedTaskId, setHighlightedTaskId] = useState<string | null>(
-    initialTaskId,
+    null,
   );
   const [boardName, setBoardName] = useState(board.name);
   const [boardDeleted, setBoardDeleted] = useState(false);
@@ -178,15 +181,46 @@ export function KanbanBoard({
     [onRefresh],
   );
 
+  const updateTaskQuery = useCallback(
+    (taskSlug: string | null) => {
+      const params = new URLSearchParams(searchParams.toString());
+      if (taskSlug) {
+        params.set('task', taskSlug);
+      } else {
+        params.delete('task');
+      }
+      const query = params.toString();
+      router.replace(query ? `${pathname}?${query}` : pathname, {
+        scroll: false,
+      });
+    },
+    [pathname, router, searchParams],
+  );
+
+  const closeTask = useCallback(() => {
+    setSelectedTask(null);
+    setHighlightedTaskId(null);
+    updateTaskQuery(null);
+  }, [updateTaskQuery]);
+
+  const openTask = useCallback(
+    (task: BoardTask) => {
+      setSelectedTask(task);
+      setHighlightedTaskId(task.id);
+      updateTaskQuery(task.slug);
+    },
+    [updateTaskQuery],
+  );
+
   const handleTaskUpdate = useCallback(async () => {
     await onRefresh();
-    setSelectedTask(null);
-  }, [onRefresh]);
+    closeTask();
+  }, [closeTask, onRefresh]);
 
   const handleTaskDelete = useCallback(async () => {
     await onRefresh();
-    setSelectedTask(null);
-  }, [onRefresh]);
+    closeTask();
+  }, [closeTask, onRefresh]);
 
   const totalTasks = columns.reduce(
     (sum, col) => sum + (col.tasks?.length ?? 0),
@@ -211,17 +245,21 @@ export function KanbanBoard({
   }, [columns, hasActiveView, matchTask, totalTasks]);
 
   useEffect(() => {
-    if (!initialTaskId) return;
+    if (!activeTaskSlug) {
+      setSelectedTask(null);
+      setHighlightedTaskId(null);
+      return;
+    }
 
     const task = columns
       .flatMap((col) => col.tasks ?? [])
-      .find((item) => item.id === initialTaskId);
+      .find((item) => item.slug === activeTaskSlug);
 
     if (task) {
       setSelectedTask(task);
       setHighlightedTaskId(task.id);
     }
-  }, [columns, initialTaskId]);
+  }, [activeTaskSlug, columns]);
 
   return (
     <div>
@@ -302,7 +340,7 @@ export function KanbanBoard({
               key={column.id}
               column={column}
               members={members}
-              onTaskClick={setSelectedTask}
+              onTaskClick={openTask}
               onAddTask={handleAddTask}
               onEdit={setEditingColumn}
               onDelete={handleDeleteColumn}
@@ -345,7 +383,7 @@ export function KanbanBoard({
           task={selectedTask}
           columns={columns}
           members={members}
-          onClose={() => setSelectedTask(null)}
+          onClose={closeTask}
           onUpdate={handleTaskUpdate}
           onDelete={handleTaskDelete}
         />

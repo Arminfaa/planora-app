@@ -7,6 +7,7 @@ export { defaultTaskFilters, UNASSIGNED_ASSIGNEE } from './filter';
 
 export interface SearchTaskResult {
   id: string;
+  slug: string;
   title: string;
   description: string | null;
   priority: TaskPriority;

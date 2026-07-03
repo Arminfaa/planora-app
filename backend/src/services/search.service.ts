@@ -13,6 +13,7 @@ function mapTaskResult(
 ) {
   return {
     id: task.id,
+    slug: task.slug,
     title: task.title,
     description: task.description,
     priority: task.priority,

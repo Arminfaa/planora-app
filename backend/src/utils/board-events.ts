@@ -19,6 +19,7 @@ async function resolveBoardIdFromTask(taskId: string): Promise<string | null> {
 function serializeTask(task: Record<string, unknown>) {
   return {
     id: String(task.id),
+    slug: String(task.slug ?? ''),
     title: task.title,
     description: task.description ?? null,
     columnId: String(task.columnId),
