@@ -340,7 +340,7 @@ export function KanbanBoard({
   const hasCustomBackground = Boolean(backgroundUrl);
 
   return (
-    <div className="relative flex min-h-[calc(100dvh-65px)] w-full flex-col overflow-hidden px-4">
+    <div className="relative flex min-h-[calc(100dvh-65px)] w-full flex-col overflow-hidden px-6">
       {/* Background layer */}
       <div className="pointer-events-none absolute inset-0">
         {hasCustomBackground ? (
@@ -370,7 +370,7 @@ export function KanbanBoard({
 
       {/* Content */}
       <div className="relative flex min-h-0 flex-1 flex-col">
-        <div className="shrink-0 px-4 py-6">
+        <div className="shrink-0 py-6">
           <BoardHeader
             boardName={boardName}
             boardId={board.id}
@@ -408,7 +408,7 @@ export function KanbanBoard({
             onDragCancel={handleDragCancel}
           >
             <div
-              className={`flex h-full min-h-[calc(100dvh-16rem)] gap-4 px-4 pb-4 ${boardDeleted ? 'pointer-events-none opacity-50' : ''}`}
+              className={`flex h-full min-h-[calc(100dvh-16rem)] gap-4 pb-4 ${boardDeleted ? 'pointer-events-none opacity-50' : ''}`}
             >
               <SortableContext
                 items={columns.map((column) => column.id)}
