@@ -1,5 +1,6 @@
 import { ApiError } from '../utils/ApiError';
 import { toSlug } from '../utils/slug';
+import type { Prisma } from '@prisma/client';
 import { boardRepository } from '../repositories/board.repository';
 import { projectRepository } from '../repositories/project.repository';
 import { projectAccessService } from './project-access.service';
@@ -50,6 +51,7 @@ export class BoardService {
   private async generateUniqueSlug(
     projectId: string,
     name: string,
+    excludeBoardId?: string,
   ): Promise<string> {
     let slug = toSlug(name) || `board-${Date.now()}`;
     const existing = await boardRepository.findByProjectAndSlug(
@@ -57,7 +59,7 @@ export class BoardService {
       slug,
     );
 
-    if (existing) {
+    if (existing && existing.id !== excludeBoardId) {
       slug = `${slug}-${Date.now()}`;
     }
 
@@ -115,7 +117,23 @@ export class BoardService {
     }
 
     await projectAccessService.ensureMember(userId, projectId);
-    return boardRepository.update(boardId, input);
+
+    const updateData: Prisma.BoardUpdateInput = {};
+
+    if (input.name !== undefined) {
+      updateData.name = input.name;
+      updateData.slug = await this.generateUniqueSlug(
+        projectId,
+        input.name,
+        boardId,
+      );
+    }
+
+    if (input.position !== undefined) {
+      updateData.position = input.position;
+    }
+
+    return boardRepository.update(boardId, updateData);
   }
 
   async delete(userId: string, boardId: string) {

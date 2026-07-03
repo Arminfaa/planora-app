@@ -90,10 +90,16 @@ export function KanbanBoard({
     (event: BoardSocketEvent) => {
       if (event.type === 'board:updated') {
         const { board: updated } = event.payload as {
-          board?: { name?: string };
+          board?: { name?: string; slug?: string };
         };
         if (updated?.name) {
           setBoardName(updated.name);
+        }
+        if (updated?.slug && updated.slug !== board.slug) {
+          const query = searchParams.toString();
+          router.replace(
+            `/dashboard/projects/${projectSlug}/boards/${updated.slug}${query ? `?${query}` : ''}`,
+          );
         }
         return;
       }
@@ -104,6 +110,10 @@ export function KanbanBoard({
         return;
       }
 
+      if (event.type === 'column:created') {
+        setShowCreateColumn(false);
+      }
+
       if (event.type === 'column:deleted') {
         const { columnId } = event.payload as { columnId: string };
         setEditingColumn((prev) => (prev?.id === columnId ? null : prev));
@@ -111,7 +121,7 @@ export function KanbanBoard({
 
       applyRemoteUpdate(event);
     },
-    [applyRemoteUpdate],
+    [applyRemoteUpdate, board.slug, projectSlug, router, searchParams],
   );
 
   const { isConnected, isJoined, lastRemoteUpdate } = useBoardSocket(board.id, {

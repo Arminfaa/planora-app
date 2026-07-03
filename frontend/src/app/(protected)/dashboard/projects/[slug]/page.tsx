@@ -122,7 +122,13 @@ export default function ProjectDetailPage() {
     data: { name?: string },
   ) => {
     setActionError('');
-    await updateBoard(boardId, data);
+    const updated = await updateBoard(boardId, data);
+
+    if (editingBoard?.id === boardId && updated?.slug) {
+      setEditingBoard((prev) =>
+        prev ? { ...prev, name: updated.name, slug: updated.slug } : prev,
+      );
+    }
   };
 
   const handleDeleteBoard = async (board: Board) => {

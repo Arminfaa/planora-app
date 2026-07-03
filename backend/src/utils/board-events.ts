@@ -65,6 +65,7 @@ function serializeBoardSummary(board: Record<string, unknown>) {
   return {
     id: String(board.id),
     name: board.name,
+    slug: String(board.slug ?? ''),
     projectId: String(board.projectId),
     position: Number(board.position),
     createdAt:
