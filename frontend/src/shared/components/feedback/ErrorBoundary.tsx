@@ -1,6 +1,6 @@
 'use client';
 
-import { Component, type ErrorInfo, type ReactNode } from 'react';
+import React, { type ErrorInfo, type ReactNode } from 'react';
 
 interface Props {
   children: ReactNode;
@@ -10,7 +10,7 @@ interface State {
   hasError: boolean;
 }
 
-export class ErrorBoundary extends Component<Props, State> {
+class ErrorBoundaryClass extends React.Component<Props, State> {
   constructor(props: Props) {
     super(props);
     this.state = { hasError: false };
@@ -35,6 +35,7 @@ export class ErrorBoundary extends Component<Props, State> {
             Please refresh the page and try again.
           </p>
           <button
+            type="button"
             onClick={() => this.setState({ hasError: false })}
             className="mt-4 text-sm font-medium text-primary-600 hover:text-primary-700"
           >
@@ -47,3 +48,9 @@ export class ErrorBoundary extends Component<Props, State> {
     return this.props.children;
   }
 }
+
+export function ErrorBoundary({ children }: Props) {
+  return <ErrorBoundaryClass>{children}</ErrorBoundaryClass>;
+}
+
+export default ErrorBoundary;
