@@ -1,6 +1,11 @@
 import { api } from '@/lib/api';
 import type { ApiSuccessResponse, PaginatedData } from '@/shared/types/api';
-import type { CreateProjectInput, Project, ProjectMember } from '../types';
+import type {
+  CreateProjectInput,
+  Project,
+  ProjectMember,
+  UpdateProjectInput,
+} from '../types';
 
 export const projectService = {
   async list(page = 1, limit = 10): Promise<PaginatedData<Project>> {
@@ -38,5 +43,17 @@ export const projectService = {
       input,
     );
     return data.data;
+  },
+
+  async update(id: string, input: UpdateProjectInput): Promise<Project> {
+    const { data } = await api.patch<ApiSuccessResponse<Project>>(
+      `/projects/${id}`,
+      input,
+    );
+    return data.data;
+  },
+
+  async delete(id: string): Promise<void> {
+    await api.delete(`/projects/${id}`);
   },
 };

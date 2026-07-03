@@ -2,13 +2,14 @@
 
 import { useEffect, useState } from 'react';
 import Link from 'next/link';
-import { useParams } from 'next/navigation';
+import { useParams, useRouter } from 'next/navigation';
 import { BoardCard } from '@/features/board/components/BoardCard';
 import { CreateBoardForm } from '@/features/board/components/CreateBoardForm';
 import { EditBoardModal } from '@/features/board/components/EditBoardModal';
 import { useBoards } from '@/features/board/hooks/useBoards';
 import type { Board } from '@/features/board/types';
 import { formatDate } from '@/features/dashboard/utils/stats';
+import { EditProjectModal } from '@/features/projects/components/EditProjectModal';
 import { projectService } from '@/features/projects/services/project.service';
 import type { Project } from '@/features/projects/types';
 import { LoadingSpinner } from '@/shared/components/feedback/LoadingSpinner';
@@ -17,11 +18,13 @@ import { getApiErrorMessage } from '@/lib/api';
 
 export default function ProjectDetailPage() {
   const params = useParams<{ slug: string }>();
+  const router = useRouter();
   const slug = params.slug;
   const [project, setProject] = useState<Project | null>(null);
   const [projectError, setProjectError] = useState('');
   const [loadingProject, setLoadingProject] = useState(true);
   const [showCreateForm, setShowCreateForm] = useState(false);
+  const [showEditProject, setShowEditProject] = useState(false);
   const [editingBoard, setEditingBoard] = useState<Board | null>(null);
   const [actionError, setActionError] = useState('');
 
@@ -57,6 +60,51 @@ export default function ProjectDetailPage() {
   const canDeleteBoard =
     project?.currentUserRole === 'OWNER' ||
     project?.currentUserRole === 'ADMIN';
+
+  const canManageProject = canDeleteBoard;
+
+  const handleUpdateProject = async (
+    projectId: string,
+    data: { name?: string; description?: string },
+  ) => {
+    setActionError('');
+    const updated = await projectService.update(projectId, data);
+    setProject((prev) =>
+      prev
+        ? {
+            ...prev,
+            ...updated,
+            currentUserRole: prev.currentUserRole,
+            owner: prev.owner,
+            _count: prev._count,
+          }
+        : prev,
+    );
+
+    if (updated.slug !== slug) {
+      router.replace(`/dashboard/projects/${updated.slug}`);
+    }
+  };
+
+  const handleDeleteProject = async () => {
+    if (!project) return;
+
+    if (
+      !confirm(
+        `Delete project "${project.name}"? All boards, columns, and tasks will be removed.`,
+      )
+    ) {
+      return;
+    }
+
+    setActionError('');
+    try {
+      await projectService.delete(project.id);
+      router.push('/dashboard');
+    } catch (err) {
+      setActionError(getApiErrorMessage(err));
+    }
+  };
 
   const handleCreateBoard = async (data: { name: string }) => {
     setActionError('');
@@ -114,13 +162,37 @@ export default function ProjectDetailPage() {
       </Link>
 
       <div className="mb-8 rounded-xl border border-gray-200 bg-white p-6 shadow-sm">
-        <h1 className="text-2xl font-bold text-gray-900">{project.name}</h1>
-        {project.description && (
-          <p className="mt-2 text-gray-600">{project.description}</p>
-        )}
-        <div className="mt-4 flex flex-wrap gap-4 text-sm text-gray-500">
-          <span>Updated: {formatDate(project.updatedAt)}</span>
-          {project.owner && <span>Owner: {project.owner.name}</span>}
+        <div className="flex items-start justify-between gap-4">
+          <div className="min-w-0 flex-1">
+            <h1 className="text-2xl font-bold text-gray-900">{project.name}</h1>
+            {project.description && (
+              <p className="mt-2 text-gray-600">{project.description}</p>
+            )}
+            <div className="mt-4 flex flex-wrap gap-4 text-sm text-gray-500">
+              <span>Updated: {formatDate(project.updatedAt)}</span>
+              {project.owner && <span>Owner: {project.owner.name}</span>}
+            </div>
+          </div>
+
+          {canManageProject && (
+            <div className="flex shrink-0 gap-2">
+              <Button
+                type="button"
+                variant="secondary"
+                onClick={() => setShowEditProject(true)}
+              >
+                Edit
+              </Button>
+              <Button
+                type="button"
+                variant="ghost"
+                onClick={handleDeleteProject}
+                className="text-red-600 hover:bg-red-50 hover:text-red-700"
+              >
+                Delete
+              </Button>
+            </div>
+          )}
         </div>
       </div>
 
@@ -198,6 +270,14 @@ export default function ProjectDetailPage() {
           board={editingBoard}
           onClose={() => setEditingBoard(null)}
           onSubmit={handleUpdateBoard}
+        />
+      )}
+
+      {showEditProject && (
+        <EditProjectModal
+          project={project}
+          onClose={() => setShowEditProject(false)}
+          onSubmit={handleUpdateProject}
         />
       )}
     </div>

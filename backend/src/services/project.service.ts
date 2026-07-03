@@ -1,4 +1,4 @@
-import { ProjectRole } from '@prisma/client';
+import { ProjectRole, type Prisma } from '@prisma/client';
 import { ApiError } from '../utils/ApiError';
 import { buildPagination } from '../utils/pagination';
 import { toSlug } from '../utils/slug';
@@ -24,6 +24,20 @@ export class ProjectService {
     }
 
     return project.id;
+  }
+
+  private async generateUniqueSlug(
+    name: string,
+    excludeProjectId?: string,
+  ): Promise<string> {
+    let slug = toSlug(name) || `project-${Date.now()}`;
+    const existing = await projectRepository.findBySlug(slug);
+
+    if (existing && existing.id !== excludeProjectId) {
+      slug = `${slug}-${Date.now()}`;
+    }
+
+    return slug;
   }
 
   async list(userId: string, page: number, limit: number) {
@@ -75,12 +89,7 @@ export class ProjectService {
   }
 
   async create(userId: string, input: CreateProjectInput) {
-    let slug = toSlug(input.name);
-    const existing = await projectRepository.findBySlug(slug);
-
-    if (existing) {
-      slug = `${slug}-${Date.now()}`;
-    }
+    const slug = await this.generateUniqueSlug(input.name);
 
     const project = await projectRepository.create({
       name: input.name,
@@ -97,7 +106,19 @@ export class ProjectService {
   async update(userId: string, idOrSlug: string, input: UpdateProjectInput) {
     const projectId = await this.resolveProjectId(idOrSlug);
     await projectAccessService.ensureAdmin(userId, projectId);
-    return projectRepository.update(projectId, input);
+
+    const updateData: Prisma.ProjectUpdateInput = {};
+
+    if (input.name !== undefined) {
+      updateData.name = input.name;
+      updateData.slug = await this.generateUniqueSlug(input.name, projectId);
+    }
+
+    if (input.description !== undefined) {
+      updateData.description = input.description;
+    }
+
+    return projectRepository.update(projectId, updateData);
   }
 
   async delete(userId: string, idOrSlug: string) {

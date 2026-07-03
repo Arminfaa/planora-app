@@ -25,6 +25,11 @@ export interface CreateProjectInput {
   description?: string;
 }
 
+export interface UpdateProjectInput {
+  name?: string;
+  description?: string;
+}
+
 export interface ProjectMember {
   id: string;
   name: string;
