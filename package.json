@@ -8,7 +8,7 @@
     "frontend"
   ],
   "scripts": {
-    "dev": "concurrently -n backend,frontend -c blue,green \"npm run dev -w backend\" \"npm run dev -w frontend\"",
+    "dev": "concurrently -n mongo,backend,frontend -c yellow,blue,green \"npm run db:start -w backend\" \"npm run dev -w backend\" \"npm run dev -w frontend\"",
     "dev:backend": "npm run dev -w backend",
     "dev:frontend": "npm run dev -w frontend",
     "build": "npm run build -w backend && npm run build -w frontend",

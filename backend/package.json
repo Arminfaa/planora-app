@@ -16,7 +16,7 @@
     "prisma:push": "prisma db push",
     "db:seed": "tsx prisma/seed.ts",
     "db:init": "tsx prisma/init-replica-set.ts",
-    "db:start": "mongod --config mongo/mongod-rs.cfg",
+    "db:start": "node scripts/start-mongo.mjs",
     "test:smoke": "tsx tests/smoke/api.smoke.ts"
   },
   "prisma": {
