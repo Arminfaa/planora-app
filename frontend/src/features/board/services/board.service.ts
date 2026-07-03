@@ -11,7 +11,9 @@ export const boardService = {
   },
 
   async getById(id: string): Promise<Board> {
-    const { data } = await api.get<ApiSuccessResponse<Board>>(`/boards/${id}`);
+    const { data } = await api.get<ApiSuccessResponse<Board>>(`/boards/${id}`, {
+      params: { _t: Date.now() },
+    });
     return data.data;
   },
 };

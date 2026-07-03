@@ -8,6 +8,8 @@ import type { Board, BoardTask } from '../types';
 import { KanbanColumn } from './KanbanColumn';
 import { TaskCard } from './TaskCard';
 import { useKanbanDnd } from '../hooks/useKanbanDnd';
+import { useBoardSocket } from '../hooks/useBoardSocket';
+import type { BoardSocketEvent } from '../types/socket';
 import { taskService } from '@/features/tasks/services/task.service';
 import { getApiErrorMessage } from '@/lib/api';
 import { LoadingSpinner } from '@/shared/components/feedback/LoadingSpinner';
@@ -20,10 +22,16 @@ const TaskModal = dynamic(
 interface KanbanBoardProps {
   board: Board;
   projectId: string;
-  onRefresh: () => Promise<void>;
+  revision: number;
+  onRefresh: (options?: { silent?: boolean }) => Promise<void>;
 }
 
-export function KanbanBoard({ board, projectId, onRefresh }: KanbanBoardProps) {
+export function KanbanBoard({
+  board,
+  projectId,
+  revision,
+  onRefresh,
+}: KanbanBoardProps) {
   const [selectedTask, setSelectedTask] = useState<BoardTask | null>(null);
   const [actionError, setActionError] = useState('');
 
@@ -34,11 +42,25 @@ export function KanbanBoard({ board, projectId, onRefresh }: KanbanBoardProps) {
   const {
     columns,
     activeTask,
+    dndRevision,
     sensors,
     handleDragStart,
     handleDragOver,
     handleDragEnd,
-  } = useKanbanDnd(board.columns ?? [], handleError, onRefresh);
+    handleDragCancel,
+    applyRemoteUpdate,
+  } = useKanbanDnd(board.columns ?? [], revision, handleError, onRefresh);
+
+  const handleRemoteChange = useCallback(
+    (event: BoardSocketEvent) => {
+      applyRemoteUpdate(event);
+    },
+    [applyRemoteUpdate],
+  );
+
+  const { isConnected, isJoined, lastRemoteUpdate } = useBoardSocket(board.id, {
+    onRemoteChange: handleRemoteChange,
+  });
 
   const handleAddTask = useCallback(
     async (columnId: string, title: string) => {
@@ -87,6 +109,27 @@ export function KanbanBoard({ board, projectId, onRefresh }: KanbanBoardProps) {
             Drag tasks to reorder or move between columns
           </p>
         </div>
+        <div className="flex items-center gap-2 text-xs text-gray-500">
+          <span
+            className={`inline-block h-2 w-2 rounded-full ${
+              isConnected && isJoined
+                ? 'bg-green-500'
+                : isConnected
+                  ? 'bg-amber-400'
+                  : 'bg-gray-300'
+            }`}
+          />
+          {isConnected && isJoined
+            ? 'Live'
+            : isConnected
+              ? 'Joining...'
+              : 'Connecting...'}
+          {lastRemoteUpdate && (
+            <span className="text-gray-400">
+              · Updated {lastRemoteUpdate.toLocaleTimeString()}
+            </span>
+          )}
+        </div>
       </div>
 
       {actionError && (
@@ -101,6 +144,7 @@ export function KanbanBoard({ board, projectId, onRefresh }: KanbanBoardProps) {
         onDragStart={handleDragStart}
         onDragOver={handleDragOver}
         onDragEnd={handleDragEnd}
+        onDragCancel={handleDragCancel}
       >
         <div className="flex gap-4 overflow-x-auto pb-6">
           {columns.map((column) => (

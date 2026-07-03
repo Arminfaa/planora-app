@@ -83,7 +83,7 @@ All endpoints are versioned under `/api/v1`.
 8. ✅ Dashboard
 9. ✅ Board
 10. ✅ Drag & Drop
-11. ⏳ Real Time
+11. ✅ Real Time
 12. ⏳ Search
 13. ⏳ Filter
 14. ⏳ Final Testing

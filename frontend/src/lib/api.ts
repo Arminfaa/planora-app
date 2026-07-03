@@ -15,6 +15,12 @@ api.interceptors.request.use((config: InternalAxiosRequestConfig) => {
   if (token) {
     config.headers.Authorization = `Bearer ${token}`;
   }
+
+  if (config.method?.toLowerCase() === 'get') {
+    config.headers['Cache-Control'] = 'no-cache';
+    config.headers.Pragma = 'no-cache';
+  }
+
   return config;
 });
 

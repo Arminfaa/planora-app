@@ -7,6 +7,7 @@ import {
   disconnectDatabase,
   env,
 } from './config';
+import { setupSocket } from './socket';
 import { logger } from './utils/logger';
 
 const server = http.createServer(app);
@@ -18,15 +19,7 @@ const io = new SocketServer(server, {
   },
 });
 
-io.on('connection', (socket) => {
-  logger.debug(`Socket connected: ${socket.id}`);
-
-  socket.on('disconnect', () => {
-    logger.debug(`Socket disconnected: ${socket.id}`);
-  });
-});
-
-export { io };
+setupSocket(io);
 
 async function startServer(): Promise<void> {
   try {
@@ -60,4 +53,5 @@ process.on('SIGINT', () => void shutdown('SIGINT'));
 
 void startServer();
 
+export { io };
 export default server;

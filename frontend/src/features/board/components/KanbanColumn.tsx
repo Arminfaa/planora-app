@@ -7,6 +7,7 @@ import {
   verticalListSortingStrategy,
 } from '@dnd-kit/sortable';
 import type { BoardColumn, BoardTask } from '../types';
+import { columnSortableKey } from '../utils/applyRealtimeEvent';
 import { SortableTaskCard } from './TaskCard';
 import { AddTaskForm } from './AddTaskForm';
 
@@ -24,6 +25,7 @@ export const KanbanColumn = memo(function KanbanColumn({
   const { setNodeRef, isOver } = useDroppable({ id: column.id });
   const tasks = column.tasks ?? [];
   const taskIds = tasks.map((t) => t.id);
+  const sortableKey = columnSortableKey(column);
 
   return (
     <div
@@ -47,9 +49,17 @@ export const KanbanColumn = memo(function KanbanColumn({
         ref={setNodeRef}
         className="flex min-h-[120px] flex-1 flex-col gap-2 p-3"
       >
-        <SortableContext items={taskIds} strategy={verticalListSortingStrategy}>
+        <SortableContext
+          key={sortableKey}
+          items={taskIds}
+          strategy={verticalListSortingStrategy}
+        >
           {tasks.map((task) => (
-            <SortableTaskCard key={task.id} task={task} onClick={onTaskClick} />
+            <SortableTaskCard
+              key={`${task.id}-${task.position}`}
+              task={task}
+              onClick={onTaskClick}
+            />
           ))}
         </SortableContext>
 

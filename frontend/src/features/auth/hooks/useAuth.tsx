@@ -12,6 +12,7 @@ import {
 import { useRouter } from 'next/navigation';
 import { authService } from '../services/auth.service';
 import { getToken, removeToken, setToken } from '../utils/token';
+import { connectSocket, disconnectSocket } from '@/lib/socket';
 import type { LoginFormData, RegisterFormData } from '../types';
 import type { User } from '@/shared/types/api';
 
@@ -42,9 +43,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     try {
       const profile = await authService.getMe();
       setUser(profile);
+      connectSocket();
     } catch {
       removeToken();
       setUser(null);
+      disconnectSocket();
     } finally {
       setIsLoading(false);
     }
@@ -59,6 +62,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       const result = await authService.login(data.email, data.password);
       setToken(result.token);
       setUser(result.user);
+      connectSocket();
       router.push('/dashboard');
     },
     [router],
@@ -73,6 +77,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       );
       setToken(result.token);
       setUser(result.user);
+      connectSocket();
       router.push('/dashboard');
     },
     [router],
@@ -80,6 +85,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   const logout = useCallback(() => {
     removeToken();
+    disconnectSocket();
     setUser(null);
     router.push('/login');
   }, [router]);

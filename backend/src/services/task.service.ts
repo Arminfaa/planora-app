@@ -82,16 +82,48 @@ export class TaskService {
     const projectId = await this.resolveProjectIdFromTask(taskId);
     await projectAccessService.ensureMember(userId, projectId);
 
-    if (input.columnId) {
-      const targetProjectId = await this.resolveProjectIdFromColumn(
-        input.columnId,
-      );
-      if (targetProjectId !== projectId) {
-        throw new ApiError(
-          400,
-          'Cannot move task to a column in another project',
-        );
+    const existing = await taskRepository.findById(taskId);
+    if (!existing) {
+      throw new ApiError(404, 'Task not found');
+    }
+
+    const isMove = input.columnId !== undefined || input.position !== undefined;
+
+    if (isMove) {
+      const targetColumnId = input.columnId ?? existing.columnId;
+
+      if (input.columnId) {
+        const targetProjectId =
+          await this.resolveProjectIdFromColumn(targetColumnId);
+        if (targetProjectId !== projectId) {
+          throw new ApiError(
+            400,
+            'Cannot move task to a column in another project',
+          );
+        }
       }
+
+      const targetPosition = input.position ?? existing.position;
+      const movedTask = await taskRepository.moveTask(
+        taskId,
+        targetColumnId,
+        targetPosition,
+      );
+
+      if (!movedTask) {
+        throw new ApiError(404, 'Task not found');
+      }
+
+      const { columnId: _columnId, position: _position, ...rest } = input;
+      if (Object.keys(rest).length > 0) {
+        const updated = await taskRepository.update(taskId, rest);
+        if (!updated) {
+          throw new ApiError(404, 'Task not found');
+        }
+        return updated;
+      }
+
+      return movedTask;
     }
 
     return taskRepository.update(taskId, input);

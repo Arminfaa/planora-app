@@ -7,7 +7,9 @@ import { LoadingSpinner } from '@/shared/components/feedback/LoadingSpinner';
 
 export default function BoardPage() {
   const params = useParams<{ id: string; boardId: string }>();
-  const { board, isLoading, error, refetch } = useBoard(params.boardId);
+  const { board, isLoading, error, refetch, revision } = useBoard(
+    params.boardId,
+  );
 
   if (isLoading) return <LoadingSpinner />;
 
@@ -20,6 +22,11 @@ export default function BoardPage() {
   }
 
   return (
-    <KanbanBoard board={board} projectId={params.id} onRefresh={refetch} />
+    <KanbanBoard
+      board={board}
+      projectId={params.id}
+      revision={revision}
+      onRefresh={refetch}
+    />
   );
 }

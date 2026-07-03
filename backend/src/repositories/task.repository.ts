@@ -66,8 +66,97 @@ export class TaskRepository extends BaseRepository {
     });
   }
 
+  async moveTask(
+    taskId: string,
+    targetColumnId: string,
+    targetPosition: number,
+  ) {
+    const task = await this.db.task.findUnique({
+      where: { id: taskId },
+      select: { id: true, columnId: true },
+    });
+
+    if (!task) {
+      throw new Error('Task not found');
+    }
+
+    const sourceColumnId = task.columnId;
+
+    await this.db.$transaction(async (tx) => {
+      const reorderColumn = async (
+        columnId: string,
+        orderedIds: string[],
+      ): Promise<void> => {
+        for (let index = 0; index < orderedIds.length; index += 1) {
+          await tx.task.update({
+            where: { id: orderedIds[index] },
+            data: { columnId, position: index },
+          });
+        }
+      };
+
+      const getOrderedIds = async (columnId: string): Promise<string[]> => {
+        const tasks = await tx.task.findMany({
+          where: { columnId },
+          orderBy: { position: 'asc' },
+          select: { id: true },
+        });
+        return tasks.map((item) => item.id);
+      };
+
+      if (sourceColumnId === targetColumnId) {
+        const ids = await getOrderedIds(sourceColumnId);
+        const fromIndex = ids.indexOf(taskId);
+        if (fromIndex === -1) return;
+
+        const [removed] = ids.splice(fromIndex, 1);
+        const toIndex = Math.max(0, Math.min(targetPosition, ids.length));
+        ids.splice(toIndex, 0, removed);
+
+        await reorderColumn(sourceColumnId, ids);
+        return;
+      }
+
+      const sourceIds = (await getOrderedIds(sourceColumnId)).filter(
+        (id) => id !== taskId,
+      );
+      const targetIds = (await getOrderedIds(targetColumnId)).filter(
+        (id) => id !== taskId,
+      );
+      const toIndex = Math.max(0, Math.min(targetPosition, targetIds.length));
+      targetIds.splice(toIndex, 0, taskId);
+
+      await reorderColumn(sourceColumnId, sourceIds);
+      await reorderColumn(targetColumnId, targetIds);
+    });
+
+    return this.findById(taskId);
+  }
+
   async delete(id: string): Promise<void> {
-    await this.db.task.delete({ where: { id } });
+    const task = await this.db.task.findUnique({
+      where: { id },
+      select: { columnId: true },
+    });
+
+    if (!task) return;
+
+    await this.db.$transaction(async (tx) => {
+      await tx.task.delete({ where: { id } });
+
+      const remaining = await tx.task.findMany({
+        where: { columnId: task.columnId },
+        orderBy: { position: 'asc' },
+        select: { id: true },
+      });
+
+      for (let index = 0; index < remaining.length; index += 1) {
+        await tx.task.update({
+          where: { id: remaining[index].id },
+          data: { position: index },
+        });
+      }
+    });
   }
 
   async getColumnId(taskId: string): Promise<string | null> {
