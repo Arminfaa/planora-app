@@ -15,15 +15,33 @@ export class TaskService {
   private async generateUniqueSlug(
     boardId: string,
     title: string,
+    excludeTaskId?: string,
   ): Promise<string> {
     let slug = toSlug(title) || `task-${Date.now()}`;
     const existing = await taskRepository.findByBoardAndSlug(boardId, slug);
 
-    if (existing) {
+    if (existing && existing.id !== excludeTaskId) {
       slug = `${slug}-${Date.now()}`;
     }
 
     return slug;
+  }
+
+  private async withUpdatedSlug<T extends UpdateTaskInput>(
+    existing: { id: string; boardId: string; title: string },
+    input: T,
+  ): Promise<T & { slug?: string }> {
+    if (input.title === undefined || input.title === existing.title) {
+      return input;
+    }
+
+    const slug = await this.generateUniqueSlug(
+      existing.boardId,
+      input.title,
+      existing.id,
+    );
+
+    return { ...input, slug };
   }
 
   private async resolveProjectIdFromColumn(columnId: string): Promise<string> {
@@ -163,7 +181,8 @@ export class TaskService {
 
       const { columnId: _columnId, position: _position, ...rest } = input;
       if (Object.keys(rest).length > 0) {
-        const updated = await taskRepository.update(taskId, rest);
+        const updatePayload = await this.withUpdatedSlug(existing, rest);
+        const updated = await taskRepository.update(taskId, updatePayload);
         if (!updated) {
           throw new ApiError(404, 'Task not found');
         }
@@ -173,7 +192,8 @@ export class TaskService {
       return movedTask;
     }
 
-    return taskRepository.update(taskId, input);
+    const updatePayload = await this.withUpdatedSlug(existing, input);
+    return taskRepository.update(taskId, updatePayload);
   }
 
   async delete(userId: string, taskId: string) {
