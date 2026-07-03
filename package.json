@@ -17,6 +17,8 @@
     "start:backend": "npm run start -w backend",
     "start:frontend": "npm run start -w frontend",
     "lint": "npm run lint -w backend && npm run lint -w frontend",
+    "test": "npm run test:smoke -w backend",
+    "test:smoke": "npm run test:smoke -w backend",
     "format": "prettier --write .",
     "format:check": "prettier --check .",
     "prepare": "husky",

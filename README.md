@@ -86,7 +86,17 @@ All endpoints are versioned under `/api/v1`.
 11. ✅ Real Time
 12. ✅ Search
 13. ✅ Filter
-14. ⏳ Final Testing
+14. ✅ Final Testing
+
+## Testing
+
+```bash
+npm run lint          # ESLint (backend + frontend)
+npm run build         # Production build
+npm run test:smoke    # API smoke tests (backend must be running)
+```
+
+See [docs/testing.md](docs/testing.md) for the full manual QA checklist.
 
 ## Getting Started
 

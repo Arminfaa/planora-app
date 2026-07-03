@@ -50,7 +50,48 @@ export class ProjectRepository extends BaseRepository {
   }
 
   async delete(id: string): Promise<void> {
-    await this.db.project.delete({ where: { id } });
+    await this.db.$transaction(async (tx) => {
+      const boards = await tx.board.findMany({
+        where: { projectId: id },
+        select: { id: true },
+      });
+      const boardIds = boards.map((board) => board.id);
+
+      const columns = boardIds.length
+        ? await tx.column.findMany({
+            where: { boardId: { in: boardIds } },
+            select: { id: true },
+          })
+        : [];
+      const columnIds = columns.map((column) => column.id);
+
+      const tasks = columnIds.length
+        ? await tx.task.findMany({
+            where: { columnId: { in: columnIds } },
+            select: { id: true },
+          })
+        : [];
+      const taskIds = tasks.map((task) => task.id);
+
+      if (taskIds.length) {
+        await tx.taskLabel.deleteMany({ where: { taskId: { in: taskIds } } });
+        await tx.comment.deleteMany({ where: { taskId: { in: taskIds } } });
+        await tx.attachment.deleteMany({ where: { taskId: { in: taskIds } } });
+        await tx.task.deleteMany({ where: { id: { in: taskIds } } });
+      }
+
+      if (columnIds.length) {
+        await tx.column.deleteMany({ where: { id: { in: columnIds } } });
+      }
+
+      if (boardIds.length) {
+        await tx.board.deleteMany({ where: { id: { in: boardIds } } });
+      }
+
+      await tx.label.deleteMany({ where: { projectId: id } });
+      await tx.projectMember.deleteMany({ where: { projectId: id } });
+      await tx.project.delete({ where: { id } });
+    });
   }
 
   async addOwnerAsMember(projectId: string, userId: string): Promise<void> {
