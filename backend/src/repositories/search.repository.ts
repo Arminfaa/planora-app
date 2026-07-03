@@ -115,6 +115,33 @@ export class SearchRepository extends BaseRepository {
 
     return { items, total };
   }
+
+  async getAssigneeOptions(userId: string) {
+    const tasks = await this.db.task.findMany({
+      where: {
+        assigneeId: { not: null },
+        column: {
+          board: {
+            project: projectAccessFilter(userId),
+          },
+        },
+      },
+      distinct: ['assigneeId'],
+      select: {
+        assignee: {
+          select: { id: true, name: true, email: true, avatar: true },
+        },
+      },
+      orderBy: { assignee: { name: 'asc' } },
+    });
+
+    return tasks
+      .map((task) => task.assignee)
+      .filter(
+        (assignee): assignee is NonNullable<typeof assignee> =>
+          assignee !== null,
+      );
+  }
 }
 
 export const searchRepository = new SearchRepository();

@@ -4,6 +4,7 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { useSearch } from '../hooks/useSearch';
+import { useSearchAssignees } from '../hooks/useSearchAssignees';
 import {
   DUE_DATE_FILTER_OPTIONS,
   type ApiDueDateFilter,
@@ -26,13 +27,20 @@ export function GlobalSearch() {
   const {
     query,
     setQuery,
+    debouncedQuery,
     results,
     isLoading,
+    isLoadingMore,
     error,
     hasCriteria,
     isEmpty,
+    hasMoreTasks,
+    hasMoreProjects,
+    loadMore,
     clear,
   } = useSearch({ limit: 6, filters });
+
+  const { assignees } = useSearchAssignees(isOpen);
 
   const showPanel = isOpen;
 
@@ -89,6 +97,8 @@ export function GlobalSearch() {
 
   const taskItems = results.tasks.items;
   const projectItems = results.projects.items;
+  const selectClassName =
+    'w-full rounded-lg border border-gray-300 bg-white px-3 py-1.5 text-sm text-gray-900 focus:border-primary-500 focus:outline-none focus:ring-1 focus:ring-primary-500';
 
   return (
     <div ref={containerRef} className="relative w-full max-w-md">
@@ -123,7 +133,7 @@ export function GlobalSearch() {
       {showPanel && (
         <div
           id="global-search-results"
-          className="absolute z-50 mt-2 w-full overflow-hidden rounded-xl border border-gray-200 bg-white shadow-lg"
+          className="absolute z-50 mt-2 max-h-[min(70vh,32rem)] w-full overflow-y-auto rounded-xl border border-gray-200 bg-white shadow-lg"
         >
           <div className="space-y-3 border-b border-gray-100 p-3">
             <p className="text-xs font-medium uppercase tracking-wide text-gray-400">
@@ -149,26 +159,50 @@ export function GlobalSearch() {
                 );
               })}
             </div>
-            <select
-              value={filters.due ?? ''}
-              onChange={(event) => {
-                const value = event.target.value as ApiDueDateFilter | '';
-                setFilters((prev) => ({
-                  ...prev,
-                  due: value || undefined,
-                }));
-              }}
-              className="w-full rounded-lg border border-gray-300 bg-white px-3 py-1.5 text-sm text-gray-900 focus:border-primary-500 focus:outline-none focus:ring-1 focus:ring-primary-500"
-            >
-              <option value="">All due dates</option>
-              {DUE_DATE_FILTER_OPTIONS.filter(
-                (item) => item.value !== 'all',
-              ).map((option) => (
-                <option key={option.value} value={option.value}>
-                  {option.label}
-                </option>
-              ))}
-            </select>
+            <div className="grid gap-2 sm:grid-cols-2">
+              <select
+                value={filters.assigneeId ?? ''}
+                onChange={(event) => {
+                  const value = event.target.value;
+                  setFilters((prev) => ({
+                    ...prev,
+                    assigneeId:
+                      value === ''
+                        ? undefined
+                        : (value as SearchFilterParams['assigneeId']),
+                  }));
+                }}
+                className={selectClassName}
+              >
+                <option value="">All assignees</option>
+                <option value="unassigned">Unassigned</option>
+                {assignees.map((assignee) => (
+                  <option key={assignee.id} value={assignee.id}>
+                    {assignee.name}
+                  </option>
+                ))}
+              </select>
+              <select
+                value={filters.due ?? ''}
+                onChange={(event) => {
+                  const value = event.target.value as ApiDueDateFilter | '';
+                  setFilters((prev) => ({
+                    ...prev,
+                    due: value || undefined,
+                  }));
+                }}
+                className={selectClassName}
+              >
+                <option value="">All due dates</option>
+                {DUE_DATE_FILTER_OPTIONS.filter(
+                  (item) => item.value !== 'all',
+                ).map((option) => (
+                  <option key={option.value} value={option.value}>
+                    {option.label}
+                  </option>
+                ))}
+              </select>
+            </div>
           </div>
 
           {!hasCriteria && (
@@ -216,6 +250,7 @@ export function GlobalSearch() {
                         <span className="text-xs text-gray-500">
                           {task.projectName} · {task.boardName} ·{' '}
                           {task.columnName}
+                          {task.assignee ? ` · ${task.assignee.name}` : ''}
                         </span>
                         <span
                           className={`mt-1 inline-flex w-fit rounded px-1.5 py-0.5 text-[10px] font-medium ${style.badge}`}
@@ -233,7 +268,7 @@ export function GlobalSearch() {
           {hasCriteria &&
             !isLoading &&
             !error &&
-            query.trim().length >= 2 &&
+            debouncedQuery.length >= 2 &&
             projectItems.length > 0 && (
               <div>
                 <p className="px-4 py-2 text-xs font-semibold uppercase tracking-wide text-gray-400">
@@ -263,11 +298,24 @@ export function GlobalSearch() {
             )}
 
           {hasCriteria && !isLoading && !error && !isEmpty && (
-            <p className="border-t border-gray-100 px-4 py-2 text-xs text-gray-400">
-              {results.tasks.pagination.total} tasks
-              {query.trim().length >= 2 &&
-                ` · ${results.projects.pagination.total} projects`}
-            </p>
+            <div className="border-t border-gray-100 px-4 py-2">
+              <p className="text-xs text-gray-400">
+                Showing {taskItems.length} of {results.tasks.pagination.total}{' '}
+                tasks
+                {debouncedQuery.length >= 2 &&
+                  ` · ${projectItems.length} of ${results.projects.pagination.total} projects`}
+              </p>
+              {(hasMoreTasks || hasMoreProjects) && (
+                <button
+                  type="button"
+                  onClick={loadMore}
+                  disabled={isLoadingMore}
+                  className="mt-2 text-xs font-medium text-primary-600 hover:text-primary-700 disabled:opacity-50"
+                >
+                  {isLoadingMore ? 'Loading...' : 'Load more'}
+                </button>
+              )}
+            </div>
           )}
         </div>
       )}

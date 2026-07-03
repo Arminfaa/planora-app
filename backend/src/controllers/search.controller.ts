@@ -25,3 +25,10 @@ export const search = asyncHandler(
     ApiResponse.success(res, result, 'Search results retrieved');
   },
 );
+
+export const listSearchAssignees = asyncHandler(
+  async (req: AuthenticatedRequest, res: Response) => {
+    const assignees = await searchService.getAssignees(req.user!.userId);
+    ApiResponse.success(res, assignees, 'Search assignees retrieved');
+  },
+);

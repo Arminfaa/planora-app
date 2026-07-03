@@ -1,6 +1,10 @@
 import { api } from '@/lib/api';
 import type { ApiSuccessResponse } from '@/shared/types/api';
-import type { SearchParams, SearchResponse } from '../types';
+import type {
+  SearchAssigneeOption,
+  SearchParams,
+  SearchResponse,
+} from '../types';
 
 export const searchService = {
   async search(params: SearchParams): Promise<SearchResponse> {
@@ -14,6 +18,14 @@ export const searchService = {
         },
       },
     );
+    return data.data;
+  },
+
+  async listAssignees(): Promise<SearchAssigneeOption[]> {
+    const { data } =
+      await api.get<ApiSuccessResponse<SearchAssigneeOption[]>>(
+        '/search/assignees',
+      );
     return data.data;
   },
 };

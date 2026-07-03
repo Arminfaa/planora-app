@@ -94,6 +94,10 @@ export class SearchService {
       ),
     };
   }
+
+  async getAssignees(userId: string) {
+    return searchRepository.getAssigneeOptions(userId);
+  }
 }
 
 export const searchService = new SearchService();

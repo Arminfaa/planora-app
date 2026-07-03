@@ -5,6 +5,13 @@ import type { ApiDueDateFilter, SearchFilterParams } from './filter';
 export type { TaskFilters, DueDateFilter, SearchFilterParams } from './filter';
 export { defaultTaskFilters, UNASSIGNED_ASSIGNEE } from './filter';
 
+export interface SearchAssigneeOption {
+  id: string;
+  name: string;
+  email: string;
+  avatar: string | null;
+}
+
 export interface SearchTaskResult {
   id: string;
   slug: string;
