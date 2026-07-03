@@ -5,7 +5,9 @@ import {
   getBoard,
   getBoardBySlug,
   listBoards,
+  removeBoardBackground,
   updateBoard,
+  uploadBoardBackground,
 } from '../../controllers/board.controller';
 import { authenticate } from '../../middlewares/auth.middleware';
 import {
@@ -40,6 +42,16 @@ router.get(
 const boardRouter = Router();
 boardRouter.use(authenticate);
 boardRouter.get('/:id', validateParams(boardIdParamSchema), getBoard);
+boardRouter.post(
+  '/:id/background',
+  validateParams(boardIdParamSchema),
+  uploadBoardBackground,
+);
+boardRouter.delete(
+  '/:id/background',
+  validateParams(boardIdParamSchema),
+  removeBoardBackground,
+);
 boardRouter.patch(
   '/:id',
   validateParams(boardIdParamSchema),

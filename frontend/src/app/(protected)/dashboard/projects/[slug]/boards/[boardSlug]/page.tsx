@@ -51,6 +51,7 @@ export default function BoardPage() {
       onRefresh={refetch}
       canDeleteColumns={canManageColumns}
       canReorderColumns={canManageColumns}
+      canManageBackground={canManageColumns}
     />
   );
 }

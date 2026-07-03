@@ -103,13 +103,16 @@ model ProjectInvite {
 // ─── Board (Kanban) ──────────────────────────────────────
 
 model Board {
-  id        String   @id @default(auto()) @map("_id") @db.ObjectId
-  name      String
-  slug      String
-  projectId String   @db.ObjectId
-  position  Int      @default(0)
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+  id                        String   @id @default(auto()) @map("_id") @db.ObjectId
+  name                      String
+  slug                      String
+  projectId                 String   @db.ObjectId
+  position                  Int      @default(0)
+  backgroundUrl             String?
+  backgroundStorageKey      String?
+  backgroundStorageProvider String?
+  createdAt                 DateTime @default(now())
+  updatedAt                 DateTime @updatedAt
 
   project Project  @relation(fields: [projectId], references: [id])
   columns Column[]

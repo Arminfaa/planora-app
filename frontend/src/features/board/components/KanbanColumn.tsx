@@ -34,6 +34,7 @@ interface KanbanColumnProps {
   filters?: TaskFilters;
   highlightedTaskId?: string | null;
   taskIsVisible?: (task: BoardTask) => boolean;
+  variant?: 'default' | 'glass';
 }
 
 export const KanbanColumn = memo(function KanbanColumn({
@@ -52,6 +53,7 @@ export const KanbanColumn = memo(function KanbanColumn({
   filters,
   highlightedTaskId = null,
   taskIsVisible,
+  variant = 'default',
 }: KanbanColumnProps) {
   const { setNodeRef, isOver } = useDroppable({ id: column.id });
   const tasks = column.tasks ?? [];
@@ -62,16 +64,25 @@ export const KanbanColumn = memo(function KanbanColumn({
     : tasks;
   const taskIds = tasks.map((t) => t.id);
   const sortableKey = columnSortableKey(column);
+  const isGlass = variant === 'glass';
+
+  const columnClass = isGlass
+    ? isDragOverlay
+      ? 'rotate-1 border-white/30 bg-white/20 shadow-2xl ring-2 ring-white/40 backdrop-blur-xl'
+      : isOver
+        ? 'border-white/40 bg-white/25 backdrop-blur-xl'
+        : 'border-white/20 bg-white/10 backdrop-blur-xl'
+    : isDragOverlay
+      ? 'rotate-1 shadow-lg ring-2 ring-primary-200'
+      : isOver
+        ? 'border-primary-400 bg-primary-50/30'
+        : 'border-gray-200';
+
+  const bgClass = isGlass ? '' : 'bg-gray-50';
 
   return (
     <div
-      className={`flex w-72 shrink-0 flex-col rounded-xl border bg-gray-50 transition ${
-        isDragOverlay
-          ? 'rotate-1 shadow-lg ring-2 ring-primary-200'
-          : isOver
-            ? 'border-primary-400 bg-primary-50/30'
-            : 'border-gray-200'
-      }`}
+      className={`flex w-72 shrink-0 flex-col rounded-xl border transition ${bgClass} ${columnClass}`}
     >
       <div
         className="flex items-start gap-2 rounded-t-xl px-4 py-3"
@@ -80,7 +91,11 @@ export const KanbanColumn = memo(function KanbanColumn({
         {canReorder && dragHandleProps && (
           <button
             type="button"
-            className="-ml-1 mt-0.5 shrink-0 cursor-grab touch-none rounded p-0.5 text-gray-400 transition hover:bg-gray-200 hover:text-gray-600 active:cursor-grabbing"
+            className={`-ml-1 mt-0.5 shrink-0 cursor-grab touch-none rounded p-0.5 transition active:cursor-grabbing ${
+              isGlass
+                ? 'text-white/50 hover:bg-white/10 hover:text-white/80'
+                : 'text-gray-400 hover:bg-gray-200 hover:text-gray-600'
+            }`}
             aria-label={`Reorder ${column.name}`}
             title="Drag to reorder column"
             {...dragHandleProps}
@@ -89,9 +104,13 @@ export const KanbanColumn = memo(function KanbanColumn({
           </button>
         )}
         <div className="min-w-0 flex-1">
-          <h3 className="font-medium text-gray-900">
+          <h3
+            className={`font-medium ${isGlass ? 'text-white' : 'text-gray-900'}`}
+          >
             {column.name}
-            <span className="ml-2 text-sm font-normal text-gray-500">
+            <span
+              className={`ml-2 text-sm font-normal ${isGlass ? 'text-white/60' : 'text-gray-500'}`}
+            >
               {hasViewFilter
                 ? `${visibleTasks.length}/${tasks.length}`
                 : tasks.length}
@@ -104,7 +123,11 @@ export const KanbanColumn = memo(function KanbanColumn({
               <button
                 type="button"
                 onClick={() => onEdit(column)}
-                className="rounded px-1.5 py-0.5 text-xs text-gray-500 transition hover:bg-gray-200 hover:text-gray-900"
+                className={`rounded px-1.5 py-0.5 text-xs transition ${
+                  isGlass
+                    ? 'text-white/60 hover:bg-white/10 hover:text-white'
+                    : 'text-gray-500 hover:bg-gray-200 hover:text-gray-900'
+                }`}
                 aria-label={`Edit ${column.name}`}
               >
                 Edit
@@ -114,7 +137,11 @@ export const KanbanColumn = memo(function KanbanColumn({
               <button
                 type="button"
                 onClick={() => onDelete(column)}
-                className="rounded px-1.5 py-0.5 text-xs text-red-600 transition hover:bg-red-50"
+                className={`rounded px-1.5 py-0.5 text-xs transition ${
+                  isGlass
+                    ? 'text-red-300 hover:bg-red-500/20'
+                    : 'text-red-600 hover:bg-red-50'
+                }`}
                 aria-label={`Delete ${column.name}`}
               >
                 Delete

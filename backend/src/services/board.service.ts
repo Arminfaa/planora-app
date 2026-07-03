@@ -4,6 +4,8 @@ import type { Prisma } from '@prisma/client';
 import { boardRepository } from '../repositories/board.repository';
 import { projectRepository } from '../repositories/project.repository';
 import { projectAccessService } from './project-access.service';
+import { removeStoredFile, storeUploadedFile } from './storage/storage.service';
+import { isImageMimeType } from './storage/storage.config';
 import type {
   CreateBoardInput,
   UpdateBoardInput,
@@ -144,6 +146,71 @@ export class BoardService {
 
     await projectAccessService.ensureAdmin(userId, projectId);
     await boardRepository.delete(boardId);
+  }
+
+  private async removeBoardBackgroundFiles(board: {
+    backgroundStorageKey?: string | null;
+    backgroundStorageProvider?: string | null;
+  }): Promise<void> {
+    if (!board.backgroundStorageKey) return;
+
+    await removeStoredFile(
+      board.backgroundStorageKey,
+      board.backgroundStorageProvider === 'cloudinary' ? 'cloudinary' : 'local',
+      'IMAGE',
+    );
+  }
+
+  async uploadBackground(
+    userId: string,
+    boardId: string,
+    file: Express.Multer.File,
+  ) {
+    const existing = await boardRepository.findById(boardId);
+    if (!existing) {
+      throw new ApiError(404, 'Board not found');
+    }
+
+    await projectAccessService.ensureAdmin(userId, existing.projectId);
+
+    if (!file) {
+      throw new ApiError(400, 'Image file is required');
+    }
+
+    if (!isImageMimeType(file.mimetype)) {
+      throw new ApiError(400, 'Only image files are allowed');
+    }
+
+    const stored = await storeUploadedFile(file);
+
+    if (stored.type !== 'IMAGE') {
+      throw new ApiError(400, 'Only image files are allowed');
+    }
+
+    await this.removeBoardBackgroundFiles(existing);
+
+    return boardRepository.update(boardId, {
+      backgroundUrl: stored.url,
+      backgroundStorageKey: stored.storageKey,
+      backgroundStorageProvider: stored.storageProvider,
+    });
+  }
+
+  async removeBackground(userId: string, boardId: string) {
+    const existing = await boardRepository.findById(boardId);
+    if (!existing) {
+      throw new ApiError(404, 'Board not found');
+    }
+
+    await projectAccessService.ensureAdmin(userId, existing.projectId);
+
+    await this.removeBoardBackgroundFiles(existing);
+
+    return boardRepository.update(boardId, {
+      backgroundUrl: null,
+      backgroundStorageKey: null,
+      backgroundStorageProvider: null,
+    });
   }
 }
 

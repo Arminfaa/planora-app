@@ -1,4 +1,4 @@
-import type { Response } from 'express';
+import type { NextFunction, Response } from 'express';
 import type { AuthenticatedRequest } from '../types';
 import { boardRepository } from '../repositories/board.repository';
 import { boardService } from '../services/board.service';
@@ -9,6 +9,7 @@ import {
   notifyProjectBoardEvent,
 } from '../utils/board-events';
 import { getParam } from '../utils/params';
+import { imageUploadMiddleware } from '../middlewares/image-upload.middleware';
 import type {
   CreateBoardInput,
   UpdateBoardInput,
@@ -109,5 +110,51 @@ export const deleteBoard = asyncHandler(
     }
 
     ApiResponse.success(res, null, 'Board deleted');
+  },
+);
+
+export const uploadBoardBackground = [
+  (req: AuthenticatedRequest, res: Response, next: NextFunction) => {
+    imageUploadMiddleware(req, res, (error) => {
+      if (error) {
+        next(error);
+        return;
+      }
+      next();
+    });
+  },
+  asyncHandler(async (req: AuthenticatedRequest, res: Response) => {
+    const board = await boardService.uploadBackground(
+      req.user!.userId,
+      getParam(req.params, 'id'),
+      req.file as Express.Multer.File,
+    );
+
+    notifyProjectBoardEvent(req.user!.userId, 'board:updated', {
+      projectId: board.projectId,
+      boardId: board.id,
+      payload: { board },
+    });
+    notifyBoardMetaEvent(req.user!.userId, board.id, board);
+
+    ApiResponse.success(res, board, 'Board background uploaded');
+  }),
+];
+
+export const removeBoardBackground = asyncHandler(
+  async (req: AuthenticatedRequest, res: Response) => {
+    const board = await boardService.removeBackground(
+      req.user!.userId,
+      getParam(req.params, 'id'),
+    );
+
+    notifyProjectBoardEvent(req.user!.userId, 'board:updated', {
+      projectId: board.projectId,
+      boardId: board.id,
+      payload: { board },
+    });
+    notifyBoardMetaEvent(req.user!.userId, board.id, board);
+
+    ApiResponse.success(res, board, 'Board background removed');
   },
 );

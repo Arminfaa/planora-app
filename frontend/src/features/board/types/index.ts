@@ -37,6 +37,7 @@ export interface Board {
   slug: string;
   projectId: string;
   position: number;
+  backgroundUrl?: string | null;
   createdAt: string;
   updatedAt: string;
   columns?: BoardColumn[];

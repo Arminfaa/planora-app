@@ -1,6 +1,7 @@
 import { boardRepository } from '../repositories/board.repository';
 import { columnRepository } from '../repositories/column.repository';
 import { taskRepository } from '../repositories/task.repository';
+import { serializeAttachmentUrl } from '../services/storage/storage.service';
 import { emitBoardEvent, emitProjectEvent } from '../socket';
 import type { BoardEventType, ProjectEventType } from '../socket/types';
 
@@ -68,6 +69,9 @@ function serializeBoardSummary(board: Record<string, unknown>) {
     slug: String(board.slug ?? ''),
     projectId: String(board.projectId),
     position: Number(board.position),
+    backgroundUrl: board.backgroundUrl
+      ? serializeAttachmentUrl(String(board.backgroundUrl))
+      : null,
     createdAt:
       createdAt instanceof Date ? createdAt.toISOString() : String(createdAt),
     updatedAt:

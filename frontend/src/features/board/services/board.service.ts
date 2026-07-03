@@ -44,4 +44,25 @@ export const boardService = {
   async delete(id: string): Promise<void> {
     await api.delete(`/boards/${id}`);
   },
+
+  async uploadBackground(id: string, file: File): Promise<Board> {
+    const formData = new FormData();
+    formData.append('file', file);
+
+    const { data } = await api.post<ApiSuccessResponse<Board>>(
+      `/boards/${id}/background`,
+      formData,
+      {
+        headers: { 'Content-Type': 'multipart/form-data' },
+      },
+    );
+    return data.data;
+  },
+
+  async removeBackground(id: string): Promise<Board> {
+    const { data } = await api.delete<ApiSuccessResponse<Board>>(
+      `/boards/${id}/background`,
+    );
+    return data.data;
+  },
 };

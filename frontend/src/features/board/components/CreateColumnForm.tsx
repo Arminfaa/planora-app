@@ -22,13 +22,16 @@ type FormData = z.infer<typeof schema>;
 interface CreateColumnFormProps {
   onSubmit: (data: CreateColumnInput) => Promise<void>;
   onCancel: () => void;
+  variant?: 'default' | 'glass';
 }
 
 export function CreateColumnForm({
   onSubmit,
   onCancel,
+  variant = 'default',
 }: CreateColumnFormProps) {
   const [error, setError] = useState('');
+  const isGlass = variant === 'glass';
 
   const {
     register,
@@ -58,7 +61,11 @@ export function CreateColumnForm({
   return (
     <form
       onSubmit={handleSubmit(handleFormSubmit)}
-      className="flex w-72 shrink-0 flex-col rounded-xl border border-dashed border-gray-300 bg-white p-4"
+      className={`flex w-72 shrink-0 flex-col rounded-xl border border-dashed p-4 ${
+        isGlass
+          ? 'border-white/30 bg-white/95 backdrop-blur-xl'
+          : 'border-gray-300 bg-white'
+      }`}
     >
       <h3 className="mb-3 text-sm font-semibold text-gray-900">New Column</h3>
 
