@@ -4,15 +4,19 @@ import { useCallback, useEffect, useMemo, useState } from 'react';
 import dynamic from 'next/dynamic';
 import Link from 'next/link';
 import { DndContext, DragOverlay, closestCorners } from '@dnd-kit/core';
-import type { Board, BoardTask } from '../types';
+import type { Board, BoardColumn, BoardTask } from '../types';
 import { KanbanColumn } from './KanbanColumn';
 import { TaskCard } from './TaskCard';
+import { CreateColumnForm } from './CreateColumnForm';
+import { EditColumnModal } from './EditColumnModal';
 import { useKanbanDnd } from '../hooks/useKanbanDnd';
 import { useBoardSocket } from '../hooks/useBoardSocket';
 import type { BoardSocketEvent } from '../types/socket';
+import { columnService } from '../services/column.service';
 import { taskService } from '@/features/tasks/services/task.service';
 import { getApiErrorMessage } from '@/lib/api';
 import { LoadingSpinner } from '@/shared/components/feedback/LoadingSpinner';
+import { Button } from '@/shared/components/ui/Button';
 import { BoardSearch } from '@/features/search/components/BoardSearch';
 import { BoardFilters } from '@/features/search/components/BoardFilters';
 import { defaultTaskFilters, type TaskFilters } from '@/features/search/types';
@@ -32,6 +36,7 @@ interface KanbanBoardProps {
   revision: number;
   onRefresh: (options?: { silent?: boolean }) => Promise<void>;
   initialTaskId?: string | null;
+  canDeleteColumns?: boolean;
 }
 
 export function KanbanBoard({
@@ -40,8 +45,11 @@ export function KanbanBoard({
   revision,
   onRefresh,
   initialTaskId = null,
+  canDeleteColumns = false,
 }: KanbanBoardProps) {
   const [selectedTask, setSelectedTask] = useState<BoardTask | null>(null);
+  const [editingColumn, setEditingColumn] = useState<BoardColumn | null>(null);
+  const [showCreateColumn, setShowCreateColumn] = useState(false);
   const [actionError, setActionError] = useState('');
   const [boardSearchQuery, setBoardSearchQuery] = useState('');
   const [boardFilters, setBoardFilters] =
@@ -81,6 +89,54 @@ export function KanbanBoard({
       setActionError('');
       try {
         await taskService.create(columnId, { title });
+        await onRefresh();
+      } catch (err) {
+        setActionError(getApiErrorMessage(err));
+      }
+    },
+    [onRefresh],
+  );
+
+  const handleCreateColumn = useCallback(
+    async (input: { name: string; color?: string }) => {
+      setActionError('');
+      try {
+        await columnService.create(board.id, {
+          ...input,
+          position: columns.length,
+        });
+        setShowCreateColumn(false);
+        await onRefresh();
+      } catch (err) {
+        setActionError(getApiErrorMessage(err));
+        throw err;
+      }
+    },
+    [board.id, columns.length, onRefresh],
+  );
+
+  const handleUpdateColumn = useCallback(
+    async (columnId: string, input: { name?: string; color?: string }) => {
+      setActionError('');
+      await columnService.update(columnId, input);
+      await onRefresh();
+    },
+    [onRefresh],
+  );
+
+  const handleDeleteColumn = useCallback(
+    async (column: BoardColumn) => {
+      const taskCount = column.tasks?.length ?? 0;
+      const message =
+        taskCount > 0
+          ? `Delete column "${column.name}"? ${taskCount} task(s) will be removed.`
+          : `Delete column "${column.name}"?`;
+
+      if (!confirm(message)) return;
+
+      setActionError('');
+      try {
+        await columnService.delete(column.id);
         await onRefresh();
       } catch (err) {
         setActionError(getApiErrorMessage(err));
@@ -212,12 +268,33 @@ export function KanbanBoard({
               column={column}
               onTaskClick={setSelectedTask}
               onAddTask={handleAddTask}
+              onEdit={setEditingColumn}
+              onDelete={handleDeleteColumn}
+              canDelete={canDeleteColumns}
               searchQuery={boardSearchQuery}
               filters={boardFilters}
               highlightedTaskId={highlightedTaskId}
               taskIsVisible={matchTask}
             />
           ))}
+
+          {showCreateColumn ? (
+            <CreateColumnForm
+              onSubmit={handleCreateColumn}
+              onCancel={() => setShowCreateColumn(false)}
+            />
+          ) : (
+            <div className="flex w-72 shrink-0 items-start pt-1">
+              <Button
+                type="button"
+                variant="secondary"
+                onClick={() => setShowCreateColumn(true)}
+                className="w-full border-dashed"
+              >
+                + Add Column
+              </Button>
+            </div>
+          )}
         </div>
 
         <DragOverlay>
@@ -234,6 +311,14 @@ export function KanbanBoard({
           onClose={() => setSelectedTask(null)}
           onUpdate={handleTaskUpdate}
           onDelete={handleTaskDelete}
+        />
+      )}
+
+      {editingColumn && (
+        <EditColumnModal
+          column={editingColumn}
+          onClose={() => setEditingColumn(null)}
+          onSubmit={handleUpdateColumn}
         />
       )}
     </div>

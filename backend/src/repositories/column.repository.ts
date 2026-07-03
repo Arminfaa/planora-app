@@ -20,7 +20,22 @@ export class ColumnRepository extends BaseRepository {
   }
 
   async delete(id: string): Promise<void> {
-    await this.db.column.delete({ where: { id } });
+    await this.db.$transaction(async (tx) => {
+      const tasks = await tx.task.findMany({
+        where: { columnId: id },
+        select: { id: true },
+      });
+      const taskIds = tasks.map((task) => task.id);
+
+      if (taskIds.length) {
+        await tx.taskLabel.deleteMany({ where: { taskId: { in: taskIds } } });
+        await tx.comment.deleteMany({ where: { taskId: { in: taskIds } } });
+        await tx.attachment.deleteMany({ where: { taskId: { in: taskIds } } });
+        await tx.task.deleteMany({ where: { id: { in: taskIds } } });
+      }
+
+      await tx.column.delete({ where: { id } });
+    });
   }
 
   async getBoardId(columnId: string): Promise<string | null> {

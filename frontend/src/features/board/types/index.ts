@@ -45,3 +45,26 @@ export interface UpdateBoardInput {
   name?: string;
   position?: number;
 }
+
+export interface CreateColumnInput {
+  name: string;
+  position?: number;
+  color?: string;
+}
+
+export interface UpdateColumnInput {
+  name?: string;
+  position?: number;
+  color?: string;
+}
+
+export const COLUMN_COLOR_OPTIONS = [
+  '#6B7280',
+  '#3B82F6',
+  '#10B981',
+  '#F59E0B',
+  '#EF4444',
+  '#8B5CF6',
+  '#06B6D4',
+  '#EC4899',
+] as const;

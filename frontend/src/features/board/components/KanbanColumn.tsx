@@ -17,6 +17,9 @@ interface KanbanColumnProps {
   column: BoardColumn;
   onTaskClick: (task: BoardTask) => void;
   onAddTask: (columnId: string, title: string) => Promise<void>;
+  onEdit?: (column: BoardColumn) => void;
+  onDelete?: (column: BoardColumn) => void;
+  canDelete?: boolean;
   searchQuery?: string;
   filters?: TaskFilters;
   highlightedTaskId?: string | null;
@@ -27,6 +30,9 @@ export const KanbanColumn = memo(function KanbanColumn({
   column,
   onTaskClick,
   onAddTask,
+  onEdit,
+  onDelete,
+  canDelete = false,
   searchQuery = '',
   filters,
   highlightedTaskId = null,
@@ -49,7 +55,7 @@ export const KanbanColumn = memo(function KanbanColumn({
       }`}
     >
       <div
-        className="rounded-t-xl px-4 py-3"
+        className="flex items-start justify-between gap-2 rounded-t-xl px-4 py-3"
         style={{ borderTop: `3px solid ${column.color ?? '#6B7280'}` }}
       >
         <h3 className="font-medium text-gray-900">
@@ -60,6 +66,30 @@ export const KanbanColumn = memo(function KanbanColumn({
               : tasks.length}
           </span>
         </h3>
+        {(onEdit || (canDelete && onDelete)) && (
+          <div className="flex shrink-0 gap-0.5">
+            {onEdit && (
+              <button
+                type="button"
+                onClick={() => onEdit(column)}
+                className="rounded px-1.5 py-0.5 text-xs text-gray-500 transition hover:bg-gray-200 hover:text-gray-900"
+                aria-label={`Edit ${column.name}`}
+              >
+                Edit
+              </button>
+            )}
+            {canDelete && onDelete && (
+              <button
+                type="button"
+                onClick={() => onDelete(column)}
+                className="rounded px-1.5 py-0.5 text-xs text-red-600 transition hover:bg-red-50"
+                aria-label={`Delete ${column.name}`}
+              >
+                Delete
+              </button>
+            )}
+          </div>
+        )}
       </div>
 
       <div
