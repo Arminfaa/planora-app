@@ -14,10 +14,11 @@ export const authService = {
     name: string,
     email: string,
     password: string,
+    inviteToken?: string,
   ): Promise<AuthData> {
     const { data } = await api.post<ApiSuccessResponse<AuthData>>(
       '/auth/register',
-      { name, email, password },
+      { name, email, password, inviteToken },
     );
     return data.data;
   },

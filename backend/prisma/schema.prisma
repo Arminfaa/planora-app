@@ -40,6 +40,7 @@ model User {
 
   ownedProjects Project[]       @relation("ProjectOwner")
   memberships   ProjectMember[]
+  sentInvites   ProjectInvite[] @relation("InviteSender")
   assignedTasks Task[]          @relation("TaskAssignee")
   createdTasks  Task[]          @relation("TaskCreator")
   comments      Comment[]
@@ -60,6 +61,7 @@ model Project {
 
   owner   User            @relation("ProjectOwner", fields: [ownerId], references: [id])
   members ProjectMember[]
+  invites ProjectInvite[]
   boards  Board[]
   labels  Label[]
 
@@ -78,6 +80,24 @@ model ProjectMember {
 
   @@unique([projectId, userId])
   @@map("project_members")
+}
+
+model ProjectInvite {
+  id         String      @id @default(auto()) @map("_id") @db.ObjectId
+  projectId  String      @db.ObjectId
+  email      String
+  role       ProjectRole @default(MEMBER)
+  token      String      @unique
+  invitedBy  String      @db.ObjectId
+  expiresAt  DateTime
+  acceptedAt DateTime?
+  createdAt  DateTime    @default(now())
+
+  project Project @relation(fields: [projectId], references: [id])
+  inviter User    @relation("InviteSender", fields: [invitedBy], references: [id])
+
+  @@index([projectId, email])
+  @@map("project_invites")
 }
 
 // ─── Board (Kanban) ──────────────────────────────────────

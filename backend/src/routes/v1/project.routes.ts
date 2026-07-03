@@ -3,7 +3,6 @@ import {
   createProject,
   deleteProject,
   getProject,
-  listProjectMembers,
   listProjects,
   updateProject,
 } from '../../controllers/project.controller';
@@ -27,11 +26,6 @@ router.use(authenticate);
 router.get('/', validateQuery(projectListQuerySchema), listProjects);
 router.post('/', validateBody(createProjectSchema), createProject);
 router.get('/:id', validateParams(projectParamsSchema), getProject);
-router.get(
-  '/:id/members',
-  validateParams(projectParamsSchema),
-  listProjectMembers,
-);
 router.patch(
   '/:id',
   validateParams(projectParamsSchema),

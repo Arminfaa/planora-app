@@ -31,4 +31,9 @@ export interface User {
 export interface AuthData {
   user: User;
   token: string;
+  inviteAcceptance?: {
+    projectId: string;
+    projectSlug: string;
+    alreadyMember?: boolean;
+  } | null;
 }

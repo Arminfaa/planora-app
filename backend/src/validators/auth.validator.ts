@@ -18,6 +18,7 @@ export const registerSchema = z.object({
     .string()
     .min(8, 'Password must be at least 8 characters')
     .max(128, 'Password must be at most 128 characters'),
+  inviteToken: z.string().min(16).max(128).optional(),
 });
 
 export const loginSchema = z.object({

@@ -1,17 +1,18 @@
-import type { Metadata } from 'next';
+'use client';
+
+import { useSearchParams } from 'next/navigation';
 import { RegisterForm } from '@/features/auth/components/RegisterForm';
 
-export const metadata: Metadata = {
-  title: 'Register',
-};
-
 export default function RegisterPage() {
+  const searchParams = useSearchParams();
+  const inviteToken = searchParams.get('invite');
+
   return (
     <div>
       <h2 className="mb-6 text-xl font-semibold text-gray-900">
         Create Account
       </h2>
-      <RegisterForm />
+      <RegisterForm inviteToken={inviteToken} />
     </div>
   );
 }

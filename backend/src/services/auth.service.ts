@@ -2,6 +2,7 @@ import { ApiError } from '../utils/ApiError';
 import { signToken } from '../utils/jwt';
 import { comparePassword, hashPassword } from '../utils/password';
 import { userRepository } from '../repositories/user.repository';
+import { inviteService } from './invite.service';
 import type { RegisterInput, LoginInput } from '../validators/auth.validator';
 
 const sanitizeUser = (user: {
@@ -25,6 +26,16 @@ export class AuthService {
       throw new ApiError(409, 'Email already registered');
     }
 
+    if (input.inviteToken) {
+      const preview = await inviteService.getPublicPreview(input.inviteToken);
+      if (!preview.valid) {
+        throw new ApiError(400, 'Invite is invalid or expired');
+      }
+      if (preview.email !== input.email) {
+        throw new ApiError(400, 'Email must match the invite');
+      }
+    }
+
     const hashedPassword = await hashPassword(input.password);
     const user = await userRepository.create({
       name: input.name,
@@ -32,11 +43,24 @@ export class AuthService {
       password: hashedPassword,
     });
 
+    let inviteAcceptance: {
+      projectId: string;
+      projectSlug: string;
+    } | null = null;
+
+    if (input.inviteToken) {
+      inviteAcceptance = await inviteService.acceptDuringRegistration(
+        user.id,
+        input.inviteToken,
+      );
+    }
+
     const token = signToken({ userId: user.id, email: user.email });
 
     return {
       user: sanitizeUser(user),
       token,
+      inviteAcceptance,
     };
   }
 

@@ -10,8 +10,11 @@ import { useBoards } from '@/features/board/hooks/useBoards';
 import type { Board } from '@/features/board/types';
 import { formatDate } from '@/features/dashboard/utils/stats';
 import { EditProjectModal } from '@/features/projects/components/EditProjectModal';
+import { ProjectTeamPanel } from '@/features/projects/components/ProjectTeamPanel';
+import { useProjectTeam } from '@/features/projects/hooks/useProjectTeam';
 import { projectService } from '@/features/projects/services/project.service';
-import type { Project } from '@/features/projects/types';
+import type { AddProjectMemberInput, Project } from '@/features/projects/types';
+import { useAuth } from '@/features/auth/hooks/useAuth';
 import { LoadingSpinner } from '@/shared/components/feedback/LoadingSpinner';
 import { Button } from '@/shared/components/ui/Button';
 import { getApiErrorMessage } from '@/lib/api';
@@ -27,6 +30,7 @@ export default function ProjectDetailPage() {
   const [showEditProject, setShowEditProject] = useState(false);
   const [editingBoard, setEditingBoard] = useState<Board | null>(null);
   const [actionError, setActionError] = useState('');
+  const { user } = useAuth();
 
   const {
     boards,
@@ -39,6 +43,23 @@ export default function ProjectDetailPage() {
     isJoined,
     lastRemoteUpdate,
   } = useBoards(project?.id ?? null);
+
+  const canManageProject =
+    project?.currentUserRole === 'OWNER' ||
+    project?.currentUserRole === 'ADMIN';
+
+  const canDeleteBoard = canManageProject;
+
+  const {
+    members,
+    invites,
+    isLoading: loadingTeam,
+    error: teamError,
+    inviteMember,
+    updateMemberRole,
+    removeMember,
+    revokeInvite,
+  } = useProjectTeam(project?.id ?? null, canManageProject);
 
   useEffect(() => {
     const fetchProject = async () => {
@@ -56,12 +77,6 @@ export default function ProjectDetailPage() {
     };
     void fetchProject();
   }, [slug]);
-
-  const canDeleteBoard =
-    project?.currentUserRole === 'OWNER' ||
-    project?.currentUserRole === 'ADMIN';
-
-  const canManageProject = canDeleteBoard;
 
   const handleUpdateProject = async (
     projectId: string,
@@ -86,24 +101,22 @@ export default function ProjectDetailPage() {
     }
   };
 
-  const handleDeleteProject = async () => {
-    if (!project) return;
-
-    if (
-      !confirm(
-        `Delete project "${project.name}"? All boards, columns, and tasks will be removed.`,
-      )
-    ) {
-      return;
-    }
-
+  const handleInviteMember = async (data: AddProjectMemberInput) => {
     setActionError('');
-    try {
-      await projectService.delete(project.id);
-      router.push('/dashboard');
-    } catch (err) {
-      setActionError(getApiErrorMessage(err));
+    const result = await inviteMember(data);
+    if (!result) return null;
+
+    if (result.type === 'member') {
+      return { type: 'member' as const };
     }
+
+    const inviteUrl = `${window.location.origin}/register?invite=${result.invite.token}`;
+    await navigator.clipboard.writeText(inviteUrl);
+    return {
+      type: 'invite' as const,
+      inviteUrl,
+      email: result.invite.email,
+    };
   };
 
   const handleCreateBoard = async (data: { name: string }) => {
@@ -143,6 +156,26 @@ export default function ProjectDetailPage() {
     setActionError('');
     try {
       await deleteBoard(board.id);
+    } catch (err) {
+      setActionError(getApiErrorMessage(err));
+    }
+  };
+
+  const handleDeleteProject = async () => {
+    if (!project) return;
+
+    if (
+      !confirm(
+        `Delete project "${project.name}"? All boards, columns, and tasks will be removed.`,
+      )
+    ) {
+      return;
+    }
+
+    setActionError('');
+    try {
+      await projectService.delete(project.id);
+      router.push('/dashboard');
     } catch (err) {
       setActionError(getApiErrorMessage(err));
     }
@@ -201,6 +234,19 @@ export default function ProjectDetailPage() {
           )}
         </div>
       </div>
+
+      <ProjectTeamPanel
+        members={members}
+        invites={invites}
+        isLoading={loadingTeam}
+        error={teamError}
+        canManage={canManageProject}
+        currentUserId={user?.id}
+        onInvite={handleInviteMember}
+        onUpdateRole={updateMemberRole}
+        onRemove={removeMember}
+        onRevokeInvite={revokeInvite}
+      />
 
       <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
         <div className="flex flex-wrap items-center gap-3">

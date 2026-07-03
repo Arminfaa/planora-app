@@ -20,8 +20,11 @@ interface AuthContextValue {
   user: User | null;
   isLoading: boolean;
   isAuthenticated: boolean;
-  login: (data: LoginFormData) => Promise<void>;
-  register: (data: RegisterFormData) => Promise<void>;
+  login: (
+    data: LoginFormData,
+    options?: { inviteToken?: string },
+  ) => Promise<void>;
+  register: (data: RegisterFormData, inviteToken?: string) => Promise<void>;
   logout: () => void;
 }
 
@@ -58,26 +61,41 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }, [loadUser]);
 
   const login = useCallback(
-    async (data: LoginFormData) => {
+    async (data: LoginFormData, options?: { inviteToken?: string }) => {
       const result = await authService.login(data.email, data.password);
       setToken(result.token);
       setUser(result.user);
       connectSocket();
+
+      if (options?.inviteToken) {
+        router.push(`/accept-invite?token=${options.inviteToken}`);
+        return;
+      }
+
       router.push('/dashboard');
     },
     [router],
   );
 
   const register = useCallback(
-    async (data: RegisterFormData) => {
+    async (data: RegisterFormData, inviteToken?: string) => {
       const result = await authService.register(
         data.name,
         data.email,
         data.password,
+        inviteToken,
       );
       setToken(result.token);
       setUser(result.user);
       connectSocket();
+
+      if (result.inviteAcceptance?.projectSlug) {
+        router.push(
+          `/dashboard/projects/${result.inviteAcceptance.projectSlug}`,
+        );
+        return;
+      }
+
       router.push('/dashboard');
     },
     [router],

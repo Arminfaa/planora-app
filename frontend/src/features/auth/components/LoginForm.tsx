@@ -10,7 +10,11 @@ import { Button } from '@/shared/components/ui/Button';
 import { Input } from '@/shared/components/ui/Input';
 import { getApiErrorMessage } from '@/lib/api';
 
-export function LoginForm() {
+interface LoginFormProps {
+  inviteToken?: string | null;
+}
+
+export function LoginForm({ inviteToken = null }: LoginFormProps) {
   const { login } = useAuth();
   const [error, setError] = useState('');
 
@@ -25,7 +29,7 @@ export function LoginForm() {
   const onSubmit = async (data: LoginFormData) => {
     setError('');
     try {
-      await login(data);
+      await login(data, inviteToken ? { inviteToken } : undefined);
     } catch (err) {
       setError(getApiErrorMessage(err));
     }
@@ -33,6 +37,12 @@ export function LoginForm() {
 
   return (
     <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
+      {inviteToken && (
+        <div className="rounded-lg bg-primary-50 px-4 py-3 text-sm text-primary-900">
+          Sign in to accept your project invite.
+        </div>
+      )}
+
       {error && (
         <div className="rounded-lg bg-red-50 px-4 py-3 text-sm text-red-700">
           {error}
@@ -62,7 +72,7 @@ export function LoginForm() {
       <p className="text-center text-sm text-gray-600">
         Don&apos;t have an account?{' '}
         <Link
-          href="/register"
+          href={inviteToken ? `/register?invite=${inviteToken}` : '/register'}
           className="font-medium text-primary-600 hover:text-primary-700"
         >
           Register

@@ -72,22 +72,6 @@ export class ProjectService {
     return { ...project, currentUserRole };
   }
 
-  async listMembers(userId: string, idOrSlug: string) {
-    const projectId = await this.resolveProjectId(idOrSlug);
-    await projectAccessService.ensureMember(userId, projectId);
-
-    const members =
-      await projectMemberRepository.findMembersByProject(projectId);
-
-    return members.map((member) => ({
-      id: member.user.id,
-      name: member.user.name,
-      email: member.user.email,
-      avatar: member.user.avatar,
-      role: member.role,
-    }));
-  }
-
   async create(userId: string, input: CreateProjectInput) {
     const slug = await this.generateUniqueSlug(input.name);
 

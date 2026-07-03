@@ -175,6 +175,19 @@ export class TaskRepository extends BaseRepository {
     });
     return task?.columnId ?? null;
   }
+
+  async unassignUserFromProject(
+    userId: string,
+    projectId: string,
+  ): Promise<void> {
+    await this.db.task.updateMany({
+      where: {
+        assigneeId: userId,
+        column: { board: { projectId } },
+      },
+      data: { assigneeId: null },
+    });
+  }
 }
 
 export const taskRepository = new TaskRepository();

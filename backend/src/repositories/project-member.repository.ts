@@ -22,6 +22,43 @@ export class ProjectMemberRepository extends BaseRepository {
       orderBy: { joinedAt: 'asc' },
     });
   }
+
+  async create(data: {
+    projectId: string;
+    userId: string;
+    role: import('@prisma/client').ProjectRole;
+  }) {
+    return this.db.projectMember.create({
+      data,
+      include: {
+        user: {
+          select: { id: true, name: true, email: true, avatar: true },
+        },
+      },
+    });
+  }
+
+  async updateRole(
+    projectId: string,
+    userId: string,
+    role: import('@prisma/client').ProjectRole,
+  ) {
+    return this.db.projectMember.update({
+      where: { projectId_userId: { projectId, userId } },
+      data: { role },
+      include: {
+        user: {
+          select: { id: true, name: true, email: true, avatar: true },
+        },
+      },
+    });
+  }
+
+  async delete(projectId: string, userId: string): Promise<void> {
+    await this.db.projectMember.delete({
+      where: { projectId_userId: { projectId, userId } },
+    });
+  }
 }
 
 export const projectMemberRepository = new ProjectMemberRepository();

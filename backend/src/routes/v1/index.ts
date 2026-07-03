@@ -6,13 +6,20 @@ import authRoutes from './auth.routes';
 import { boardRouter, projectBoardRoutes } from './board.routes';
 import { boardColumnRouter, columnRouter } from './column.routes';
 import projectRoutes from './project.routes';
+import inviteRoutes, {
+  projectInviteRoutes,
+  projectMemberRoutes,
+} from './invite.routes';
 import searchRoutes from './search.routes';
 import { columnTaskRouter, taskRouter } from './task.routes';
 
 const router = Router();
 
 router.use('/auth', authRoutes);
+router.use('/invites', inviteRoutes);
 router.use('/projects', projectRoutes);
+router.use('/projects/:id/members', projectMemberRoutes);
+router.use('/projects/:id/invites', projectInviteRoutes);
 router.use('/search', searchRoutes);
 router.use('/projects/:projectId/boards', projectBoardRoutes);
 router.use('/boards', boardRouter);

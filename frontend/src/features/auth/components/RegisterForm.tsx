@@ -3,29 +3,46 @@
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import Link from 'next/link';
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { useAuth } from '../hooks/useAuth';
 import { registerSchema, type RegisterFormData } from '../types';
+import { useInvitePreview } from '@/features/projects/hooks/useProjectTeam';
 import { Button } from '@/shared/components/ui/Button';
 import { Input } from '@/shared/components/ui/Input';
 import { getApiErrorMessage } from '@/lib/api';
 
-export function RegisterForm() {
+interface RegisterFormProps {
+  inviteToken?: string | null;
+}
+
+export function RegisterForm({ inviteToken = null }: RegisterFormProps) {
   const { register: registerUser } = useAuth();
   const [error, setError] = useState('');
+  const {
+    preview,
+    isLoading: loadingInvite,
+    error: inviteError,
+  } = useInvitePreview(inviteToken);
 
   const {
     register,
     handleSubmit,
+    setValue,
     formState: { errors, isSubmitting },
   } = useForm<RegisterFormData>({
     resolver: zodResolver(registerSchema),
   });
 
+  useEffect(() => {
+    if (preview?.valid && preview.email) {
+      setValue('email', preview.email);
+    }
+  }, [preview, setValue]);
+
   const onSubmit = async (data: RegisterFormData) => {
     setError('');
     try {
-      await registerUser(data);
+      await registerUser(data, inviteToken ?? undefined);
     } catch (err) {
       setError(getApiErrorMessage(err));
     }
@@ -33,6 +50,25 @@ export function RegisterForm() {
 
   return (
     <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
+      {inviteToken && loadingInvite && (
+        <div className="rounded-lg bg-gray-50 px-4 py-3 text-sm text-gray-600">
+          Loading invite...
+        </div>
+      )}
+
+      {inviteToken && preview?.valid && (
+        <div className="rounded-lg bg-primary-50 px-4 py-3 text-sm text-primary-900">
+          You are joining <strong>{preview.projectName}</strong> as{' '}
+          <strong>{preview.role.toLowerCase()}</strong>.
+        </div>
+      )}
+
+      {inviteToken && inviteError && (
+        <div className="rounded-lg bg-red-50 px-4 py-3 text-sm text-red-700">
+          {inviteError}
+        </div>
+      )}
+
       {error && (
         <div className="rounded-lg bg-red-50 px-4 py-3 text-sm text-red-700">
           {error}
@@ -51,6 +87,7 @@ export function RegisterForm() {
         label="Email"
         type="email"
         autoComplete="email"
+        readOnly={Boolean(preview?.valid)}
         error={errors.email?.message}
         {...register('email')}
       />
@@ -63,14 +100,19 @@ export function RegisterForm() {
         {...register('password')}
       />
 
-      <Button type="submit" className="w-full" isLoading={isSubmitting}>
+      <Button
+        type="submit"
+        className="w-full"
+        isLoading={isSubmitting}
+        disabled={Boolean(inviteToken && !preview?.valid)}
+      >
         Create Account
       </Button>
 
       <p className="text-center text-sm text-gray-600">
         Already have an account?{' '}
         <Link
-          href="/login"
+          href={inviteToken ? `/accept-invite?token=${inviteToken}` : '/login'}
           className="font-medium text-primary-600 hover:text-primary-700"
         >
           Sign In
