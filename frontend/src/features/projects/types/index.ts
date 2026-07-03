@@ -1,3 +1,5 @@
+export type ProjectRole = 'OWNER' | 'ADMIN' | 'MEMBER';
+
 export interface Project {
   id: string;
   name: string;
@@ -6,6 +8,7 @@ export interface Project {
   ownerId: string;
   createdAt: string;
   updatedAt: string;
+  currentUserRole?: ProjectRole;
   owner?: {
     id: string;
     name: string;

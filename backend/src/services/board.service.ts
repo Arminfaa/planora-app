@@ -25,7 +25,7 @@ export class BoardService {
   async create(userId: string, projectId: string, input: CreateBoardInput) {
     await projectAccessService.ensureMember(userId, projectId);
 
-    return boardRepository.create({
+    return boardRepository.createWithDefaultColumns({
       name: input.name,
       projectId,
       position: input.position,

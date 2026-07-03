@@ -1,6 +1,6 @@
 import { api } from '@/lib/api';
 import type { ApiSuccessResponse } from '@/shared/types/api';
-import type { Board } from '../types';
+import type { Board, CreateBoardInput, UpdateBoardInput } from '../types';
 
 export const boardService = {
   async listByProject(projectId: string): Promise<Board[]> {
@@ -15,5 +15,25 @@ export const boardService = {
       params: { _t: Date.now() },
     });
     return data.data;
+  },
+
+  async create(projectId: string, input: CreateBoardInput): Promise<Board> {
+    const { data } = await api.post<ApiSuccessResponse<Board>>(
+      `/projects/${projectId}/boards`,
+      input,
+    );
+    return data.data;
+  },
+
+  async update(id: string, input: UpdateBoardInput): Promise<Board> {
+    const { data } = await api.patch<ApiSuccessResponse<Board>>(
+      `/boards/${id}`,
+      input,
+    );
+    return data.data;
+  },
+
+  async delete(id: string): Promise<void> {
+    await api.delete(`/boards/${id}`);
   },
 };

@@ -1,7 +1,9 @@
+import { ProjectRole } from '@prisma/client';
 import { ApiError } from '../utils/ApiError';
 import { buildPagination } from '../utils/pagination';
 import { toSlug } from '../utils/slug';
 import { projectRepository } from '../repositories/project.repository';
+import { projectMemberRepository } from '../repositories/project-member.repository';
 import { projectAccessService } from './project-access.service';
 import type {
   CreateProjectInput,
@@ -21,12 +23,23 @@ export class ProjectService {
   async getById(userId: string, projectId: string) {
     await projectAccessService.ensureMember(userId, projectId);
 
-    const project = await projectRepository.findById(projectId);
+    const project = await projectRepository.findByIdWithDetails(projectId);
     if (!project) {
       throw new ApiError(404, 'Project not found');
     }
 
-    return project;
+    let currentUserRole: ProjectRole;
+    if (project.ownerId === userId) {
+      currentUserRole = ProjectRole.OWNER;
+    } else {
+      const membership = await projectMemberRepository.findByProjectAndUser(
+        projectId,
+        userId,
+      );
+      currentUserRole = membership!.role;
+    }
+
+    return { ...project, currentUserRole };
   }
 
   async create(userId: string, input: CreateProjectInput) {

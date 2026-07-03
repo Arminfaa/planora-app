@@ -6,6 +6,16 @@ export class ProjectRepository extends BaseRepository {
     return this.db.project.findUnique({ where: { id } });
   }
 
+  async findByIdWithDetails(id: string) {
+    return this.db.project.findUnique({
+      where: { id },
+      include: {
+        owner: { select: { id: true, name: true, email: true } },
+        _count: { select: { boards: true, members: true } },
+      },
+    });
+  }
+
   async findBySlug(slug: string): Promise<Project | null> {
     return this.db.project.findUnique({ where: { slug } });
   }

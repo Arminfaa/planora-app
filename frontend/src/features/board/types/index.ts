@@ -35,3 +35,13 @@ export interface Board {
   columns?: BoardColumn[];
   _count?: { columns: number };
 }
+
+export interface CreateBoardInput {
+  name: string;
+  position?: number;
+}
+
+export interface UpdateBoardInput {
+  name?: string;
+  position?: number;
+}

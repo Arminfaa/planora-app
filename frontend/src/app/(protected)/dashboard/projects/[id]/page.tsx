@@ -4,11 +4,15 @@ import { useEffect, useState } from 'react';
 import Link from 'next/link';
 import { useParams } from 'next/navigation';
 import { BoardCard } from '@/features/board/components/BoardCard';
+import { CreateBoardForm } from '@/features/board/components/CreateBoardForm';
+import { EditBoardModal } from '@/features/board/components/EditBoardModal';
 import { useBoards } from '@/features/board/hooks/useBoards';
+import type { Board } from '@/features/board/types';
 import { formatDate } from '@/features/dashboard/utils/stats';
 import { projectService } from '@/features/projects/services/project.service';
 import type { Project } from '@/features/projects/types';
 import { LoadingSpinner } from '@/shared/components/feedback/LoadingSpinner';
+import { Button } from '@/shared/components/ui/Button';
 import { getApiErrorMessage } from '@/lib/api';
 
 export default function ProjectDetailPage() {
@@ -17,10 +21,17 @@ export default function ProjectDetailPage() {
   const [project, setProject] = useState<Project | null>(null);
   const [projectError, setProjectError] = useState('');
   const [loadingProject, setLoadingProject] = useState(true);
+  const [showCreateForm, setShowCreateForm] = useState(false);
+  const [editingBoard, setEditingBoard] = useState<Board | null>(null);
+  const [actionError, setActionError] = useState('');
+
   const {
     boards,
     isLoading: loadingBoards,
     error: boardsError,
+    createBoard,
+    updateBoard,
+    deleteBoard,
   } = useBoards(projectId);
 
   useEffect(() => {
@@ -36,6 +47,46 @@ export default function ProjectDetailPage() {
     };
     void fetchProject();
   }, [projectId]);
+
+  const canDeleteBoard =
+    project?.currentUserRole === 'OWNER' ||
+    project?.currentUserRole === 'ADMIN';
+
+  const handleCreateBoard = async (data: { name: string }) => {
+    setActionError('');
+    try {
+      await createBoard(data);
+      setShowCreateForm(false);
+    } catch (err) {
+      setActionError(getApiErrorMessage(err));
+      throw err;
+    }
+  };
+
+  const handleUpdateBoard = async (
+    boardId: string,
+    data: { name?: string },
+  ) => {
+    setActionError('');
+    await updateBoard(boardId, data);
+  };
+
+  const handleDeleteBoard = async (board: Board) => {
+    if (
+      !confirm(
+        `Delete board "${board.name}"? All columns and tasks will be removed.`,
+      )
+    ) {
+      return;
+    }
+
+    setActionError('');
+    try {
+      await deleteBoard(board.id);
+    } catch (err) {
+      setActionError(getApiErrorMessage(err));
+    }
+  };
 
   if (loadingProject) return <LoadingSpinner />;
 
@@ -68,11 +119,25 @@ export default function ProjectDetailPage() {
         </div>
       </div>
 
-      <h2 className="mb-4 text-lg font-semibold text-gray-900">Boards</h2>
+      <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
+        <h2 className="text-lg font-semibold text-gray-900">Boards</h2>
+        <Button onClick={() => setShowCreateForm(!showCreateForm)}>
+          {showCreateForm ? 'Cancel' : 'New Board'}
+        </Button>
+      </div>
 
-      {boardsError && (
+      {(boardsError || actionError) && (
         <div className="mb-4 rounded-lg bg-red-50 px-4 py-3 text-sm text-red-700">
-          {boardsError}
+          {boardsError || actionError}
+        </div>
+      )}
+
+      {showCreateForm && (
+        <div className="mb-6">
+          <CreateBoardForm
+            onSubmit={handleCreateBoard}
+            onCancel={() => setShowCreateForm(false)}
+          />
         </div>
       )}
 
@@ -80,14 +145,32 @@ export default function ProjectDetailPage() {
         <LoadingSpinner />
       ) : boards.length === 0 ? (
         <div className="rounded-xl border border-dashed border-gray-300 bg-white py-12 text-center text-gray-600">
-          No boards in this project yet.
+          <p>No boards in this project yet.</p>
+          <Button className="mt-4" onClick={() => setShowCreateForm(true)}>
+            Create your first board
+          </Button>
         </div>
       ) : (
         <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
           {boards.map((board) => (
-            <BoardCard key={board.id} board={board} projectId={project.id} />
+            <BoardCard
+              key={board.id}
+              board={board}
+              projectId={project.id}
+              canDelete={canDeleteBoard}
+              onEdit={setEditingBoard}
+              onDelete={handleDeleteBoard}
+            />
           ))}
         </div>
+      )}
+
+      {editingBoard && (
+        <EditBoardModal
+          board={editingBoard}
+          onClose={() => setEditingBoard(null)}
+          onSubmit={handleUpdateBoard}
+        />
       )}
     </div>
   );
