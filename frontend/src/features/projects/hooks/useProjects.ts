@@ -40,6 +40,7 @@ export function useProjects() {
   return {
     projects: data?.items ?? [],
     pagination: data?.pagination,
+    stats: data?.stats,
     isLoading,
     error,
     refetch: fetchProjects,

@@ -6,14 +6,14 @@ export interface DashboardStats {
   totalMembers: number;
 }
 
-export function computeDashboardStats(projects: Project[]): DashboardStats {
+export function computeDashboardStats(
+  projects: Project[],
+  options?: { totalProjects?: number; uniqueMemberCount?: number },
+): DashboardStats {
   return {
-    totalProjects: projects.length,
+    totalProjects: options?.totalProjects ?? projects.length,
     totalBoards: projects.reduce((sum, p) => sum + (p._count?.boards ?? 0), 0),
-    totalMembers: projects.reduce(
-      (sum, p) => sum + (p._count?.members ?? 0),
-      0,
-    ),
+    totalMembers: options?.uniqueMemberCount ?? 0,
   };
 }
 

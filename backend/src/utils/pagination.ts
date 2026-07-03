@@ -19,6 +19,7 @@ export interface PaginatedResult<T> {
     total: number;
     totalPages: number;
   };
+  stats?: Record<string, number>;
 }
 
 export const buildPagination = <T>(

@@ -41,12 +41,15 @@ export class ProjectService {
   }
 
   async list(userId: string, page: number, limit: number) {
-    const { items, total } = await projectRepository.findByUser(
-      userId,
-      page,
-      limit,
-    );
-    return buildPagination(items, total, page, limit);
+    const [{ items, total }, uniqueMemberCount] = await Promise.all([
+      projectRepository.findByUser(userId, page, limit),
+      projectMemberRepository.countUniqueMembersForUserProjects(userId),
+    ]);
+
+    return {
+      ...buildPagination(items, total, page, limit),
+      stats: { uniqueMemberCount },
+    };
   }
 
   async getById(userId: string, idOrSlug: string) {

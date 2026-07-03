@@ -24,12 +24,22 @@ function projectMatchesQuery(
 }
 
 export function DashboardView() {
-  const { projects, pagination, isLoading, error, createProject, refetch } =
-    useProjects();
+  const {
+    projects,
+    pagination,
+    stats,
+    isLoading,
+    error,
+    createProject,
+    refetch,
+  } = useProjects();
   const [showCreateModal, setShowCreateModal] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
 
-  const stats = computeDashboardStats(projects);
+  const dashboardStats = computeDashboardStats(projects, {
+    totalProjects: pagination?.total,
+    uniqueMemberCount: stats?.uniqueMemberCount,
+  });
 
   const filteredProjects = useMemo(
     () =>
@@ -68,7 +78,7 @@ export function DashboardView() {
           <div className="mt-8 grid gap-3 sm:grid-cols-3">
             <StatsCard
               label="Projects"
-              value={stats.totalProjects}
+              value={dashboardStats.totalProjects}
               accent="blue"
               variant="glass"
               icon={
@@ -89,7 +99,7 @@ export function DashboardView() {
             />
             <StatsCard
               label="Boards"
-              value={stats.totalBoards}
+              value={dashboardStats.totalBoards}
               accent="green"
               variant="glass"
               icon={
@@ -110,7 +120,7 @@ export function DashboardView() {
             />
             <StatsCard
               label="Team Members"
-              value={stats.totalMembers}
+              value={dashboardStats.totalMembers}
               accent="purple"
               variant="glass"
               icon={

@@ -18,6 +18,7 @@ export interface PaginatedData<T> {
     total: number;
     totalPages: number;
   };
+  stats?: Record<string, number>;
 }
 
 export interface User {

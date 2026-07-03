@@ -59,6 +59,20 @@ export class ProjectMemberRepository extends BaseRepository {
       where: { projectId_userId: { projectId, userId } },
     });
   }
+
+  async countUniqueMembersForUserProjects(userId: string): Promise<number> {
+    const members = await this.db.projectMember.findMany({
+      where: {
+        project: {
+          OR: [{ ownerId: userId }, { members: { some: { userId } } }],
+        },
+      },
+      select: { userId: true },
+      distinct: ['userId'],
+    });
+
+    return members.length;
+  }
 }
 
 export const projectMemberRepository = new ProjectMemberRepository();
