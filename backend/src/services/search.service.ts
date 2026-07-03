@@ -21,6 +21,7 @@ function mapTaskResult(
     boardId: task.column.board.id,
     boardName: task.column.board.name,
     projectId: task.column.board.project.id,
+    projectSlug: task.column.board.project.slug,
     projectName: task.column.board.project.name,
     assignee: task.assignee,
   };

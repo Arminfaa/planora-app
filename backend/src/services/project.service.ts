@@ -10,7 +10,22 @@ import type {
   UpdateProjectInput,
 } from '../validators/project.validator';
 
+const OBJECT_ID_PATTERN = /^[0-9a-fA-F]{24}$/;
+
 export class ProjectService {
+  private async resolveProjectId(idOrSlug: string): Promise<string> {
+    if (OBJECT_ID_PATTERN.test(idOrSlug)) {
+      return idOrSlug;
+    }
+
+    const project = await projectRepository.findBySlug(idOrSlug);
+    if (!project) {
+      throw new ApiError(404, 'Project not found');
+    }
+
+    return project.id;
+  }
+
   async list(userId: string, page: number, limit: number) {
     const { items, total } = await projectRepository.findByUser(
       userId,
@@ -20,7 +35,8 @@ export class ProjectService {
     return buildPagination(items, total, page, limit);
   }
 
-  async getById(userId: string, projectId: string) {
+  async getById(userId: string, idOrSlug: string) {
+    const projectId = await this.resolveProjectId(idOrSlug);
     await projectAccessService.ensureMember(userId, projectId);
 
     const project = await projectRepository.findByIdWithDetails(projectId);
@@ -42,7 +58,8 @@ export class ProjectService {
     return { ...project, currentUserRole };
   }
 
-  async listMembers(userId: string, projectId: string) {
+  async listMembers(userId: string, idOrSlug: string) {
+    const projectId = await this.resolveProjectId(idOrSlug);
     await projectAccessService.ensureMember(userId, projectId);
 
     const members =
@@ -77,12 +94,14 @@ export class ProjectService {
     return project;
   }
 
-  async update(userId: string, projectId: string, input: UpdateProjectInput) {
+  async update(userId: string, idOrSlug: string, input: UpdateProjectInput) {
+    const projectId = await this.resolveProjectId(idOrSlug);
     await projectAccessService.ensureAdmin(userId, projectId);
     return projectRepository.update(projectId, input);
   }
 
-  async delete(userId: string, projectId: string) {
+  async delete(userId: string, idOrSlug: string) {
+    const projectId = await this.resolveProjectId(idOrSlug);
     await projectAccessService.ensureAdmin(userId, projectId);
     await projectRepository.delete(projectId);
   }

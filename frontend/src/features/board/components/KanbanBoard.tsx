@@ -35,6 +35,7 @@ const TaskModal = dynamic(
 interface KanbanBoardProps {
   board: Board;
   projectId: string;
+  projectSlug: string;
   revision: number;
   onRefresh: (options?: { silent?: boolean }) => Promise<void>;
   initialTaskId?: string | null;
@@ -44,6 +45,7 @@ interface KanbanBoardProps {
 export function KanbanBoard({
   board,
   projectId,
+  projectSlug,
   revision,
   onRefresh,
   initialTaskId = null,
@@ -224,7 +226,7 @@ export function KanbanBoard({
   return (
     <div>
       <Link
-        href={`/dashboard/projects/${projectId}`}
+        href={`/dashboard/projects/${projectSlug}`}
         className="mb-4 inline-flex items-center text-sm text-gray-600 hover:text-gray-900"
       >
         ← Back to Project

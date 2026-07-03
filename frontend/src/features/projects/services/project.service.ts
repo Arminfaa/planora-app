@@ -18,6 +18,13 @@ export const projectService = {
     return data.data;
   },
 
+  async getBySlug(slug: string): Promise<Project> {
+    const { data } = await api.get<ApiSuccessResponse<Project>>(
+      `/projects/${slug}`,
+    );
+    return data.data;
+  },
+
   async listMembers(projectId: string): Promise<ProjectMember[]> {
     const { data } = await api.get<ApiSuccessResponse<ProjectMember[]>>(
       `/projects/${projectId}/members`,

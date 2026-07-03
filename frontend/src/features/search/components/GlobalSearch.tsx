@@ -65,13 +65,13 @@ export function GlobalSearch() {
   }, [close]);
 
   const handleTaskSelect = (
-    projectId: string,
+    projectSlug: string,
     boardId: string,
     taskId: string,
   ) => {
     close();
     router.push(
-      `/dashboard/projects/${projectId}/boards/${boardId}?task=${taskId}`,
+      `/dashboard/projects/${projectSlug}/boards/${boardId}?task=${taskId}`,
     );
   };
 
@@ -203,7 +203,7 @@ export function GlobalSearch() {
                         type="button"
                         onClick={() =>
                           handleTaskSelect(
-                            task.projectId,
+                            task.projectSlug,
                             task.boardId,
                             task.id,
                           )
@@ -243,7 +243,7 @@ export function GlobalSearch() {
                   {projectItems.map((project) => (
                     <li key={project.id}>
                       <Link
-                        href={`/dashboard/projects/${project.id}`}
+                        href={`/dashboard/projects/${project.slug}`}
                         onClick={close}
                         className="block px-4 py-2.5 transition hover:bg-gray-50"
                       >

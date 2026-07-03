@@ -16,8 +16,8 @@ import { Button } from '@/shared/components/ui/Button';
 import { getApiErrorMessage } from '@/lib/api';
 
 export default function ProjectDetailPage() {
-  const params = useParams<{ id: string }>();
-  const projectId = params.id;
+  const params = useParams<{ slug: string }>();
+  const slug = params.slug;
   const [project, setProject] = useState<Project | null>(null);
   const [projectError, setProjectError] = useState('');
   const [loadingProject, setLoadingProject] = useState(true);
@@ -35,21 +35,24 @@ export default function ProjectDetailPage() {
     isConnected,
     isJoined,
     lastRemoteUpdate,
-  } = useBoards(projectId);
+  } = useBoards(project?.id ?? null);
 
   useEffect(() => {
     const fetchProject = async () => {
+      setLoadingProject(true);
+      setProjectError('');
       try {
-        const data = await projectService.getById(projectId);
+        const data = await projectService.getBySlug(slug);
         setProject(data);
       } catch (err) {
+        setProject(null);
         setProjectError(getApiErrorMessage(err));
       } finally {
         setLoadingProject(false);
       }
     };
     void fetchProject();
-  }, [projectId]);
+  }, [slug]);
 
   const canDeleteBoard =
     project?.currentUserRole === 'OWNER' ||
@@ -116,7 +119,6 @@ export default function ProjectDetailPage() {
           <p className="mt-2 text-gray-600">{project.description}</p>
         )}
         <div className="mt-4 flex flex-wrap gap-4 text-sm text-gray-500">
-          <span>Slug: {project.slug}</span>
           <span>Updated: {formatDate(project.updatedAt)}</span>
           {project.owner && <span>Owner: {project.owner.name}</span>}
         </div>
@@ -182,7 +184,7 @@ export default function ProjectDetailPage() {
             <BoardCard
               key={board.id}
               board={board}
-              projectId={project.id}
+              projectSlug={project.slug}
               canDelete={canDeleteBoard}
               onEdit={setEditingBoard}
               onDelete={handleDeleteBoard}

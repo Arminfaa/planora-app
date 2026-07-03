@@ -9,7 +9,7 @@ interface ProjectCardProps {
 export function ProjectCard({ project }: ProjectCardProps) {
   return (
     <Link
-      href={`/dashboard/projects/${project.id}`}
+      href={`/dashboard/projects/${project.slug}`}
       className="block rounded-xl border border-gray-200 bg-white p-6 shadow-sm transition hover:border-primary-300 hover:shadow-md"
     >
       <h3 className="text-lg font-semibold text-gray-900">{project.name}</h3>

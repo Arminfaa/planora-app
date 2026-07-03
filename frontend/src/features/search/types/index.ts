@@ -15,6 +15,7 @@ export interface SearchTaskResult {
   boardId: string;
   boardName: string;
   projectId: string;
+  projectSlug: string;
   projectName: string;
   assignee?: {
     id: string;

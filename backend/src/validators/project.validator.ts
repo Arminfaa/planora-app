@@ -7,7 +7,10 @@ export const projectIdParamSchema = z.object({
 });
 
 export const projectParamsSchema = z.object({
-  id: objectIdSchema,
+  id: z.union([
+    objectIdSchema,
+    z.string().regex(/^[a-z0-9]+(?:-[a-z0-9]+)*$/, 'Invalid slug format'),
+  ]),
 });
 
 export const createProjectSchema = z.object({

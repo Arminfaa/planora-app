@@ -68,7 +68,7 @@ export class SearchRepository extends BaseRepository {
                 select: {
                   id: true,
                   name: true,
-                  project: { select: { id: true, name: true } },
+                  project: { select: { id: true, name: true, slug: true } },
                 },
               },
             },

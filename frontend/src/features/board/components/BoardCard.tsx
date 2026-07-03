@@ -5,7 +5,7 @@ import type { Board } from '../types';
 
 interface BoardCardProps {
   board: Board;
-  projectId: string;
+  projectSlug: string;
   canDelete?: boolean;
   onEdit: (board: Board) => void;
   onDelete: (board: Board) => void;
@@ -13,7 +13,7 @@ interface BoardCardProps {
 
 export function BoardCard({
   board,
-  projectId,
+  projectSlug,
   canDelete = false,
   onEdit,
   onDelete,
@@ -24,7 +24,7 @@ export function BoardCard({
     <div className="rounded-xl border border-gray-200 bg-white p-5 shadow-sm transition hover:border-primary-300 hover:shadow-md">
       <div className="flex items-start justify-between gap-3">
         <Link
-          href={`/dashboard/projects/${projectId}/boards/${board.id}`}
+          href={`/dashboard/projects/${projectSlug}/boards/${board.id}`}
           className="min-w-0 flex-1"
         >
           <h3 className="font-semibold text-gray-900 hover:text-primary-700">
