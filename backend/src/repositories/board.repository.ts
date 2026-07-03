@@ -24,6 +24,12 @@ export class BoardRepository extends BaseRepository {
                 assignee: {
                   select: { id: true, name: true, email: true, avatar: true },
                 },
+                labels: {
+                  include: { label: true },
+                },
+                _count: {
+                  select: { attachments: true },
+                },
               },
             },
           },

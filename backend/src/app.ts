@@ -10,7 +10,11 @@ import v1Routes from './routes/v1';
 
 const app = express();
 
-app.use(helmet());
+app.use(
+  helmet({
+    crossOriginResourcePolicy: { policy: 'cross-origin' },
+  }),
+);
 app.use(
   cors({
     origin: env.CORS_ORIGIN,

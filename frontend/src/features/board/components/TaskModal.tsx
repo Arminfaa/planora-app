@@ -6,6 +6,12 @@ import { z } from 'zod';
 import { useState } from 'react';
 import type { BoardColumn, BoardTask } from '../types';
 import type { ProjectMember } from '@/features/projects/types';
+import { LabelBadges } from '@/features/labels/components/LabelBadges';
+import { TaskLabelPicker } from '@/features/labels/components/TaskLabelPicker';
+import { TaskComments } from '@/features/comments/components/TaskComments';
+import { TaskAttachments } from '@/features/attachments/components/TaskAttachments';
+import { useProjectLabels } from '@/features/labels/hooks/useProjectLabels';
+import { normalizeTaskLabels } from '@/features/labels/types';
 import { taskService } from '@/features/tasks/services/task.service';
 import { PRIORITY_OPTIONS, priorityStyles } from '@/features/tasks/types';
 import { toDateInputValue } from '@/features/tasks/utils/dates';
@@ -24,12 +30,16 @@ const schema = z.object({
 
 type FormData = z.infer<typeof schema>;
 
+const FORM_ID = 'task-edit-form';
+
 interface TaskModalProps {
   task: BoardTask;
   columns: BoardColumn[];
   members: ProjectMember[];
+  projectId: string;
   onClose: () => void;
-  onUpdate: () => Promise<void>;
+  onRefresh: () => Promise<void>;
+  onSave: () => Promise<void>;
   onDelete: () => Promise<void>;
 }
 
@@ -37,12 +47,16 @@ export function TaskModal({
   task,
   columns,
   members,
+  projectId,
   onClose,
-  onUpdate,
+  onRefresh,
+  onSave,
   onDelete,
 }: TaskModalProps) {
   const [error, setError] = useState('');
   const [isDeleting, setIsDeleting] = useState(false);
+  const { labels: projectLabels, createLabel } = useProjectLabels(projectId);
+  const taskLabels = normalizeTaskLabels(task.labels);
 
   const {
     register,
@@ -79,7 +93,7 @@ export function TaskModal({
         assigneeId:
           nextAssigneeId !== currentAssigneeId ? nextAssigneeId : undefined,
       });
-      await onUpdate();
+      await onSave();
     } catch (err) {
       setError(getApiErrorMessage(err));
     }
@@ -108,102 +122,129 @@ export function TaskModal({
         onClick={onClose}
         aria-hidden
       />
-      <div className="relative z-10 w-full max-w-lg rounded-xl bg-white p-6 shadow-xl">
-        <h2 className="text-lg font-semibold text-gray-900">Edit Task</h2>
+      <div className="relative z-10 flex max-h-[90vh] w-full max-w-2xl flex-col overflow-hidden rounded-xl bg-white shadow-xl">
+        <div className="shrink-0 border-b border-gray-100 px-6 py-4">
+          <h2 className="text-lg font-semibold text-gray-900">Edit Task</h2>
+        </div>
 
-        {error && (
-          <div className="mt-4 rounded-lg bg-red-50 px-4 py-3 text-sm text-red-700">
-            {error}
-          </div>
-        )}
+        <div className="min-h-0 flex-1 overflow-y-auto px-6 py-4">
+          {error && (
+            <div className="mb-4 rounded-lg bg-red-50 px-4 py-3 text-sm text-red-700">
+              {error}
+            </div>
+          )}
 
-        <form onSubmit={handleSubmit(onSubmit)} className="mt-4 space-y-4">
-          <Input
-            label="Title"
-            error={errors.title?.message}
-            {...register('title')}
-          />
-
-          <div className="space-y-1">
-            <label className="block text-sm font-medium text-gray-700">
-              Description
-            </label>
-            <textarea
-              className="block w-full rounded-lg border border-gray-300 px-3 py-2 text-sm shadow-sm focus:border-primary-500 focus:outline-none focus:ring-1 focus:ring-primary-500"
-              rows={3}
-              {...register('description')}
+          <form
+            id={FORM_ID}
+            onSubmit={handleSubmit(onSubmit)}
+            className="space-y-4"
+          >
+            <Input
+              label="Title"
+              error={errors.title?.message}
+              {...register('title')}
             />
-          </div>
 
-          <div className="grid gap-4 sm:grid-cols-2">
             <div className="space-y-1">
               <label className="block text-sm font-medium text-gray-700">
-                Priority
+                Description
               </label>
-              <select className={selectClassName} {...register('priority')}>
-                {PRIORITY_OPTIONS.map((p) => (
-                  <option key={p} value={p}>
-                    {priorityStyles[p].label}
+              <textarea
+                className="block w-full rounded-lg border border-gray-300 px-3 py-2 text-sm shadow-sm focus:border-primary-500 focus:outline-none focus:ring-1 focus:ring-primary-500"
+                rows={3}
+                {...register('description')}
+              />
+            </div>
+
+            <div className="grid gap-4 sm:grid-cols-2">
+              <div className="space-y-1">
+                <label className="block text-sm font-medium text-gray-700">
+                  Priority
+                </label>
+                <select className={selectClassName} {...register('priority')}>
+                  {PRIORITY_OPTIONS.map((p) => (
+                    <option key={p} value={p}>
+                      {priorityStyles[p].label}
+                    </option>
+                  ))}
+                </select>
+              </div>
+
+              <Input
+                label="Due Date"
+                type="date"
+                error={errors.dueDate?.message}
+                {...register('dueDate')}
+              />
+            </div>
+
+            <div className="space-y-1">
+              <label className="block text-sm font-medium text-gray-700">
+                Assignee
+              </label>
+              <select className={selectClassName} {...register('assigneeId')}>
+                <option value="">Unassigned</option>
+                {members.map((member) => (
+                  <option key={member.id} value={member.id}>
+                    {member.name}
                   </option>
                 ))}
               </select>
             </div>
 
-            <Input
-              label="Due Date"
-              type="date"
-              error={errors.dueDate?.message}
-              {...register('dueDate')}
-            />
-          </div>
-
-          <div className="space-y-1">
-            <label className="block text-sm font-medium text-gray-700">
-              Assignee
-            </label>
-            <select className={selectClassName} {...register('assigneeId')}>
-              <option value="">Unassigned</option>
-              {members.map((member) => (
-                <option key={member.id} value={member.id}>
-                  {member.name}
-                </option>
-              ))}
-            </select>
-          </div>
-
-          <div className="space-y-1">
-            <label className="block text-sm font-medium text-gray-700">
-              Column
-            </label>
-            <select className={selectClassName} {...register('columnId')}>
-              {columns.map((col) => (
-                <option key={col.id} value={col.id}>
-                  {col.name}
-                </option>
-              ))}
-            </select>
-          </div>
-
-          <div className="flex items-center justify-between pt-2">
-            <Button
-              type="button"
-              variant="ghost"
-              onClick={handleDelete}
-              isLoading={isDeleting}
-              className="text-red-600 hover:bg-red-50 hover:text-red-700"
-            >
-              Delete
-            </Button>
-            <div className="flex gap-2">
-              <Button type="button" variant="secondary" onClick={onClose}>
-                Cancel
-              </Button>
-              <Button type="submit" isLoading={isSubmitting}>
-                Save
-              </Button>
+            <div className="space-y-1">
+              <label className="block text-sm font-medium text-gray-700">
+                Column
+              </label>
+              <select className={selectClassName} {...register('columnId')}>
+                {columns.map((col) => (
+                  <option key={col.id} value={col.id}>
+                    {col.name}
+                  </option>
+                ))}
+              </select>
             </div>
+          </form>
+
+          <div className="mt-6 space-y-6 border-t border-gray-100 pt-6">
+            <div className="space-y-2">
+              <h3 className="text-sm font-semibold text-gray-900">Labels</h3>
+              <LabelBadges labels={taskLabels} />
+              <TaskLabelPicker
+                taskId={task.id}
+                projectLabels={projectLabels}
+                selectedLabels={taskLabels}
+                onChange={onRefresh}
+                onCreateLabel={async (name, color) =>
+                  createLabel({ name, color })
+                }
+              />
+            </div>
+
+            <TaskComments taskId={task.id} />
+            <TaskAttachments taskId={task.id} />
           </div>
-        </form>
+        </div>
+
+        <div className="flex shrink-0 items-center justify-between gap-3 border-t border-gray-100 bg-white px-6 py-4">
+          <Button
+            type="button"
+            variant="ghost"
+            onClick={handleDelete}
+            isLoading={isDeleting}
+            className="text-red-600 hover:bg-red-50 hover:text-red-700"
+          >
+            Delete
+          </Button>
+          <div className="flex gap-2">
+            <Button type="button" variant="secondary" onClick={onClose}>
+              Cancel
+            </Button>
+            <Button type="submit" form={FORM_ID} isLoading={isSubmitting}>
+              Save
+            </Button>
+          </div>
+        </div>
       </div>
     </div>
   );

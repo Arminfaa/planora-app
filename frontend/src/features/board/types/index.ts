@@ -1,4 +1,5 @@
 import type { TaskPriority } from '@/features/tasks/types';
+import type { TaskLabel } from '@/features/labels/types';
 
 export interface BoardColumn {
   id: string;
@@ -24,6 +25,10 @@ export interface BoardTask {
     email: string;
     avatar: string | null;
   } | null;
+  labels?: Array<{ label: TaskLabel }> | TaskLabel[];
+  _count?: {
+    attachments: number;
+  };
 }
 
 export interface Board {

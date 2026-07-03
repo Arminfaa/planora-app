@@ -207,14 +207,16 @@ model Comment {
 // ─── Attachment ──────────────────────────────────────────
 
 model Attachment {
-  id        String         @id @default(auto()) @map("_id") @db.ObjectId
-  filename  String
-  url       String
-  mimeType  String
-  size      Int
-  type      AttachmentType
-  taskId    String         @db.ObjectId
-  createdAt DateTime       @default(now())
+  id              String         @id @default(auto()) @map("_id") @db.ObjectId
+  filename        String
+  url             String
+  mimeType        String
+  size            Int
+  type            AttachmentType
+  storageKey      String?
+  storageProvider String?        @default("local")
+  taskId          String         @db.ObjectId
+  createdAt       DateTime       @default(now())
 
   task Task @relation(fields: [taskId], references: [id])
 

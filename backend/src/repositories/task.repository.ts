@@ -151,6 +151,9 @@ export class TaskRepository extends BaseRepository {
     if (!task) return;
 
     await this.db.$transaction(async (tx) => {
+      await tx.taskLabel.deleteMany({ where: { taskId: id } });
+      await tx.comment.deleteMany({ where: { taskId: id } });
+      await tx.attachment.deleteMany({ where: { taskId: id } });
       await tx.task.delete({ where: { id } });
 
       const remaining = await tx.task.findMany({

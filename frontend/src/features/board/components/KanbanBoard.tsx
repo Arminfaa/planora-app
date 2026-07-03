@@ -28,6 +28,14 @@ import {
   taskIsVisible,
 } from '@/features/search/utils/taskFilters';
 
+const TaskAttachmentsPreviewModal = dynamic(
+  () =>
+    import('@/features/attachments/components/TaskAttachmentsPreviewModal').then(
+      (mod) => ({ default: mod.TaskAttachmentsPreviewModal }),
+    ),
+  { loading: () => <LoadingSpinner /> },
+);
+
 const TaskModal = dynamic(
   () => import('./TaskModal').then((mod) => ({ default: mod.TaskModal })),
   { loading: () => <LoadingSpinner /> },
@@ -66,6 +74,8 @@ export function KanbanBoard({
   );
   const [boardName, setBoardName] = useState(board.name);
   const [boardDeleted, setBoardDeleted] = useState(false);
+  const [attachmentPreviewTask, setAttachmentPreviewTask] =
+    useState<BoardTask | null>(null);
 
   useEffect(() => {
     setBoardName(board.name);
@@ -85,6 +95,20 @@ export function KanbanBoard({
     handleDragCancel,
     applyRemoteUpdate,
   } = useKanbanDnd(board.columns ?? [], revision, handleError, onRefresh);
+
+  useEffect(() => {
+    if (!selectedTask) return;
+
+    for (const column of columns) {
+      const updated = column.tasks?.find((task) => task.id === selectedTask.id);
+      if (updated) {
+        setSelectedTask(updated);
+        return;
+      }
+    }
+    // Keep selected task in sync after silent board refresh (labels, etc.)
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- only re-sync when columns data changes
+  }, [columns, selectedTask?.id]);
 
   const handleRemoteChange = useCallback(
     (event: BoardSocketEvent) => {
@@ -213,6 +237,10 @@ export function KanbanBoard({
     updateTaskQuery(null);
   }, [updateTaskQuery]);
 
+  const closeAttachmentPreview = useCallback(() => {
+    setAttachmentPreviewTask(null);
+  }, []);
+
   const openTask = useCallback(
     (task: BoardTask) => {
       setSelectedTask(task);
@@ -222,7 +250,16 @@ export function KanbanBoard({
     [updateTaskQuery],
   );
 
+  const openTaskAttachments = useCallback((task: BoardTask) => {
+    setAttachmentPreviewTask(task);
+    setHighlightedTaskId(task.id);
+  }, []);
+
   const handleTaskUpdate = useCallback(async () => {
+    await onRefresh({ silent: true });
+  }, [onRefresh]);
+
+  const handleTaskSave = useCallback(async () => {
     await onRefresh();
     closeTask();
   }, [closeTask, onRefresh]);
@@ -351,6 +388,7 @@ export function KanbanBoard({
               column={column}
               members={members}
               onTaskClick={openTask}
+              onTaskAttachmentClick={openTaskAttachments}
               onAddTask={handleAddTask}
               onEdit={setEditingColumn}
               onDelete={handleDeleteColumn}
@@ -393,9 +431,18 @@ export function KanbanBoard({
           task={selectedTask}
           columns={columns}
           members={members}
+          projectId={projectId}
           onClose={closeTask}
-          onUpdate={handleTaskUpdate}
+          onRefresh={handleTaskUpdate}
+          onSave={handleTaskSave}
           onDelete={handleTaskDelete}
+        />
+      )}
+
+      {attachmentPreviewTask && (
+        <TaskAttachmentsPreviewModal
+          task={attachmentPreviewTask}
+          onClose={closeAttachmentPreview}
         />
       )}
 

@@ -12,6 +12,9 @@ import inviteRoutes, {
 } from './invite.routes';
 import searchRoutes from './search.routes';
 import { columnTaskRouter, taskRouter } from './task.routes';
+import { projectLabelRoutes, taskLabelRoutes } from './label.routes';
+import { taskCommentRoutes } from './comment.routes';
+import { taskAttachmentRoutes } from './attachment.routes';
 
 const router = Router();
 
@@ -20,6 +23,7 @@ router.use('/invites', inviteRoutes);
 router.use('/projects', projectRoutes);
 router.use('/projects/:id/members', projectMemberRoutes);
 router.use('/projects/:id/invites', projectInviteRoutes);
+router.use('/projects/:id/labels', projectLabelRoutes);
 router.use('/search', searchRoutes);
 router.use('/projects/:projectId/boards', projectBoardRoutes);
 router.use('/boards', boardRouter);
@@ -27,6 +31,9 @@ router.use('/boards/:boardId/columns', boardColumnRouter);
 router.use('/columns', columnRouter);
 router.use('/columns/:columnId/tasks', columnTaskRouter);
 router.use('/tasks', taskRouter);
+router.use('/tasks/:id/labels', taskLabelRoutes);
+router.use('/tasks/:id/comments', taskCommentRoutes);
+router.use('/tasks/:id/attachments', taskAttachmentRoutes);
 
 router.get(
   '/health',

@@ -19,6 +19,7 @@ interface KanbanColumnProps {
   column: BoardColumn;
   members: ProjectMember[];
   onTaskClick: (task: BoardTask) => void;
+  onTaskAttachmentClick?: (task: BoardTask) => void;
   onAddTask: (columnId: string, input: CreateTaskInput) => Promise<void>;
   onEdit?: (column: BoardColumn) => void;
   onDelete?: (column: BoardColumn) => void;
@@ -33,6 +34,7 @@ export const KanbanColumn = memo(function KanbanColumn({
   column,
   members,
   onTaskClick,
+  onTaskAttachmentClick,
   onAddTask,
   onEdit,
   onDelete,
@@ -112,6 +114,7 @@ export const KanbanColumn = memo(function KanbanColumn({
                 key={`${task.id}-${task.position}`}
                 task={task}
                 onClick={onTaskClick}
+                onAttachmentClick={onTaskAttachmentClick}
                 isDimmed={hasViewFilter && !matches}
                 isHighlighted={highlightedTaskId === task.id}
               />
