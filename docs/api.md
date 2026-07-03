@@ -42,6 +42,14 @@ All protected endpoints require `Authorization: Bearer <token>`.
 | PATCH  | `/api/v1/tasks/:id`               | Update / move task     |
 | DELETE | `/api/v1/tasks/:id`               | Delete task            |
 
+## Search
+
+| Method | Endpoint         | Description                               |
+| ------ | ---------------- | ----------------------------------------- |
+| GET    | `/api/v1/search` | Search tasks & projects (user-accessible) |
+
+**Query params:** `q` (min 2 chars), `page`, `limit`, optional `projectId`, optional `boardId`
+
 ## Pagination Response
 
 ```json

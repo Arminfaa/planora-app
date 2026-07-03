@@ -15,15 +15,25 @@ interface KanbanColumnProps {
   column: BoardColumn;
   onTaskClick: (task: BoardTask) => void;
   onAddTask: (columnId: string, title: string) => Promise<void>;
+  searchQuery?: string;
+  highlightedTaskId?: string | null;
+  taskMatchesSearch?: (task: BoardTask) => boolean;
 }
 
 export const KanbanColumn = memo(function KanbanColumn({
   column,
   onTaskClick,
   onAddTask,
+  searchQuery = '',
+  highlightedTaskId = null,
+  taskMatchesSearch,
 }: KanbanColumnProps) {
   const { setNodeRef, isOver } = useDroppable({ id: column.id });
   const tasks = column.tasks ?? [];
+  const hasSearch = searchQuery.trim().length > 0;
+  const visibleTasks = hasSearch
+    ? tasks.filter((task) => taskMatchesSearch?.(task) ?? true)
+    : tasks;
   const taskIds = tasks.map((t) => t.id);
   const sortableKey = columnSortableKey(column);
 
@@ -40,7 +50,9 @@ export const KanbanColumn = memo(function KanbanColumn({
         <h3 className="font-medium text-gray-900">
           {column.name}
           <span className="ml-2 text-sm font-normal text-gray-500">
-            {tasks.length}
+            {hasSearch
+              ? `${visibleTasks.length}/${tasks.length}`
+              : tasks.length}
           </span>
         </h3>
       </div>
@@ -54,13 +66,18 @@ export const KanbanColumn = memo(function KanbanColumn({
           items={taskIds}
           strategy={verticalListSortingStrategy}
         >
-          {tasks.map((task) => (
-            <SortableTaskCard
-              key={`${task.id}-${task.position}`}
-              task={task}
-              onClick={onTaskClick}
-            />
-          ))}
+          {tasks.map((task) => {
+            const matches = !hasSearch || (taskMatchesSearch?.(task) ?? true);
+            return (
+              <SortableTaskCard
+                key={`${task.id}-${task.position}`}
+                task={task}
+                onClick={onTaskClick}
+                isDimmed={hasSearch && !matches}
+                isHighlighted={highlightedTaskId === task.id}
+              />
+            );
+          })}
         </SortableContext>
 
         <AddTaskForm onSubmit={(title) => onAddTask(column.id, title)} />

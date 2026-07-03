@@ -10,12 +10,16 @@ interface TaskCardProps {
   task: BoardTask;
   onClick: (task: BoardTask) => void;
   isDragOverlay?: boolean;
+  isDimmed?: boolean;
+  isHighlighted?: boolean;
 }
 
 export const TaskCard = memo(function TaskCard({
   task,
   onClick,
   isDragOverlay = false,
+  isDimmed = false,
+  isHighlighted = false,
 }: TaskCardProps) {
   const style = priorityStyles[task.priority];
 
@@ -23,8 +27,12 @@ export const TaskCard = memo(function TaskCard({
     <button
       type="button"
       onClick={() => onClick(task)}
-      className={`w-full rounded-lg border border-gray-200 bg-white p-3 text-left shadow-sm transition hover:border-primary-300 hover:shadow-md ${
+      className={`w-full rounded-lg border bg-white p-3 text-left shadow-sm transition hover:border-primary-300 hover:shadow-md ${
         isDragOverlay ? 'rotate-2 shadow-lg ring-2 ring-primary-200' : ''
+      } ${isDimmed ? 'opacity-35' : ''} ${
+        isHighlighted
+          ? 'border-primary-400 ring-2 ring-primary-100'
+          : 'border-gray-200'
       }`}
     >
       <p className="text-sm font-medium text-gray-900">{task.title}</p>
@@ -52,11 +60,15 @@ export const TaskCard = memo(function TaskCard({
 interface SortableTaskCardProps {
   task: BoardTask;
   onClick: (task: BoardTask) => void;
+  isDimmed?: boolean;
+  isHighlighted?: boolean;
 }
 
 export const SortableTaskCard = memo(function SortableTaskCard({
   task,
   onClick,
+  isDimmed = false,
+  isHighlighted = false,
 }: SortableTaskCardProps) {
   const {
     attributes,
@@ -78,7 +90,12 @@ export const SortableTaskCard = memo(function SortableTaskCard({
 
   return (
     <div ref={setNodeRef} style={style} {...attributes} {...listeners}>
-      <TaskCard task={task} onClick={onClick} />
+      <TaskCard
+        task={task}
+        onClick={onClick}
+        isDimmed={isDimmed}
+        isHighlighted={isHighlighted}
+      />
     </div>
   );
 });

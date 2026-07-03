@@ -1,12 +1,14 @@
 'use client';
 
-import { useParams } from 'next/navigation';
+import { useParams, useSearchParams } from 'next/navigation';
 import { KanbanBoard } from '@/features/board/components/KanbanBoard';
 import { useBoard } from '@/features/board/hooks/useBoard';
 import { LoadingSpinner } from '@/shared/components/feedback/LoadingSpinner';
 
 export default function BoardPage() {
   const params = useParams<{ id: string; boardId: string }>();
+  const searchParams = useSearchParams();
+  const taskId = searchParams.get('task');
   const { board, isLoading, error, refetch, revision } = useBoard(
     params.boardId,
   );
@@ -27,6 +29,7 @@ export default function BoardPage() {
       projectId={params.id}
       revision={revision}
       onRefresh={refetch}
+      initialTaskId={taskId}
     />
   );
 }

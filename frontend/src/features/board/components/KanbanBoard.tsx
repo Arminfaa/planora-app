@@ -1,6 +1,6 @@
 'use client';
 
-import { useCallback, useState } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 import dynamic from 'next/dynamic';
 import Link from 'next/link';
 import { DndContext, DragOverlay, closestCorners } from '@dnd-kit/core';
@@ -13,6 +13,8 @@ import type { BoardSocketEvent } from '../types/socket';
 import { taskService } from '@/features/tasks/services/task.service';
 import { getApiErrorMessage } from '@/lib/api';
 import { LoadingSpinner } from '@/shared/components/feedback/LoadingSpinner';
+import { BoardSearch } from '@/features/search/components/BoardSearch';
+import { taskMatchesQuery } from '@/features/search/utils/matchTask';
 
 const TaskModal = dynamic(
   () => import('./TaskModal').then((mod) => ({ default: mod.TaskModal })),
@@ -24,6 +26,7 @@ interface KanbanBoardProps {
   projectId: string;
   revision: number;
   onRefresh: (options?: { silent?: boolean }) => Promise<void>;
+  initialTaskId?: string | null;
 }
 
 export function KanbanBoard({
@@ -31,9 +34,14 @@ export function KanbanBoard({
   projectId,
   revision,
   onRefresh,
+  initialTaskId = null,
 }: KanbanBoardProps) {
   const [selectedTask, setSelectedTask] = useState<BoardTask | null>(null);
   const [actionError, setActionError] = useState('');
+  const [boardSearchQuery, setBoardSearchQuery] = useState('');
+  const [highlightedTaskId, setHighlightedTaskId] = useState<string | null>(
+    initialTaskId,
+  );
 
   const handleError = useCallback((message: string) => {
     setActionError(message);
@@ -42,7 +50,6 @@ export function KanbanBoard({
   const {
     columns,
     activeTask,
-    dndRevision,
     sensors,
     handleDragStart,
     handleDragOver,
@@ -89,6 +96,33 @@ export function KanbanBoard({
     (sum, col) => sum + (col.tasks?.length ?? 0),
     0,
   );
+
+  const matchTask = useCallback(
+    (task: BoardTask) => taskMatchesQuery(task, boardSearchQuery),
+    [boardSearchQuery],
+  );
+
+  const matchingTaskCount = useMemo(() => {
+    if (!boardSearchQuery.trim()) return totalTasks;
+    return columns.reduce(
+      (sum, col) =>
+        sum + (col.tasks?.filter((task) => matchTask(task)).length ?? 0),
+      0,
+    );
+  }, [boardSearchQuery, columns, matchTask, totalTasks]);
+
+  useEffect(() => {
+    if (!initialTaskId) return;
+
+    const task = columns
+      .flatMap((col) => col.tasks ?? [])
+      .find((item) => item.id === initialTaskId);
+
+    if (task) {
+      setSelectedTask(task);
+      setHighlightedTaskId(task.id);
+    }
+  }, [columns, initialTaskId]);
 
   return (
     <div>
@@ -138,6 +172,13 @@ export function KanbanBoard({
         </div>
       )}
 
+      <BoardSearch
+        value={boardSearchQuery}
+        onChange={setBoardSearchQuery}
+        matchCount={matchingTaskCount}
+        totalCount={totalTasks}
+      />
+
       <DndContext
         sensors={sensors}
         collisionDetection={closestCorners}
@@ -153,6 +194,9 @@ export function KanbanBoard({
               column={column}
               onTaskClick={setSelectedTask}
               onAddTask={handleAddTask}
+              searchQuery={boardSearchQuery}
+              highlightedTaskId={highlightedTaskId}
+              taskMatchesSearch={matchTask}
             />
           ))}
         </div>
