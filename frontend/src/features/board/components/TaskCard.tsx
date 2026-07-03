@@ -5,6 +5,7 @@ import { useSortable } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
 import type { BoardTask } from '../types';
 import { priorityStyles } from '@/features/tasks/types';
+import { formatDueDate, isDueDateOverdue } from '@/features/tasks/utils/dates';
 
 interface TaskCardProps {
   task: BoardTask;
@@ -41,17 +42,30 @@ export const TaskCard = memo(function TaskCard({
           {task.description}
         </p>
       )}
-      <div className="mt-3 flex items-center justify-between">
+      <div className="mt-3 flex items-center justify-between gap-2">
         <span
           className={`rounded px-2 py-0.5 text-xs font-medium ${style.badge}`}
         >
           {style.label}
         </span>
-        {task.assignee && (
-          <span className="truncate text-xs text-gray-500">
-            {task.assignee.name}
-          </span>
-        )}
+        <div className="flex min-w-0 flex-col items-end gap-0.5">
+          {task.dueDate && (
+            <span
+              className={`text-xs ${
+                isDueDateOverdue(task.dueDate)
+                  ? 'font-medium text-red-600'
+                  : 'text-gray-500'
+              }`}
+            >
+              {formatDueDate(task.dueDate)}
+            </span>
+          )}
+          {task.assignee && (
+            <span className="truncate text-xs text-gray-500">
+              {task.assignee.name}
+            </span>
+          )}
+        </div>
       </div>
     </button>
   );

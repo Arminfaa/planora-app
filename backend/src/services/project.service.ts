@@ -42,6 +42,21 @@ export class ProjectService {
     return { ...project, currentUserRole };
   }
 
+  async listMembers(userId: string, projectId: string) {
+    await projectAccessService.ensureMember(userId, projectId);
+
+    const members =
+      await projectMemberRepository.findMembersByProject(projectId);
+
+    return members.map((member) => ({
+      id: member.user.id,
+      name: member.user.name,
+      email: member.user.email,
+      avatar: member.user.avatar,
+      role: member.role,
+    }));
+  }
+
   async create(userId: string, input: CreateProjectInput) {
     let slug = toSlug(input.name);
     const existing = await projectRepository.findBySlug(slug);

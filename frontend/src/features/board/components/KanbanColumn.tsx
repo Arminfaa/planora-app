@@ -7,6 +7,8 @@ import {
   verticalListSortingStrategy,
 } from '@dnd-kit/sortable';
 import type { BoardColumn, BoardTask } from '../types';
+import type { ProjectMember } from '@/features/projects/types';
+import type { CreateTaskInput } from '@/features/tasks/types';
 import type { TaskFilters } from '@/features/search/types';
 import { isTaskFiltersActive } from '@/features/search/utils/taskFilters';
 import { columnSortableKey } from '../utils/applyRealtimeEvent';
@@ -15,8 +17,9 @@ import { AddTaskForm } from './AddTaskForm';
 
 interface KanbanColumnProps {
   column: BoardColumn;
+  members: ProjectMember[];
   onTaskClick: (task: BoardTask) => void;
-  onAddTask: (columnId: string, title: string) => Promise<void>;
+  onAddTask: (columnId: string, input: CreateTaskInput) => Promise<void>;
   onEdit?: (column: BoardColumn) => void;
   onDelete?: (column: BoardColumn) => void;
   canDelete?: boolean;
@@ -28,6 +31,7 @@ interface KanbanColumnProps {
 
 export const KanbanColumn = memo(function KanbanColumn({
   column,
+  members,
   onTaskClick,
   onAddTask,
   onEdit,
@@ -115,7 +119,10 @@ export const KanbanColumn = memo(function KanbanColumn({
           })}
         </SortableContext>
 
-        <AddTaskForm onSubmit={(title) => onAddTask(column.id, title)} />
+        <AddTaskForm
+          members={members}
+          onSubmit={(input) => onAddTask(column.id, input)}
+        />
       </div>
     </div>
   );

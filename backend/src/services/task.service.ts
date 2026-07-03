@@ -2,6 +2,7 @@ import { ApiError } from '../utils/ApiError';
 import { buildPagination } from '../utils/pagination';
 import { boardRepository } from '../repositories/board.repository';
 import { columnRepository } from '../repositories/column.repository';
+import { projectMemberRepository } from '../repositories/project-member.repository';
 import { taskRepository } from '../repositories/task.repository';
 import { projectAccessService } from './project-access.service';
 import type {
@@ -30,6 +31,20 @@ export class TaskService {
       throw new ApiError(404, 'Task not found');
     }
     return this.resolveProjectIdFromColumn(columnId);
+  }
+
+  private async ensureAssigneeIsMember(
+    projectId: string,
+    assigneeId: string,
+  ): Promise<void> {
+    const membership = await projectMemberRepository.findByProjectAndUser(
+      projectId,
+      assigneeId,
+    );
+
+    if (!membership) {
+      throw new ApiError(400, 'Assignee must be a project member');
+    }
   }
 
   async listByColumn(
@@ -66,6 +81,10 @@ export class TaskService {
     const projectId = await this.resolveProjectIdFromColumn(columnId);
     await projectAccessService.ensureMember(userId, projectId);
 
+    if (input.assigneeId) {
+      await this.ensureAssigneeIsMember(projectId, input.assigneeId);
+    }
+
     return taskRepository.create({
       title: input.title,
       description: input.description,
@@ -85,6 +104,10 @@ export class TaskService {
     const existing = await taskRepository.findById(taskId);
     if (!existing) {
       throw new ApiError(404, 'Task not found');
+    }
+
+    if (input.assigneeId) {
+      await this.ensureAssigneeIsMember(projectId, input.assigneeId);
     }
 
     const isMove = input.columnId !== undefined || input.position !== undefined;

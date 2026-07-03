@@ -31,6 +31,7 @@ export interface CreateTaskInput {
   description?: string;
   priority?: TaskPriority;
   dueDate?: string;
+  assigneeId?: string;
 }
 
 export interface UpdateTaskInput {
@@ -40,6 +41,7 @@ export interface UpdateTaskInput {
   columnId?: string;
   position?: number;
   dueDate?: string | null;
+  assigneeId?: string | null;
 }
 
 export const PRIORITY_OPTIONS: TaskPriority[] = [

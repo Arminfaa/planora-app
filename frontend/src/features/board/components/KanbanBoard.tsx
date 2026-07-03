@@ -14,6 +14,8 @@ import { useBoardSocket } from '../hooks/useBoardSocket';
 import type { BoardSocketEvent } from '../types/socket';
 import { columnService } from '../services/column.service';
 import { taskService } from '@/features/tasks/services/task.service';
+import type { CreateTaskInput } from '@/features/tasks/types';
+import { useProjectMembers } from '@/features/projects/hooks/useProjectMembers';
 import { getApiErrorMessage } from '@/lib/api';
 import { LoadingSpinner } from '@/shared/components/feedback/LoadingSpinner';
 import { Button } from '@/shared/components/ui/Button';
@@ -111,11 +113,13 @@ export function KanbanBoard({
     onRemoteChange: handleRemoteChange,
   });
 
+  const members = useProjectMembers(projectId);
+
   const handleAddTask = useCallback(
-    async (columnId: string, title: string) => {
+    async (columnId: string, input: CreateTaskInput) => {
       setActionError('');
       try {
-        await taskService.create(columnId, { title });
+        await taskService.create(columnId, input);
         await onRefresh();
       } catch (err) {
         setActionError(getApiErrorMessage(err));
@@ -295,6 +299,7 @@ export function KanbanBoard({
             <KanbanColumn
               key={column.id}
               column={column}
+              members={members}
               onTaskClick={setSelectedTask}
               onAddTask={handleAddTask}
               onEdit={setEditingColumn}
@@ -337,6 +342,7 @@ export function KanbanBoard({
         <TaskModal
           task={selectedTask}
           columns={columns}
+          members={members}
           onClose={() => setSelectedTask(null)}
           onUpdate={handleTaskUpdate}
           onDelete={handleTaskDelete}

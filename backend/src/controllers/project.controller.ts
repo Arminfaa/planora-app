@@ -28,6 +28,16 @@ export const getProject = asyncHandler(
   },
 );
 
+export const listProjectMembers = asyncHandler(
+  async (req: AuthenticatedRequest, res: Response) => {
+    const members = await projectService.listMembers(
+      req.user!.userId,
+      getParam(req.params, 'id'),
+    );
+    ApiResponse.success(res, members, 'Project members retrieved');
+  },
+);
+
 export const createProject = asyncHandler(
   async (req: AuthenticatedRequest, res: Response) => {
     const project = await projectService.create(

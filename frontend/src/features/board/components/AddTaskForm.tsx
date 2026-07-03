@@ -1,17 +1,28 @@
 'use client';
 
 import { useState } from 'react';
+import type { ProjectMember } from '@/features/projects/types';
+import type { CreateTaskInput } from '@/features/tasks/types';
 import { Button } from '@/shared/components/ui/Button';
 import { Input } from '@/shared/components/ui/Input';
 
 interface AddTaskFormProps {
-  onSubmit: (title: string) => Promise<void>;
+  members: ProjectMember[];
+  onSubmit: (input: CreateTaskInput) => Promise<void>;
 }
 
-export function AddTaskForm({ onSubmit }: AddTaskFormProps) {
+export function AddTaskForm({ members, onSubmit }: AddTaskFormProps) {
   const [isOpen, setIsOpen] = useState(false);
   const [title, setTitle] = useState('');
+  const [dueDate, setDueDate] = useState('');
+  const [assigneeId, setAssigneeId] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
+
+  const resetForm = () => {
+    setTitle('');
+    setDueDate('');
+    setAssigneeId('');
+  };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -19,13 +30,20 @@ export function AddTaskForm({ onSubmit }: AddTaskFormProps) {
 
     setIsSubmitting(true);
     try {
-      await onSubmit(title.trim());
-      setTitle('');
+      await onSubmit({
+        title: title.trim(),
+        dueDate: dueDate || undefined,
+        assigneeId: assigneeId || undefined,
+      });
+      resetForm();
       setIsOpen(false);
     } finally {
       setIsSubmitting(false);
     }
   };
+
+  const selectClassName =
+    'block w-full rounded-lg border border-gray-300 px-3 py-2 text-sm shadow-sm focus:border-primary-500 focus:outline-none focus:ring-1 focus:ring-primary-500';
 
   if (!isOpen) {
     return (
@@ -47,6 +65,23 @@ export function AddTaskForm({ onSubmit }: AddTaskFormProps) {
         onChange={(e) => setTitle(e.target.value)}
         autoFocus
       />
+      <Input
+        type="date"
+        value={dueDate}
+        onChange={(e) => setDueDate(e.target.value)}
+      />
+      <select
+        className={selectClassName}
+        value={assigneeId}
+        onChange={(e) => setAssigneeId(e.target.value)}
+      >
+        <option value="">Unassigned</option>
+        {members.map((member) => (
+          <option key={member.id} value={member.id}>
+            {member.name}
+          </option>
+        ))}
+      </select>
       <div className="flex gap-2">
         <Button type="submit" isLoading={isSubmitting} className="flex-1">
           Add
@@ -56,7 +91,7 @@ export function AddTaskForm({ onSubmit }: AddTaskFormProps) {
           variant="secondary"
           onClick={() => {
             setIsOpen(false);
-            setTitle('');
+            resetForm();
           }}
         >
           Cancel

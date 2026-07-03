@@ -5,8 +5,10 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import { useState } from 'react';
 import type { BoardColumn, BoardTask } from '../types';
+import type { ProjectMember } from '@/features/projects/types';
 import { taskService } from '@/features/tasks/services/task.service';
 import { PRIORITY_OPTIONS, priorityStyles } from '@/features/tasks/types';
+import { toDateInputValue } from '@/features/tasks/utils/dates';
 import { Button } from '@/shared/components/ui/Button';
 import { Input } from '@/shared/components/ui/Input';
 import { getApiErrorMessage } from '@/lib/api';
@@ -16,6 +18,8 @@ const schema = z.object({
   description: z.string().max(2000).optional(),
   priority: z.enum(['LOW', 'MEDIUM', 'HIGH', 'URGENT']),
   columnId: z.string().min(1),
+  dueDate: z.string().optional(),
+  assigneeId: z.string().optional(),
 });
 
 type FormData = z.infer<typeof schema>;
@@ -23,6 +27,7 @@ type FormData = z.infer<typeof schema>;
 interface TaskModalProps {
   task: BoardTask;
   columns: BoardColumn[];
+  members: ProjectMember[];
   onClose: () => void;
   onUpdate: () => Promise<void>;
   onDelete: () => Promise<void>;
@@ -31,6 +36,7 @@ interface TaskModalProps {
 export function TaskModal({
   task,
   columns,
+  members,
   onClose,
   onUpdate,
   onDelete,
@@ -49,17 +55,29 @@ export function TaskModal({
       description: task.description ?? '',
       priority: task.priority,
       columnId: task.columnId,
+      dueDate: toDateInputValue(task.dueDate),
+      assigneeId: task.assignee?.id ?? '',
     },
   });
 
   const onSubmit = async (data: FormData) => {
     setError('');
     try {
+      const nextDueDate = data.dueDate?.trim() ? data.dueDate : null;
+      const currentDueDate = task.dueDate
+        ? toDateInputValue(task.dueDate)
+        : null;
+      const nextAssigneeId = data.assigneeId?.trim() ? data.assigneeId : null;
+      const currentAssigneeId = task.assignee?.id ?? null;
+
       await taskService.update(task.id, {
         title: data.title,
         description: data.description || undefined,
         priority: data.priority,
         columnId: data.columnId !== task.columnId ? data.columnId : undefined,
+        dueDate: nextDueDate !== currentDueDate ? nextDueDate : undefined,
+        assigneeId:
+          nextAssigneeId !== currentAssigneeId ? nextAssigneeId : undefined,
       });
       await onUpdate();
     } catch (err) {
@@ -79,6 +97,9 @@ export function TaskModal({
       setIsDeleting(false);
     }
   };
+
+  const selectClassName =
+    'block w-full rounded-lg border border-gray-300 px-3 py-2.5 text-sm shadow-sm focus:border-primary-500 focus:outline-none focus:ring-1 focus:ring-primary-500';
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
@@ -114,17 +135,37 @@ export function TaskModal({
             />
           </div>
 
+          <div className="grid gap-4 sm:grid-cols-2">
+            <div className="space-y-1">
+              <label className="block text-sm font-medium text-gray-700">
+                Priority
+              </label>
+              <select className={selectClassName} {...register('priority')}>
+                {PRIORITY_OPTIONS.map((p) => (
+                  <option key={p} value={p}>
+                    {priorityStyles[p].label}
+                  </option>
+                ))}
+              </select>
+            </div>
+
+            <Input
+              label="Due Date"
+              type="date"
+              error={errors.dueDate?.message}
+              {...register('dueDate')}
+            />
+          </div>
+
           <div className="space-y-1">
             <label className="block text-sm font-medium text-gray-700">
-              Priority
+              Assignee
             </label>
-            <select
-              className="block w-full rounded-lg border border-gray-300 px-3 py-2.5 text-sm shadow-sm focus:border-primary-500 focus:outline-none focus:ring-1 focus:ring-primary-500"
-              {...register('priority')}
-            >
-              {PRIORITY_OPTIONS.map((p) => (
-                <option key={p} value={p}>
-                  {priorityStyles[p].label}
+            <select className={selectClassName} {...register('assigneeId')}>
+              <option value="">Unassigned</option>
+              {members.map((member) => (
+                <option key={member.id} value={member.id}>
+                  {member.name}
                 </option>
               ))}
             </select>
@@ -134,10 +175,7 @@ export function TaskModal({
             <label className="block text-sm font-medium text-gray-700">
               Column
             </label>
-            <select
-              className="block w-full rounded-lg border border-gray-300 px-3 py-2.5 text-sm shadow-sm focus:border-primary-500 focus:outline-none focus:ring-1 focus:ring-primary-500"
-              {...register('columnId')}
-            >
+            <select className={selectClassName} {...register('columnId')}>
               {columns.map((col) => (
                 <option key={col.id} value={col.id}>
                   {col.name}

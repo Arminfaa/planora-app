@@ -30,6 +30,8 @@ export const createTaskSchema = z.object({
 
 export const updateTaskSchema = createTaskSchema.partial().extend({
   columnId: objectIdSchema.optional(),
+  assigneeId: objectIdSchema.nullable().optional(),
+  dueDate: z.coerce.date().nullable().optional(),
 });
 
 export const taskListQuerySchema = paginationSchema;
