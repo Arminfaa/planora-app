@@ -14,7 +14,12 @@ import { taskService } from '@/features/tasks/services/task.service';
 import { getApiErrorMessage } from '@/lib/api';
 import { LoadingSpinner } from '@/shared/components/feedback/LoadingSpinner';
 import { BoardSearch } from '@/features/search/components/BoardSearch';
-import { taskMatchesQuery } from '@/features/search/utils/matchTask';
+import { BoardFilters } from '@/features/search/components/BoardFilters';
+import { defaultTaskFilters, type TaskFilters } from '@/features/search/types';
+import {
+  isTaskFiltersActive,
+  taskIsVisible,
+} from '@/features/search/utils/taskFilters';
 
 const TaskModal = dynamic(
   () => import('./TaskModal').then((mod) => ({ default: mod.TaskModal })),
@@ -39,6 +44,8 @@ export function KanbanBoard({
   const [selectedTask, setSelectedTask] = useState<BoardTask | null>(null);
   const [actionError, setActionError] = useState('');
   const [boardSearchQuery, setBoardSearchQuery] = useState('');
+  const [boardFilters, setBoardFilters] =
+    useState<TaskFilters>(defaultTaskFilters);
   const [highlightedTaskId, setHighlightedTaskId] = useState<string | null>(
     initialTaskId,
   );
@@ -98,18 +105,21 @@ export function KanbanBoard({
   );
 
   const matchTask = useCallback(
-    (task: BoardTask) => taskMatchesQuery(task, boardSearchQuery),
-    [boardSearchQuery],
+    (task: BoardTask) => taskIsVisible(task, boardSearchQuery, boardFilters),
+    [boardFilters, boardSearchQuery],
   );
 
+  const hasActiveView =
+    boardSearchQuery.trim().length > 0 || isTaskFiltersActive(boardFilters);
+
   const matchingTaskCount = useMemo(() => {
-    if (!boardSearchQuery.trim()) return totalTasks;
+    if (!hasActiveView) return totalTasks;
     return columns.reduce(
       (sum, col) =>
         sum + (col.tasks?.filter((task) => matchTask(task)).length ?? 0),
       0,
     );
-  }, [boardSearchQuery, columns, matchTask, totalTasks]);
+  }, [columns, hasActiveView, matchTask, totalTasks]);
 
   useEffect(() => {
     if (!initialTaskId) return;
@@ -172,12 +182,20 @@ export function KanbanBoard({
         </div>
       )}
 
-      <BoardSearch
-        value={boardSearchQuery}
-        onChange={setBoardSearchQuery}
-        matchCount={matchingTaskCount}
-        totalCount={totalTasks}
-      />
+      <div className="mb-4 space-y-3">
+        <BoardSearch
+          value={boardSearchQuery}
+          onChange={setBoardSearchQuery}
+          matchCount={matchingTaskCount}
+          totalCount={totalTasks}
+          hasActiveView={hasActiveView}
+        />
+        <BoardFilters
+          columns={columns}
+          filters={boardFilters}
+          onChange={setBoardFilters}
+        />
+      </div>
 
       <DndContext
         sensors={sensors}
@@ -195,8 +213,9 @@ export function KanbanBoard({
               onTaskClick={setSelectedTask}
               onAddTask={handleAddTask}
               searchQuery={boardSearchQuery}
+              filters={boardFilters}
               highlightedTaskId={highlightedTaskId}
-              taskMatchesSearch={matchTask}
+              taskIsVisible={matchTask}
             />
           ))}
         </div>

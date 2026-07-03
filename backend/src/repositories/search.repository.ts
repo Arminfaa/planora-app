@@ -1,5 +1,7 @@
 import type { Prisma } from '@prisma/client';
 import { BaseRepository } from './base.repository';
+import type { TaskFilterQuery } from '../validators/filter.validator';
+import { buildTaskFilterWhere } from '../utils/task-filters';
 
 const projectAccessFilter = (userId: string): Prisma.ProjectWhereInput => ({
   OR: [{ ownerId: userId }, { members: { some: { userId } } }],
@@ -8,10 +10,14 @@ const projectAccessFilter = (userId: string): Prisma.ProjectWhereInput => ({
 export class SearchRepository extends BaseRepository {
   async searchTasks(
     userId: string,
-    query: string,
+    query: string | undefined,
     page: number,
     limit: number,
-    options?: { projectId?: string; boardId?: string },
+    options?: {
+      projectId?: string;
+      boardId?: string;
+      filters?: TaskFilterQuery;
+    },
   ) {
     const boardFilter: Prisma.BoardWhereInput = {
       project: {
@@ -21,12 +27,27 @@ export class SearchRepository extends BaseRepository {
       ...(options?.boardId ? { id: options.boardId } : {}),
     };
 
+    const textFilter: Prisma.TaskWhereInput | undefined = query
+      ? {
+          OR: [
+            { title: { contains: query, mode: 'insensitive' } },
+            { description: { contains: query, mode: 'insensitive' } },
+          ],
+        }
+      : undefined;
+
+    const attributeFilter = buildTaskFilterWhere(options?.filters);
+
     const where: Prisma.TaskWhereInput = {
       column: { board: boardFilter },
-      OR: [
-        { title: { contains: query, mode: 'insensitive' } },
-        { description: { contains: query, mode: 'insensitive' } },
-      ],
+      ...(textFilter || Object.keys(attributeFilter).length > 0
+        ? {
+            AND: [textFilter, attributeFilter].filter(
+              (part): part is Prisma.TaskWhereInput =>
+                Boolean(part && Object.keys(part).length > 0),
+            ),
+          }
+        : {}),
     };
 
     const [items, total] = await Promise.all([

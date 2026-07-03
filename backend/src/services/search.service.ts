@@ -3,6 +3,8 @@ import { buildPagination } from '../utils/pagination';
 import { boardRepository } from '../repositories/board.repository';
 import { projectAccessService } from './project-access.service';
 import { searchRepository } from '../repositories/search.repository';
+import type { TaskFilterQuery } from '../validators/filter.validator';
+import { hasActiveTaskFilters } from '../utils/task-filters';
 
 function mapTaskResult(
   task: Awaited<
@@ -42,11 +44,19 @@ function mapProjectResult(
 export class SearchService {
   async search(
     userId: string,
-    query: string,
+    query: string | undefined,
     page: number,
     limit: number,
-    options?: { projectId?: string; boardId?: string },
+    options?: {
+      projectId?: string;
+      boardId?: string;
+      filters?: TaskFilterQuery;
+    },
   ) {
+    if (!query && !hasActiveTaskFilters(options?.filters)) {
+      throw new ApiError(400, 'Search query or filters required');
+    }
+
     if (options?.boardId) {
       const projectId = await boardRepository.getProjectId(options.boardId);
       if (!projectId) {
@@ -57,11 +67,13 @@ export class SearchService {
       await projectAccessService.ensureMember(userId, options.projectId);
     }
 
+    const includeProjects = !options?.boardId && (query?.length ?? 0) >= 2;
+
     const [tasks, projects] = await Promise.all([
       searchRepository.searchTasks(userId, query, page, limit, options),
-      options?.boardId
-        ? Promise.resolve({ items: [], total: 0 })
-        : searchRepository.searchProjects(userId, query, page, limit),
+      includeProjects
+        ? searchRepository.searchProjects(userId, query!, page, limit)
+        : Promise.resolve({ items: [], total: 0 }),
     ]);
 
     return {

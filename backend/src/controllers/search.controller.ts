@@ -7,7 +7,7 @@ import type { SearchQuery } from '../validators/search.validator';
 
 export const search = asyncHandler(
   async (req: AuthenticatedRequest, res: Response) => {
-    const { q, page, limit, projectId, boardId } =
+    const { q, page, limit, projectId, boardId, priority, assigneeId, due } =
       req.query as unknown as SearchQuery;
 
     const result = await searchService.search(
@@ -18,6 +18,7 @@ export const search = asyncHandler(
       {
         projectId,
         boardId,
+        filters: { priority, assigneeId, due },
       },
     );
 

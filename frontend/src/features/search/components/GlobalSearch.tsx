@@ -4,12 +4,24 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { useSearch } from '../hooks/useSearch';
-import { priorityStyles } from '@/features/tasks/types';
+import {
+  DUE_DATE_FILTER_OPTIONS,
+  type ApiDueDateFilter,
+  type SearchFilterParams,
+} from '../types/filter';
+import {
+  PRIORITY_OPTIONS,
+  priorityStyles,
+  type TaskPriority,
+} from '@/features/tasks/types';
+import { togglePriorityFilter } from '../utils/taskFilters';
+import { defaultTaskFilters } from '../types/filter';
 
 export function GlobalSearch() {
   const router = useRouter();
   const containerRef = useRef<HTMLDivElement>(null);
   const [isOpen, setIsOpen] = useState(false);
+  const [filters, setFilters] = useState<SearchFilterParams>({});
 
   const {
     query,
@@ -17,16 +29,17 @@ export function GlobalSearch() {
     results,
     isLoading,
     error,
-    hasQuery,
+    hasCriteria,
     isEmpty,
     clear,
-  } = useSearch({ limit: 6 });
+  } = useSearch({ limit: 6, filters });
 
-  const showPanel = isOpen && (hasQuery || isLoading);
+  const showPanel = isOpen;
 
   const close = useCallback(() => {
     setIsOpen(false);
     clear();
+    setFilters({});
   }, [clear]);
 
   useEffect(() => {
@@ -60,6 +73,18 @@ export function GlobalSearch() {
     router.push(
       `/dashboard/projects/${projectId}/boards/${boardId}?task=${taskId}`,
     );
+  };
+
+  const handlePriorityToggle = (priority: TaskPriority) => {
+    const current = filters.priority ?? [];
+    const next = togglePriorityFilter(
+      { ...defaultTaskFilters, priorities: current },
+      priority,
+    ).priorities;
+    setFilters((prev) => ({
+      ...prev,
+      priority: next.length ? next : undefined,
+    }));
   };
 
   const taskItems = results.tasks.items;
@@ -100,17 +125,71 @@ export function GlobalSearch() {
           id="global-search-results"
           className="absolute z-50 mt-2 w-full overflow-hidden rounded-xl border border-gray-200 bg-white shadow-lg"
         >
-          {isLoading && (
+          <div className="space-y-3 border-b border-gray-100 p-3">
+            <p className="text-xs font-medium uppercase tracking-wide text-gray-400">
+              Task filters
+            </p>
+            <div className="flex flex-wrap gap-1.5">
+              {PRIORITY_OPTIONS.map((priority) => {
+                const selected = filters.priority?.includes(priority) ?? false;
+                const style = priorityStyles[priority];
+                return (
+                  <button
+                    key={priority}
+                    type="button"
+                    onClick={() => handlePriorityToggle(priority)}
+                    className={`rounded-full px-2.5 py-0.5 text-[11px] font-medium transition ${
+                      selected
+                        ? style.badge
+                        : 'border border-gray-200 bg-gray-50 text-gray-600'
+                    }`}
+                  >
+                    {style.label}
+                  </button>
+                );
+              })}
+            </div>
+            <select
+              value={filters.due ?? ''}
+              onChange={(event) => {
+                const value = event.target.value as ApiDueDateFilter | '';
+                setFilters((prev) => ({
+                  ...prev,
+                  due: value || undefined,
+                }));
+              }}
+              className="w-full rounded-lg border border-gray-300 bg-white px-3 py-1.5 text-sm text-gray-900 focus:border-primary-500 focus:outline-none focus:ring-1 focus:ring-primary-500"
+            >
+              <option value="">All due dates</option>
+              {DUE_DATE_FILTER_OPTIONS.filter(
+                (item) => item.value !== 'all',
+              ).map((option) => (
+                <option key={option.value} value={option.value}>
+                  {option.label}
+                </option>
+              ))}
+            </select>
+          </div>
+
+          {!hasCriteria && (
+            <p className="px-4 py-3 text-sm text-gray-500">
+              Type to search or apply filters
+            </p>
+          )}
+
+          {hasCriteria && isLoading && (
             <p className="px-4 py-3 text-sm text-gray-500">Searching...</p>
           )}
 
-          {error && <p className="px-4 py-3 text-sm text-red-600">{error}</p>}
+          {hasCriteria && error && (
+            <p className="px-4 py-3 text-sm text-red-600">{error}</p>
+          )}
 
-          {isEmpty && (
+          {hasCriteria && isEmpty && (
             <p className="px-4 py-3 text-sm text-gray-500">No results found</p>
           )}
 
-          {!isLoading && !error && taskItems.length > 0 && (
+          {hasCriteria && !isLoading && !error && taskItems.length > 0 && (
             <div className="border-b border-gray-100">
               <p className="px-4 py-2 text-xs font-semibold uppercase tracking-wide text-gray-400">
                 Tasks
@@ -151,38 +230,43 @@ export function GlobalSearch() {
             </div>
           )}
 
-          {!isLoading && !error && projectItems.length > 0 && (
-            <div>
-              <p className="px-4 py-2 text-xs font-semibold uppercase tracking-wide text-gray-400">
-                Projects
-              </p>
-              <ul>
-                {projectItems.map((project) => (
-                  <li key={project.id}>
-                    <Link
-                      href={`/dashboard/projects/${project.id}`}
-                      onClick={close}
-                      className="block px-4 py-2.5 transition hover:bg-gray-50"
-                    >
-                      <span className="text-sm font-medium text-gray-900">
-                        {project.name}
-                      </span>
-                      {project.description && (
-                        <span className="mt-0.5 block line-clamp-1 text-xs text-gray-500">
-                          {project.description}
+          {hasCriteria &&
+            !isLoading &&
+            !error &&
+            query.trim().length >= 2 &&
+            projectItems.length > 0 && (
+              <div>
+                <p className="px-4 py-2 text-xs font-semibold uppercase tracking-wide text-gray-400">
+                  Projects
+                </p>
+                <ul>
+                  {projectItems.map((project) => (
+                    <li key={project.id}>
+                      <Link
+                        href={`/dashboard/projects/${project.id}`}
+                        onClick={close}
+                        className="block px-4 py-2.5 transition hover:bg-gray-50"
+                      >
+                        <span className="text-sm font-medium text-gray-900">
+                          {project.name}
                         </span>
-                      )}
-                    </Link>
-                  </li>
-                ))}
-              </ul>
-            </div>
-          )}
+                        {project.description && (
+                          <span className="mt-0.5 block line-clamp-1 text-xs text-gray-500">
+                            {project.description}
+                          </span>
+                        )}
+                      </Link>
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            )}
 
-          {hasQuery && !isLoading && !error && !isEmpty && (
+          {hasCriteria && !isLoading && !error && !isEmpty && (
             <p className="border-t border-gray-100 px-4 py-2 text-xs text-gray-400">
-              {results.tasks.pagination.total} tasks ·{' '}
-              {results.projects.pagination.total} projects
+              {results.tasks.pagination.total} tasks
+              {query.trim().length >= 2 &&
+                ` · ${results.projects.pagination.total} projects`}
             </p>
           )}
         </div>

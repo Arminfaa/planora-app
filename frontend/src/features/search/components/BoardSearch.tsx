@@ -5,6 +5,7 @@ interface BoardSearchProps {
   onChange: (value: string) => void;
   matchCount: number;
   totalCount: number;
+  hasActiveView?: boolean;
 }
 
 export function BoardSearch({
@@ -12,11 +13,12 @@ export function BoardSearch({
   onChange,
   matchCount,
   totalCount,
+  hasActiveView = false,
 }: BoardSearchProps) {
   const hasQuery = value.trim().length > 0;
 
   return (
-    <div className="mb-4 flex flex-wrap items-center gap-3">
+    <div className="flex flex-wrap items-center gap-3">
       <div className="relative min-w-[220px] flex-1 sm:max-w-xs">
         <span className="pointer-events-none absolute inset-y-0 left-3 flex items-center text-gray-400">
           <svg
@@ -54,7 +56,7 @@ export function BoardSearch({
         )}
       </div>
 
-      {hasQuery && (
+      {hasActiveView && (
         <p className="text-sm text-gray-500">
           {matchCount} of {totalCount} tasks
         </p>

@@ -7,6 +7,8 @@ import {
   verticalListSortingStrategy,
 } from '@dnd-kit/sortable';
 import type { BoardColumn, BoardTask } from '../types';
+import type { TaskFilters } from '@/features/search/types';
+import { isTaskFiltersActive } from '@/features/search/utils/taskFilters';
 import { columnSortableKey } from '../utils/applyRealtimeEvent';
 import { SortableTaskCard } from './TaskCard';
 import { AddTaskForm } from './AddTaskForm';
@@ -16,8 +18,9 @@ interface KanbanColumnProps {
   onTaskClick: (task: BoardTask) => void;
   onAddTask: (columnId: string, title: string) => Promise<void>;
   searchQuery?: string;
+  filters?: TaskFilters;
   highlightedTaskId?: string | null;
-  taskMatchesSearch?: (task: BoardTask) => boolean;
+  taskIsVisible?: (task: BoardTask) => boolean;
 }
 
 export const KanbanColumn = memo(function KanbanColumn({
@@ -25,14 +28,16 @@ export const KanbanColumn = memo(function KanbanColumn({
   onTaskClick,
   onAddTask,
   searchQuery = '',
+  filters,
   highlightedTaskId = null,
-  taskMatchesSearch,
+  taskIsVisible,
 }: KanbanColumnProps) {
   const { setNodeRef, isOver } = useDroppable({ id: column.id });
   const tasks = column.tasks ?? [];
-  const hasSearch = searchQuery.trim().length > 0;
-  const visibleTasks = hasSearch
-    ? tasks.filter((task) => taskMatchesSearch?.(task) ?? true)
+  const hasViewFilter =
+    searchQuery.trim().length > 0 || isTaskFiltersActive(filters);
+  const visibleTasks = hasViewFilter
+    ? tasks.filter((task) => taskIsVisible?.(task) ?? true)
     : tasks;
   const taskIds = tasks.map((t) => t.id);
   const sortableKey = columnSortableKey(column);
@@ -50,7 +55,7 @@ export const KanbanColumn = memo(function KanbanColumn({
         <h3 className="font-medium text-gray-900">
           {column.name}
           <span className="ml-2 text-sm font-normal text-gray-500">
-            {hasSearch
+            {hasViewFilter
               ? `${visibleTasks.length}/${tasks.length}`
               : tasks.length}
           </span>
@@ -67,13 +72,13 @@ export const KanbanColumn = memo(function KanbanColumn({
           strategy={verticalListSortingStrategy}
         >
           {tasks.map((task) => {
-            const matches = !hasSearch || (taskMatchesSearch?.(task) ?? true);
+            const matches = !hasViewFilter || (taskIsVisible?.(task) ?? true);
             return (
               <SortableTaskCard
                 key={`${task.id}-${task.position}`}
                 task={task}
                 onClick={onTaskClick}
-                isDimmed={hasSearch && !matches}
+                isDimmed={hasViewFilter && !matches}
                 isHighlighted={highlightedTaskId === task.id}
               />
             );

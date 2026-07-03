@@ -48,7 +48,9 @@ All protected endpoints require `Authorization: Bearer <token>`.
 | ------ | ---------------- | ----------------------------------------- |
 | GET    | `/api/v1/search` | Search tasks & projects (user-accessible) |
 
-**Query params:** `q` (min 2 chars), `page`, `limit`, optional `projectId`, optional `boardId`
+**Query params:** `q` (min 2 chars, optional if filters set), `page`, `limit`, optional `projectId`, optional `boardId`
+
+**Filter params (tasks):** `priority` (comma-separated: `HIGH,URGENT`), `assigneeId` (`unassigned` or user id), `due` (`overdue` | `today` | `week` | `none`)
 
 ## Pagination Response
 

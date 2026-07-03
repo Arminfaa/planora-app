@@ -85,7 +85,7 @@ All endpoints are versioned under `/api/v1`.
 10. ✅ Drag & Drop
 11. ✅ Real Time
 12. ✅ Search
-13. ⏳ Filter
+13. ✅ Filter
 14. ⏳ Final Testing
 
 ## Getting Started

@@ -4,7 +4,12 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 import { getApiErrorMessage } from '@/lib/api';
 import { useDebounce } from '@/shared/hooks/useDebounce';
 import { searchService } from '../services/search.service';
-import type { SearchParams, SearchResponse } from '../types';
+import type {
+  SearchFilterParams,
+  SearchParams,
+  SearchResponse,
+} from '../types';
+import { toSearchFilterParams } from '../types';
 
 const emptyResults: SearchResponse = {
   tasks: {
@@ -22,6 +27,12 @@ interface UseSearchOptions {
   boardId?: string;
   minLength?: number;
   limit?: number;
+  filters?: SearchFilterParams;
+}
+
+function hasFilterCriteria(filters?: SearchFilterParams): boolean {
+  if (!filters) return false;
+  return Boolean(filters.priority?.length || filters.assigneeId || filters.due);
 }
 
 export function useSearch({
@@ -29,6 +40,7 @@ export function useSearch({
   boardId,
   minLength = 2,
   limit = 8,
+  filters,
 }: UseSearchOptions = {}) {
   const [query, setQuery] = useState('');
   const [results, setResults] = useState<SearchResponse>(emptyResults);
@@ -37,10 +49,14 @@ export function useSearch({
   const requestIdRef = useRef(0);
 
   const debouncedQuery = useDebounce(query.trim(), 300);
+  const filtersKey = JSON.stringify(filters ?? {});
 
-  const search = useCallback(
+  const runSearch = useCallback(
     async (searchQuery: string) => {
-      if (searchQuery.length < minLength) {
+      const hasQuery = searchQuery.length >= minLength;
+      const hasFilters = hasFilterCriteria(filters);
+
+      if (!hasQuery && !hasFilters) {
         setResults(emptyResults);
         setError('');
         setIsLoading(false);
@@ -52,12 +68,16 @@ export function useSearch({
       setError('');
 
       const params: SearchParams = {
-        q: searchQuery,
         page: 1,
         limit,
         projectId,
         boardId,
+        ...toSearchFilterParams(filters ?? {}),
       };
+
+      if (hasQuery) {
+        params.q = searchQuery;
+      }
 
       try {
         const data = await searchService.search(params);
@@ -73,12 +93,12 @@ export function useSearch({
         }
       }
     },
-    [boardId, limit, minLength, projectId],
+    [boardId, filters, limit, minLength, projectId],
   );
 
   useEffect(() => {
-    void search(debouncedQuery);
-  }, [debouncedQuery, search]);
+    void runSearch(debouncedQuery);
+  }, [debouncedQuery, filtersKey, runSearch]);
 
   const clear = useCallback(() => {
     requestIdRef.current += 1;
@@ -88,11 +108,16 @@ export function useSearch({
     setIsLoading(false);
   }, []);
 
-  const hasQuery = debouncedQuery.length >= minLength;
+  const hasCriteria =
+    debouncedQuery.length >= minLength || hasFilterCriteria(filters);
   const taskCount = results.tasks.pagination.total;
   const projectCount = results.projects.pagination.total;
   const isEmpty =
-    hasQuery && !isLoading && !error && taskCount === 0 && projectCount === 0;
+    hasCriteria &&
+    !isLoading &&
+    !error &&
+    taskCount === 0 &&
+    projectCount === 0;
 
   return {
     query,
@@ -101,7 +126,7 @@ export function useSearch({
     results,
     isLoading,
     error,
-    hasQuery,
+    hasCriteria,
     isEmpty,
     clear,
   };
