@@ -117,7 +117,8 @@ export async function notifyBoardTaskEvent(
   });
 }
 
-type ColumnEventType = 'column:created' | 'column:updated' | 'column:deleted';
+type ColumnEventType =
+  'column:created' | 'column:updated' | 'column:deleted' | 'columns:reordered';
 
 export async function notifyBoardColumnEvent(
   userId: string,
@@ -141,6 +142,15 @@ export async function notifyBoardColumnEvent(
   if (type === 'column:deleted') {
     const record = payload as { columnId?: string };
     payload = { columnId: String(record.columnId ?? options.columnId) };
+  } else if (type === 'columns:reordered') {
+    const board = await boardRepository.findById(boardId);
+    if (board?.columns) {
+      payload = {
+        columns: (
+          board.columns as unknown as Array<Record<string, unknown>>
+        ).map((column) => serializeColumn(column)),
+      };
+    }
   } else if (payload && typeof payload === 'object' && 'column' in payload) {
     const record = payload as { column: Record<string, unknown> };
     payload = { column: serializeColumn(record.column) };

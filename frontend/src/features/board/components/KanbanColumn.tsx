@@ -1,6 +1,8 @@
 'use client';
 
-import { memo } from 'react';
+import { memo, type HTMLAttributes } from 'react';
+import { useSortable } from '@dnd-kit/sortable';
+import { CSS } from '@dnd-kit/utilities';
 import { useDroppable } from '@dnd-kit/core';
 import {
   SortableContext,
@@ -14,6 +16,7 @@ import { isTaskFiltersActive } from '@/features/search/utils/taskFilters';
 import { columnSortableKey } from '../utils/applyRealtimeEvent';
 import { SortableTaskCard } from './TaskCard';
 import { AddTaskForm } from './AddTaskForm';
+import { GripVerticalIcon } from './GripVerticalIcon';
 
 interface KanbanColumnProps {
   column: BoardColumn;
@@ -24,6 +27,9 @@ interface KanbanColumnProps {
   onEdit?: (column: BoardColumn) => void;
   onDelete?: (column: BoardColumn) => void;
   canDelete?: boolean;
+  canReorder?: boolean;
+  dragHandleProps?: HTMLAttributes<HTMLButtonElement>;
+  isDragOverlay?: boolean;
   searchQuery?: string;
   filters?: TaskFilters;
   highlightedTaskId?: string | null;
@@ -39,6 +45,9 @@ export const KanbanColumn = memo(function KanbanColumn({
   onEdit,
   onDelete,
   canDelete = false,
+  canReorder = false,
+  dragHandleProps,
+  isDragOverlay = false,
   searchQuery = '',
   filters,
   highlightedTaskId = null,
@@ -57,21 +66,38 @@ export const KanbanColumn = memo(function KanbanColumn({
   return (
     <div
       className={`flex w-72 shrink-0 flex-col rounded-xl border bg-gray-50 transition ${
-        isOver ? 'border-primary-400 bg-primary-50/30' : 'border-gray-200'
+        isDragOverlay
+          ? 'rotate-1 shadow-lg ring-2 ring-primary-200'
+          : isOver
+            ? 'border-primary-400 bg-primary-50/30'
+            : 'border-gray-200'
       }`}
     >
       <div
-        className="flex items-start justify-between gap-2 rounded-t-xl px-4 py-3"
+        className="flex items-start gap-2 rounded-t-xl px-4 py-3"
         style={{ borderTop: `3px solid ${column.color ?? '#6B7280'}` }}
       >
-        <h3 className="font-medium text-gray-900">
-          {column.name}
-          <span className="ml-2 text-sm font-normal text-gray-500">
-            {hasViewFilter
-              ? `${visibleTasks.length}/${tasks.length}`
-              : tasks.length}
-          </span>
-        </h3>
+        {canReorder && dragHandleProps && (
+          <button
+            type="button"
+            className="-ml-1 mt-0.5 shrink-0 cursor-grab touch-none rounded p-0.5 text-gray-400 transition hover:bg-gray-200 hover:text-gray-600 active:cursor-grabbing"
+            aria-label={`Reorder ${column.name}`}
+            title="Drag to reorder column"
+            {...dragHandleProps}
+          >
+            <GripVerticalIcon className="h-4 w-4" />
+          </button>
+        )}
+        <div className="min-w-0 flex-1">
+          <h3 className="font-medium text-gray-900">
+            {column.name}
+            <span className="ml-2 text-sm font-normal text-gray-500">
+              {hasViewFilter
+                ? `${visibleTasks.length}/${tasks.length}`
+                : tasks.length}
+            </span>
+          </h3>
+        </div>
         {(onEdit || (canDelete && onDelete)) && (
           <div className="flex shrink-0 gap-0.5">
             {onEdit && (
@@ -127,6 +153,52 @@ export const KanbanColumn = memo(function KanbanColumn({
           onSubmit={(input) => onAddTask(column.id, input)}
         />
       </div>
+    </div>
+  );
+});
+
+interface SortableKanbanColumnProps extends Omit<
+  KanbanColumnProps,
+  'dragHandleProps' | 'isDragOverlay'
+> {
+  disabled?: boolean;
+}
+
+export const SortableKanbanColumn = memo(function SortableKanbanColumn({
+  column,
+  disabled = false,
+  canReorder = false,
+  ...props
+}: SortableKanbanColumnProps) {
+  const {
+    attributes,
+    listeners,
+    setNodeRef,
+    transform,
+    transition,
+    isDragging,
+  } = useSortable({
+    id: column.id,
+    disabled: disabled || !canReorder,
+    data: { type: 'column' },
+  });
+
+  const style = {
+    transform: CSS.Transform.toString(transform),
+    transition,
+    opacity: isDragging ? 0.5 : 1,
+  };
+
+  return (
+    <div ref={setNodeRef} style={style}>
+      <KanbanColumn
+        column={column}
+        canReorder={canReorder}
+        dragHandleProps={
+          canReorder ? { ...attributes, ...listeners } : undefined
+        }
+        {...props}
+      />
     </div>
   );
 });

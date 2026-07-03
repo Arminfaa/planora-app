@@ -130,6 +130,26 @@ export function applyRealtimeEvent(
       if (!columnId) return columns;
       return normalizeColumns(removeColumn(columns, columnId));
     }
+    case 'columns:reordered': {
+      const { columns: syncedColumns } = event.payload as {
+        columns?: BoardColumn[];
+      };
+      if (!syncedColumns?.length) return columns;
+
+      const tasksByColumnId = new Map<string, BoardTask[]>(
+        columns.map((col) => [col.id, col.tasks ?? []]),
+      );
+
+      const reordered = syncedColumns.map((col) => {
+        const normalized = normalizeColumn(col);
+        return {
+          ...normalized,
+          tasks: tasksByColumnId.get(normalized.id) ?? normalized.tasks ?? [],
+        };
+      });
+
+      return normalizeColumns(reordered);
+    }
     default:
       return columns;
   }

@@ -6,6 +6,7 @@ export type BoardEventType =
   | 'column:created'
   | 'column:updated'
   | 'column:deleted'
+  | 'columns:reordered'
   | 'board:updated'
   | 'board:deleted';
 

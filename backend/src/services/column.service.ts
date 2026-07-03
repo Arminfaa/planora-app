@@ -35,9 +35,31 @@ export class ColumnService {
     }
 
     const projectId = await this.resolveProjectId(boardId);
-    await projectAccessService.ensureMember(userId, projectId);
+
+    if (input.position !== undefined) {
+      await projectAccessService.ensureAdmin(userId, projectId);
+    } else {
+      await projectAccessService.ensureMember(userId, projectId);
+    }
 
     return columnRepository.update(columnId, input);
+  }
+
+  async reorder(userId: string, boardId: string, columnIds: string[]) {
+    const projectId = await this.resolveProjectId(boardId);
+    await projectAccessService.ensureAdmin(userId, projectId);
+
+    const existing = await columnRepository.findByBoardId(boardId);
+    if (existing.length !== columnIds.length) {
+      throw new ApiError(400, 'Invalid column order');
+    }
+
+    const existingIds = new Set(existing.map((column) => column.id));
+    if (!columnIds.every((id) => existingIds.has(id))) {
+      throw new ApiError(400, 'Invalid column order');
+    }
+
+    return columnRepository.reorder(boardId, columnIds);
   }
 
   async delete(userId: string, columnId: string) {

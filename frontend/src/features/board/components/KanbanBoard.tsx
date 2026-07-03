@@ -5,8 +5,12 @@ import dynamic from 'next/dynamic';
 import Link from 'next/link';
 import { usePathname, useRouter, useSearchParams } from 'next/navigation';
 import { DndContext, DragOverlay, closestCorners } from '@dnd-kit/core';
+import {
+  SortableContext,
+  horizontalListSortingStrategy,
+} from '@dnd-kit/sortable';
 import type { Board, BoardColumn, BoardTask } from '../types';
-import { KanbanColumn } from './KanbanColumn';
+import { KanbanColumn, SortableKanbanColumn } from './KanbanColumn';
 import { TaskCard } from './TaskCard';
 import { CreateColumnForm } from './CreateColumnForm';
 import { EditColumnModal } from './EditColumnModal';
@@ -48,6 +52,7 @@ interface KanbanBoardProps {
   revision: number;
   onRefresh: (options?: { silent?: boolean }) => Promise<void>;
   canDeleteColumns?: boolean;
+  canReorderColumns?: boolean;
 }
 
 export function KanbanBoard({
@@ -57,6 +62,7 @@ export function KanbanBoard({
   revision,
   onRefresh,
   canDeleteColumns = false,
+  canReorderColumns = false,
 }: KanbanBoardProps) {
   const router = useRouter();
   const pathname = usePathname();
@@ -88,13 +94,20 @@ export function KanbanBoard({
   const {
     columns,
     activeTask,
+    activeColumn,
     sensors,
     handleDragStart,
     handleDragOver,
     handleDragEnd,
     handleDragCancel,
     applyRemoteUpdate,
-  } = useKanbanDnd(board.columns ?? [], revision, handleError, onRefresh);
+  } = useKanbanDnd(
+    board.columns ?? [],
+    board.id,
+    revision,
+    handleError,
+    onRefresh,
+  );
 
   useEffect(() => {
     if (!selectedTask) return;
@@ -325,6 +338,9 @@ export function KanbanBoard({
           </p>
           <p className="mt-1 text-xs text-gray-400">
             Drag tasks to reorder or move between columns
+            {canReorderColumns
+              ? ' · Admins can reorder columns via the grip handle'
+              : ''}
           </p>
         </div>
         <div className="flex items-center gap-2 text-xs text-gray-500">
@@ -382,23 +398,29 @@ export function KanbanBoard({
         <div
           className={`flex gap-4 overflow-x-auto pb-6 ${boardDeleted ? 'pointer-events-none opacity-50' : ''}`}
         >
-          {columns.map((column) => (
-            <KanbanColumn
-              key={column.id}
-              column={column}
-              members={members}
-              onTaskClick={openTask}
-              onTaskAttachmentClick={openTaskAttachments}
-              onAddTask={handleAddTask}
-              onEdit={setEditingColumn}
-              onDelete={handleDeleteColumn}
-              canDelete={canDeleteColumns}
-              searchQuery={boardSearchQuery}
-              filters={boardFilters}
-              highlightedTaskId={highlightedTaskId}
-              taskIsVisible={matchTask}
-            />
-          ))}
+          <SortableContext
+            items={columns.map((column) => column.id)}
+            strategy={horizontalListSortingStrategy}
+          >
+            {columns.map((column) => (
+              <SortableKanbanColumn
+                key={column.id}
+                column={column}
+                members={members}
+                onTaskClick={openTask}
+                onTaskAttachmentClick={openTaskAttachments}
+                onAddTask={handleAddTask}
+                onEdit={setEditingColumn}
+                onDelete={handleDeleteColumn}
+                canDelete={canDeleteColumns}
+                canReorder={canReorderColumns}
+                searchQuery={boardSearchQuery}
+                filters={boardFilters}
+                highlightedTaskId={highlightedTaskId}
+                taskIsVisible={matchTask}
+              />
+            ))}
+          </SortableContext>
 
           {showCreateColumn ? (
             <CreateColumnForm
@@ -422,6 +444,16 @@ export function KanbanBoard({
         <DragOverlay>
           {activeTask ? (
             <TaskCard task={activeTask} onClick={() => {}} isDragOverlay />
+          ) : null}
+          {activeColumn ? (
+            <KanbanColumn
+              column={activeColumn}
+              members={members}
+              onTaskClick={() => {}}
+              onAddTask={async () => {}}
+              canReorder={canReorderColumns}
+              isDragOverlay
+            />
           ) : null}
         </DragOverlay>
       </DndContext>

@@ -21,5 +21,10 @@ export const createColumnSchema = z.object({
 
 export const updateColumnSchema = createColumnSchema.partial();
 
+export const reorderColumnsSchema = z.object({
+  columnIds: z.array(objectIdSchema).min(1, 'At least one column is required'),
+});
+
 export type CreateColumnInput = z.infer<typeof createColumnSchema>;
 export type UpdateColumnInput = z.infer<typeof updateColumnSchema>;
+export type ReorderColumnsInput = z.infer<typeof reorderColumnsSchema>;

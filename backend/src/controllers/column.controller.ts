@@ -8,6 +8,7 @@ import { notifyBoardColumnEvent } from '../utils/board-events';
 import { getParam } from '../utils/params';
 import type {
   CreateColumnInput,
+  ReorderColumnsInput,
   UpdateColumnInput,
 } from '../validators/column.validator';
 
@@ -63,5 +64,24 @@ export const deleteColumn = asyncHandler(
     }
 
     ApiResponse.success(res, null, 'Column deleted');
+  },
+);
+
+export const reorderColumns = asyncHandler(
+  async (req: AuthenticatedRequest, res: Response) => {
+    const boardId = getParam(req.params, 'boardId');
+    const { columnIds } = req.body as ReorderColumnsInput;
+    const columns = await columnService.reorder(
+      req.user!.userId,
+      boardId,
+      columnIds,
+    );
+
+    await notifyBoardColumnEvent(req.user!.userId, 'columns:reordered', {
+      boardId,
+      payload: { columns },
+    });
+
+    ApiResponse.success(res, columns, 'Columns reordered');
   },
 );

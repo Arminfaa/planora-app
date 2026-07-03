@@ -2,6 +2,7 @@ import { Router } from 'express';
 import {
   createColumn,
   deleteColumn,
+  reorderColumns,
   updateColumn,
 } from '../../controllers/column.controller';
 import { authenticate } from '../../middlewares/auth.middleware';
@@ -13,6 +14,7 @@ import {
   columnBoardParamSchema,
   columnIdParamSchema,
   createColumnSchema,
+  reorderColumnsSchema,
   updateColumnSchema,
 } from '../../validators/column.validator';
 
@@ -24,6 +26,12 @@ boardColumnRouter.post(
   validateParams(columnBoardParamSchema),
   validateBody(createColumnSchema),
   createColumn,
+);
+boardColumnRouter.patch(
+  '/reorder',
+  validateParams(columnBoardParamSchema),
+  validateBody(reorderColumnsSchema),
+  reorderColumns,
 );
 
 const columnRouter = Router();

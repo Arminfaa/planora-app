@@ -45,6 +45,26 @@ export class ColumnRepository extends BaseRepository {
     });
     return column?.boardId ?? null;
   }
+
+  async findByBoardId(boardId: string): Promise<Column[]> {
+    return this.db.column.findMany({
+      where: { boardId },
+      orderBy: { position: 'asc' },
+    });
+  }
+
+  async reorder(boardId: string, orderedIds: string[]): Promise<Column[]> {
+    await this.db.$transaction(async (tx) => {
+      for (let index = 0; index < orderedIds.length; index += 1) {
+        await tx.column.updateMany({
+          where: { id: orderedIds[index], boardId },
+          data: { position: index },
+        });
+      }
+    });
+
+    return this.findByBoardId(boardId);
+  }
 }
 
 export const columnRepository = new ColumnRepository();

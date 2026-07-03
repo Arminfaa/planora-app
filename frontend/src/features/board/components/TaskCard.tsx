@@ -129,7 +129,7 @@ export const SortableTaskCard = memo(function SortableTaskCard({
     isDragging,
   } = useSortable({
     id: task.id,
-    data: { columnId: task.columnId },
+    data: { type: 'task', columnId: task.columnId },
   });
 
   const style = {

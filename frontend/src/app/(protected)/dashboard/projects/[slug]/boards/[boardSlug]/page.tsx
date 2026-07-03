@@ -38,7 +38,7 @@ export default function BoardPage() {
     );
   }
 
-  const canDeleteColumns =
+  const canManageColumns =
     project?.currentUserRole === 'OWNER' ||
     project?.currentUserRole === 'ADMIN';
 
@@ -49,7 +49,8 @@ export default function BoardPage() {
       projectSlug={params.slug}
       revision={revision}
       onRefresh={refetch}
-      canDeleteColumns={canDeleteColumns}
+      canDeleteColumns={canManageColumns}
+      canReorderColumns={canManageColumns}
     />
   );
 }

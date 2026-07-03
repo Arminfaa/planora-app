@@ -14,8 +14,11 @@ import { arrayMove, sortableKeyboardCoordinates } from '@dnd-kit/sortable';
 import type { BoardColumn, BoardTask } from '../types';
 import type { BoardSocketEvent } from '../types/socket';
 import { applyRealtimeEvent } from '../utils/applyRealtimeEvent';
+import { columnService } from '../services/column.service';
 import { taskService } from '@/features/tasks/services/task.service';
 import { getApiErrorMessage } from '@/lib/api';
+
+type DragItemType = 'task' | 'column';
 
 function findColumnByTaskId(
   columns: BoardColumn[],
@@ -31,6 +34,11 @@ function findColumnById(
   return columns.find((col) => col.id === columnId);
 }
 
+function resolveColumnId(columns: BoardColumn[], id: string): string | null {
+  if (findColumnById(columns, id)) return id;
+  return findColumnByTaskId(columns, id)?.id ?? null;
+}
+
 function cloneColumns(columns: BoardColumn[]): BoardColumn[] {
   return columns.map((col) => ({
     ...col,
@@ -38,8 +46,15 @@ function cloneColumns(columns: BoardColumn[]): BoardColumn[] {
   }));
 }
 
+function getDragType(
+  event: DragStartEvent | DragOverEvent | DragEndEvent,
+): DragItemType {
+  const type = event.active.data.current?.type;
+  return type === 'column' ? 'column' : 'task';
+}
+
 /** Apply drop when handleDragOver did not update state (quick drop). */
-function applyDrop(
+function applyTaskDrop(
   columns: BoardColumn[],
   activeId: string,
   overId: string,
@@ -91,18 +106,36 @@ function applyDrop(
   });
 }
 
+function applyColumnDrop(
+  columns: BoardColumn[],
+  activeId: string,
+  overId: string,
+): BoardColumn[] | null {
+  const overColumnId = resolveColumnId(columns, overId);
+  if (!overColumnId || activeId === overColumnId) return null;
+
+  const oldIndex = columns.findIndex((col) => col.id === activeId);
+  const newIndex = columns.findIndex((col) => col.id === overColumnId);
+  if (oldIndex === -1 || newIndex === -1 || oldIndex === newIndex) return null;
+
+  return arrayMove(columns, oldIndex, newIndex);
+}
+
 export function useKanbanDnd(
   initialColumns: BoardColumn[],
+  boardId: string,
   revision: number,
   onError: (message: string) => void,
   onRefresh: () => Promise<void>,
 ) {
   const [columns, setColumns] = useState(initialColumns);
   const [activeTask, setActiveTask] = useState<BoardTask | null>(null);
+  const [activeColumn, setActiveColumn] = useState<BoardColumn | null>(null);
   const [dndRevision, setDndRevision] = useState(0);
 
   const columnsRef = useRef(columns);
   const dragStartSnapshot = useRef<BoardColumn[] | null>(null);
+  const dragTypeRef = useRef<DragItemType>('task');
   const isDraggingRef = useRef(false);
   const pendingRemoteRef = useRef(false);
 
@@ -157,6 +190,14 @@ export function useKanbanDnd(
   const handleDragStart = useCallback((event: DragStartEvent) => {
     isDraggingRef.current = true;
     dragStartSnapshot.current = cloneColumns(columnsRef.current);
+    dragTypeRef.current = getDragType(event);
+
+    if (dragTypeRef.current === 'column') {
+      const columnId = String(event.active.id);
+      const column = findColumnById(columnsRef.current, columnId);
+      if (column) setActiveColumn(column);
+      return;
+    }
 
     const taskId = String(event.active.id);
     const column = findColumnByTaskId(columnsRef.current, taskId);
@@ -171,18 +212,25 @@ export function useKanbanDnd(
 
       const activeId = String(active.id);
       const overId = String(over.id);
-
       if (activeId === overId) return;
 
+      if (getDragType(event) === 'column') {
+        updateColumns((prev) => {
+          const applied = applyColumnDrop(prev, activeId, overId);
+          return applied ?? prev;
+        });
+        return;
+      }
+
       updateColumns((prev) => {
-        const activeColumn = findColumnByTaskId(prev, activeId);
+        const activeColumnItem = findColumnByTaskId(prev, activeId);
         const overColumn =
           findColumnByTaskId(prev, overId) ?? findColumnById(prev, overId);
 
-        if (!activeColumn || !overColumn) return prev;
+        if (!activeColumnItem || !overColumn) return prev;
 
-        if (activeColumn.id === overColumn.id) {
-          const tasks = [...(activeColumn.tasks ?? [])];
+        if (activeColumnItem.id === overColumn.id) {
+          const tasks = [...(activeColumnItem.tasks ?? [])];
           const oldIndex = tasks.findIndex((t) => t.id === activeId);
           const newIndex = tasks.findIndex((t) => t.id === overId);
 
@@ -193,11 +241,11 @@ export function useKanbanDnd(
           const reordered = arrayMove(tasks, oldIndex, newIndex);
 
           return prev.map((col) =>
-            col.id === activeColumn.id ? { ...col, tasks: reordered } : col,
+            col.id === activeColumnItem.id ? { ...col, tasks: reordered } : col,
           );
         }
 
-        const activeTasks = [...(activeColumn.tasks ?? [])];
+        const activeTasks = [...(activeColumnItem.tasks ?? [])];
         const overTasks = [...(overColumn.tasks ?? [])];
         const activeIndex = activeTasks.findIndex((t) => t.id === activeId);
         if (activeIndex === -1) return prev;
@@ -213,7 +261,7 @@ export function useKanbanDnd(
         }
 
         return prev.map((col) => {
-          if (col.id === activeColumn.id) {
+          if (col.id === activeColumnItem.id) {
             return { ...col, tasks: activeTasks };
           }
           if (col.id === overColumn.id) {
@@ -229,8 +277,10 @@ export function useKanbanDnd(
   const handleDragEnd = useCallback(
     async (event: DragEndEvent) => {
       const { active, over } = event;
+      const dragType = dragTypeRef.current;
       isDraggingRef.current = false;
       setActiveTask(null);
+      setActiveColumn(null);
 
       const activeId = String(active.id);
       const snapshot = dragStartSnapshot.current;
@@ -248,6 +298,47 @@ export function useKanbanDnd(
       const baseline = snapshot ?? columnsRef.current;
       let finalColumns = columnsRef.current;
 
+      if (dragType === 'column') {
+        const startIndex = baseline.findIndex((col) => col.id === activeId);
+        let endIndex = finalColumns.findIndex((col) => col.id === activeId);
+
+        if (startIndex === -1) {
+          dragStartSnapshot.current = null;
+          return;
+        }
+
+        if (startIndex === endIndex) {
+          const applied = applyColumnDrop(finalColumns, activeId, overId);
+          if (!applied) {
+            dragStartSnapshot.current = null;
+            return;
+          }
+          finalColumns = applied;
+          updateColumns(finalColumns);
+          endIndex = finalColumns.findIndex((col) => col.id === activeId);
+        }
+
+        if (endIndex === -1 || startIndex === endIndex) {
+          dragStartSnapshot.current = null;
+          return;
+        }
+
+        const previousColumns = snapshot ?? columnsRef.current;
+        const columnIds = finalColumns.map((col) => col.id);
+        dragStartSnapshot.current = null;
+
+        try {
+          await columnService.reorder(boardId, columnIds);
+          setDndRevision((value) => value + 1);
+        } catch (err) {
+          updateColumns(previousColumns);
+          setDndRevision((value) => value + 1);
+          onError(getApiErrorMessage(err));
+          await onRefresh();
+        }
+        return;
+      }
+
       const startCol = findColumnByTaskId(baseline, activeId);
       let endCol = findColumnByTaskId(finalColumns, activeId);
 
@@ -263,7 +354,7 @@ export function useKanbanDnd(
       const unchanged = startCol.id === endCol?.id && startIndex === endIndex;
 
       if (unchanged) {
-        const applied = applyDrop(finalColumns, activeId, overId);
+        const applied = applyTaskDrop(finalColumns, activeId, overId);
         if (!applied) {
           dragStartSnapshot.current = null;
           return;
@@ -303,12 +394,13 @@ export function useKanbanDnd(
         await onRefresh();
       }
     },
-    [onError, onRefresh, updateColumns],
+    [boardId, onError, onRefresh, updateColumns],
   );
 
   const handleDragCancel = useCallback(() => {
     isDraggingRef.current = false;
     setActiveTask(null);
+    setActiveColumn(null);
 
     if (dragStartSnapshot.current) {
       updateColumns(dragStartSnapshot.current);
@@ -321,6 +413,7 @@ export function useKanbanDnd(
   return {
     columns,
     activeTask,
+    activeColumn,
     dndRevision,
     sensors,
     handleDragStart,

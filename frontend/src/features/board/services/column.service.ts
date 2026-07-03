@@ -29,4 +29,12 @@ export const columnService = {
   async delete(id: string): Promise<void> {
     await api.delete(`/columns/${id}`);
   },
+
+  async reorder(boardId: string, columnIds: string[]): Promise<BoardColumn[]> {
+    const { data } = await api.patch<ApiSuccessResponse<BoardColumn[]>>(
+      `/boards/${boardId}/columns/reorder`,
+      { columnIds },
+    );
+    return data.data;
+  },
 };
