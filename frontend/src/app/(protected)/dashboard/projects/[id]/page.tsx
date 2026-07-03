@@ -32,6 +32,9 @@ export default function ProjectDetailPage() {
     createBoard,
     updateBoard,
     deleteBoard,
+    isConnected,
+    isJoined,
+    lastRemoteUpdate,
   } = useBoards(projectId);
 
   useEffect(() => {
@@ -120,7 +123,30 @@ export default function ProjectDetailPage() {
       </div>
 
       <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
-        <h2 className="text-lg font-semibold text-gray-900">Boards</h2>
+        <div className="flex flex-wrap items-center gap-3">
+          <h2 className="text-lg font-semibold text-gray-900">Boards</h2>
+          <div className="flex items-center gap-2 text-xs text-gray-500">
+            <span
+              className={`inline-block h-2 w-2 rounded-full ${
+                isConnected && isJoined
+                  ? 'bg-green-500'
+                  : isConnected
+                    ? 'bg-amber-400'
+                    : 'bg-gray-300'
+              }`}
+            />
+            {isConnected && isJoined
+              ? 'Live'
+              : isConnected
+                ? 'Joining...'
+                : 'Connecting...'}
+            {lastRemoteUpdate && (
+              <span className="text-gray-400">
+                · Updated {lastRemoteUpdate.toLocaleTimeString()}
+              </span>
+            )}
+          </div>
+        </div>
         <Button onClick={() => setShowCreateForm(!showCreateForm)}>
           {showCreateForm ? 'Cancel' : 'New Board'}
         </Button>

@@ -1,6 +1,7 @@
 import { io, type Socket } from 'socket.io-client';
 import { getToken } from '@/features/auth/utils/token';
 import type { BoardSocketEvent } from '@/features/board/types/socket';
+import type { ProjectSocketEvent } from '@/features/projects/types/socket';
 
 function getSocketUrl(): string {
   if (process.env.NEXT_PUBLIC_SOCKET_URL) {
@@ -13,16 +14,26 @@ function getSocketUrl(): string {
 }
 
 type BoardEventListener = (event: BoardSocketEvent) => void;
+type ProjectEventListener = (event: ProjectSocketEvent) => void;
 
 let socket: Socket | null = null;
 let activeToken: string | null = null;
 let globalHandlerAttached = false;
 
 const boardSubscriptions = new Map<string, Set<BoardEventListener>>();
+const projectSubscriptions = new Map<string, Set<ProjectEventListener>>();
 const joinedBoards = new Set<string>();
+const joinedProjects = new Set<string>();
 
 function dispatchBoardEvent(event: BoardSocketEvent): void {
   const listeners = boardSubscriptions.get(event.boardId);
+  if (!listeners) return;
+
+  listeners.forEach((listener) => listener(event));
+}
+
+function dispatchProjectEvent(event: ProjectSocketEvent): void {
+  const listeners = projectSubscriptions.get(event.projectId);
   if (!listeners) return;
 
   listeners.forEach((listener) => listener(event));
@@ -33,11 +44,16 @@ function attachGlobalHandlers(sock: Socket): void {
   globalHandlerAttached = true;
 
   sock.on('board:event', dispatchBoardEvent);
+  sock.on('project:event', dispatchProjectEvent);
 
   sock.on('connect', () => {
     joinedBoards.clear();
+    joinedProjects.clear();
     for (const boardId of boardSubscriptions.keys()) {
       void joinBoardRoom(sock, boardId);
+    }
+    for (const projectId of projectSubscriptions.keys()) {
+      void joinProjectRoom(sock, projectId);
     }
   });
 }
@@ -84,6 +100,7 @@ export function disconnectSocket(): void {
   activeToken = null;
   globalHandlerAttached = false;
   joinedBoards.clear();
+  joinedProjects.clear();
 }
 
 export function getSocket(): Socket | null {
@@ -125,6 +142,44 @@ export function leaveBoardRoom(sock: Socket, boardId: string): void {
   sock.emit('board:leave', { boardId });
 }
 
+export function joinProjectRoom(
+  sock: Socket,
+  projectId: string,
+): Promise<boolean> {
+  if (joinedProjects.has(projectId) && sock.connected) {
+    return Promise.resolve(true);
+  }
+
+  return new Promise((resolve) => {
+    let settled = false;
+
+    const finish = (value: boolean) => {
+      if (settled) return;
+      settled = true;
+      clearTimeout(timer);
+      if (value) {
+        joinedProjects.add(projectId);
+      }
+      resolve(value);
+    };
+
+    const timer = setTimeout(() => finish(false), 5000);
+
+    sock.emit(
+      'project:join',
+      { projectId },
+      (response?: { success?: boolean }) => {
+        finish(response?.success === true);
+      },
+    );
+  });
+}
+
+export function leaveProjectRoom(sock: Socket, projectId: string): void {
+  joinedProjects.delete(projectId);
+  sock.emit('project:leave', { projectId });
+}
+
 export function subscribeToBoard(
   boardId: string,
   listener: BoardEventListener,
@@ -155,6 +210,40 @@ export function subscribeToBoard(
     if (current?.size === 0) {
       boardSubscriptions.delete(boardId);
       leaveBoardRoom(sock, boardId);
+    }
+  };
+}
+
+export function subscribeToProject(
+  projectId: string,
+  listener: ProjectEventListener,
+  onJoined?: (joined: boolean) => void,
+): () => void {
+  const sock = connectSocket();
+  if (!sock) {
+    onJoined?.(false);
+    return () => {};
+  }
+
+  let listeners = projectSubscriptions.get(projectId);
+  if (!listeners) {
+    listeners = new Set();
+    projectSubscriptions.set(projectId, listeners);
+  }
+
+  listeners.add(listener);
+
+  void joinProjectRoom(sock, projectId).then((joined) => {
+    onJoined?.(joined);
+  });
+
+  return () => {
+    const current = projectSubscriptions.get(projectId);
+    current?.delete(listener);
+
+    if (current?.size === 0) {
+      projectSubscriptions.delete(projectId);
+      leaveProjectRoom(sock, projectId);
     }
   };
 }

@@ -57,6 +57,12 @@ export function KanbanBoard({
   const [highlightedTaskId, setHighlightedTaskId] = useState<string | null>(
     initialTaskId,
   );
+  const [boardName, setBoardName] = useState(board.name);
+  const [boardDeleted, setBoardDeleted] = useState(false);
+
+  useEffect(() => {
+    setBoardName(board.name);
+  }, [board.name]);
 
   const handleError = useCallback((message: string) => {
     setActionError(message);
@@ -75,6 +81,27 @@ export function KanbanBoard({
 
   const handleRemoteChange = useCallback(
     (event: BoardSocketEvent) => {
+      if (event.type === 'board:updated') {
+        const { board: updated } = event.payload as {
+          board?: { name?: string };
+        };
+        if (updated?.name) {
+          setBoardName(updated.name);
+        }
+        return;
+      }
+
+      if (event.type === 'board:deleted') {
+        setBoardDeleted(true);
+        setActionError('This board was deleted by another user.');
+        return;
+      }
+
+      if (event.type === 'column:deleted') {
+        const { columnId } = event.payload as { columnId: string };
+        setEditingColumn((prev) => (prev?.id === columnId ? null : prev));
+      }
+
       applyRemoteUpdate(event);
     },
     [applyRemoteUpdate],
@@ -201,7 +228,7 @@ export function KanbanBoard({
 
       <div className="mb-6 flex flex-wrap items-end justify-between gap-4">
         <div>
-          <h1 className="text-2xl font-bold text-gray-900">{board.name}</h1>
+          <h1 className="text-2xl font-bold text-gray-900">{boardName}</h1>
           <p className="mt-1 text-sm text-gray-600">
             {columns.length} columns · {totalTasks} tasks
           </p>
@@ -261,7 +288,9 @@ export function KanbanBoard({
         onDragEnd={handleDragEnd}
         onDragCancel={handleDragCancel}
       >
-        <div className="flex gap-4 overflow-x-auto pb-6">
+        <div
+          className={`flex gap-4 overflow-x-auto pb-6 ${boardDeleted ? 'pointer-events-none opacity-50' : ''}`}
+        >
           {columns.map((column) => (
             <KanbanColumn
               key={column.id}

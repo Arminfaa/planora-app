@@ -1,5 +1,13 @@
 export type BoardEventType =
-  'task:created' | 'task:updated' | 'task:deleted' | 'task:moved';
+  | 'task:created'
+  | 'task:updated'
+  | 'task:deleted'
+  | 'task:moved'
+  | 'column:created'
+  | 'column:updated'
+  | 'column:deleted'
+  | 'board:updated'
+  | 'board:deleted';
 
 export interface BoardSocketEvent {
   boardId: string;

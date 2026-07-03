@@ -4,6 +4,9 @@ import { useCallback, useEffect, useState } from 'react';
 import { getApiErrorMessage } from '@/lib/api';
 import { boardService } from '../services/board.service';
 import type { Board, CreateBoardInput, UpdateBoardInput } from '../types';
+import { useProjectSocket } from '@/features/projects/hooks/useProjectSocket';
+import { applyProjectBoardEvent } from '@/features/projects/utils/applyProjectBoardEvent';
+import type { ProjectSocketEvent } from '@/features/projects/types/socket';
 
 export function useBoards(projectId: string | null) {
   const [boards, setBoards] = useState<Board[]>([]);
@@ -28,6 +31,15 @@ export function useBoards(projectId: string | null) {
   useEffect(() => {
     void fetchBoards();
   }, [fetchBoards]);
+
+  const applyRemoteUpdate = useCallback((event: ProjectSocketEvent) => {
+    setBoards((prev) => applyProjectBoardEvent(prev, event));
+  }, []);
+
+  const { isConnected, isJoined, lastRemoteUpdate } = useProjectSocket(
+    projectId ?? '',
+    { onRemoteChange: applyRemoteUpdate },
+  );
 
   const createBoard = useCallback(
     async (input: CreateBoardInput) => {
@@ -64,5 +76,8 @@ export function useBoards(projectId: string | null) {
     createBoard,
     updateBoard,
     deleteBoard,
+    isConnected,
+    isJoined,
+    lastRemoteUpdate,
   };
 }

@@ -1,5 +1,16 @@
 export type BoardEventType =
-  'task:created' | 'task:updated' | 'task:deleted' | 'task:moved';
+  | 'task:created'
+  | 'task:updated'
+  | 'task:deleted'
+  | 'task:moved'
+  | 'column:created'
+  | 'column:updated'
+  | 'column:deleted'
+  | 'board:updated'
+  | 'board:deleted';
+
+export type ProjectEventType =
+  'board:created' | 'board:updated' | 'board:deleted';
 
 export interface BoardSocketEvent {
   boardId: string;
@@ -8,10 +19,25 @@ export interface BoardSocketEvent {
   payload: unknown;
 }
 
+export interface ProjectSocketEvent {
+  projectId: string;
+  type: ProjectEventType;
+  userId: string;
+  payload: unknown;
+}
+
 export interface BoardJoinPayload {
   boardId: string;
 }
 
+export interface ProjectJoinPayload {
+  projectId: string;
+}
+
 export function getBoardRoom(boardId: string): string {
   return `board:${boardId}`;
+}
+
+export function getProjectRoom(projectId: string): string {
+  return `project:${projectId}`;
 }

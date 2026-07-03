@@ -34,6 +34,49 @@ function insertTask(columns: BoardColumn[], task: BoardTask): BoardColumn[] {
   });
 }
 
+function normalizeColumn(column: BoardColumn): BoardColumn {
+  return {
+    ...column,
+    id: String(column.id),
+    boardId: String(column.boardId),
+    position: Number(column.position),
+    tasks: column.tasks ?? [],
+  };
+}
+
+function insertColumn(
+  columns: BoardColumn[],
+  column: BoardColumn,
+): BoardColumn[] {
+  const normalized = normalizeColumn(column);
+  const exists = columns.some((col) => col.id === normalized.id);
+  const next = exists
+    ? columns.map((col) => (col.id === normalized.id ? normalized : col))
+    : [...columns, normalized];
+
+  return next.sort((a, b) => a.position - b.position);
+}
+
+function updateColumn(
+  columns: BoardColumn[],
+  column: BoardColumn,
+): BoardColumn[] {
+  const normalized = normalizeColumn(column);
+
+  return columns
+    .map((col) =>
+      col.id === normalized.id
+        ? { ...col, ...normalized, tasks: col.tasks ?? [] }
+        : col,
+    )
+    .sort((a, b) => a.position - b.position);
+}
+
+function removeColumn(columns: BoardColumn[], columnId: string): BoardColumn[] {
+  const id = String(columnId);
+  return columns.filter((col) => col.id !== id);
+}
+
 function normalizeColumns(columns: BoardColumn[]): BoardColumn[] {
   return columns.map((col) => ({
     ...col,
@@ -72,6 +115,21 @@ export function applyRealtimeEvent(
       if (!taskId) return columns;
       return normalizeColumns(removeTask(columns, taskId));
     }
+    case 'column:created': {
+      const { column } = event.payload as { column: BoardColumn };
+      if (!column) return columns;
+      return normalizeColumns(insertColumn(columns, column));
+    }
+    case 'column:updated': {
+      const { column } = event.payload as { column: BoardColumn };
+      if (!column) return columns;
+      return normalizeColumns(updateColumn(columns, column));
+    }
+    case 'column:deleted': {
+      const { columnId } = event.payload as { columnId: string };
+      if (!columnId) return columns;
+      return normalizeColumns(removeColumn(columns, columnId));
+    }
     default:
       return columns;
   }
@@ -83,7 +141,7 @@ export function columnsFingerprint(columns: BoardColumn[]): string {
       const tasks = (col.tasks ?? [])
         .map((task) => `${task.id}:${task.columnId}:${task.position}`)
         .join(',');
-      return `${col.id}[${tasks}]`;
+      return `${col.id}:${col.position}:${col.name}[${tasks}]`;
     })
     .join('|');
 }
