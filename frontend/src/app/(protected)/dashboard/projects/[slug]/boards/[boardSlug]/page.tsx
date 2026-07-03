@@ -9,11 +9,12 @@ import type { Project } from '@/features/projects/types';
 import { LoadingSpinner } from '@/shared/components/feedback/LoadingSpinner';
 
 export default function BoardPage() {
-  const params = useParams<{ slug: string; boardId: string }>();
+  const params = useParams<{ slug: string; boardSlug: string }>();
   const searchParams = useSearchParams();
   const taskId = searchParams.get('task');
   const { board, isLoading, error, refetch, revision } = useBoard(
-    params.boardId,
+    params.slug,
+    params.boardSlug,
   );
   const [project, setProject] = useState<Project | null>(null);
 
@@ -46,7 +47,7 @@ export default function BoardPage() {
   return (
     <KanbanBoard
       board={board}
-      projectId={project?.id ?? ''}
+      projectId={project?.id ?? board.projectId}
       projectSlug={params.slug}
       revision={revision}
       onRefresh={refetch}

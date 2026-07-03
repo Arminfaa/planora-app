@@ -1,5 +1,6 @@
 import { PrismaClient, ProjectRole, TaskPriority } from '@prisma/client';
 import bcrypt from 'bcryptjs';
+import { toSlug } from '../src/utils/slug';
 
 const prisma = new PrismaClient();
 
@@ -53,8 +54,33 @@ async function main() {
     });
   }
 
+  const boardsMissingSlug = await prisma.board.findMany({
+    where: { slug: { isSet: false } },
+  });
+
+  for (const existingBoard of boardsMissingSlug) {
+    let slug = toSlug(existingBoard.name);
+    const duplicate = await prisma.board.findFirst({
+      where: {
+        projectId: existingBoard.projectId,
+        slug,
+        NOT: { id: existingBoard.id },
+      },
+    });
+    if (duplicate) {
+      slug = `${slug}-${Date.now()}`;
+    }
+    await prisma.board.update({
+      where: { id: existingBoard.id },
+      data: { slug },
+    });
+  }
+
   let board = await prisma.board.findFirst({
-    where: { projectId: project.id, name: 'Main Board' },
+    where: {
+      projectId: project.id,
+      OR: [{ slug: 'main-board' }, { name: 'Main Board' }],
+    },
     include: { columns: { orderBy: { position: 'asc' } } },
   });
 
@@ -62,6 +88,7 @@ async function main() {
     board = await prisma.board.create({
       data: {
         name: 'Main Board',
+        slug: 'main-board',
         projectId: project.id,
         position: 0,
         columns: {
@@ -73,6 +100,34 @@ async function main() {
         },
       },
       include: { columns: { orderBy: { position: 'asc' } } },
+    });
+  } else if (board.slug !== 'main-board') {
+    board = await prisma.board.update({
+      where: { id: board.id },
+      data: { slug: 'main-board' },
+      include: { columns: { orderBy: { position: 'asc' } } },
+    });
+  }
+
+  const boardsStillMissingSlug = await prisma.board.findMany({
+    where: { slug: { isSet: false } },
+  });
+
+  for (const existingBoard of boardsStillMissingSlug) {
+    let slug = toSlug(existingBoard.name);
+    const duplicate = await prisma.board.findFirst({
+      where: {
+        projectId: existingBoard.projectId,
+        slug,
+        NOT: { id: existingBoard.id },
+      },
+    });
+    if (duplicate) {
+      slug = `${slug}-${Date.now()}`;
+    }
+    await prisma.board.update({
+      where: { id: existingBoard.id },
+      data: { slug },
     });
   }
 

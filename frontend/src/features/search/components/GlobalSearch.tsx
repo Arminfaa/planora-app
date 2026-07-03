@@ -66,12 +66,12 @@ export function GlobalSearch() {
 
   const handleTaskSelect = (
     projectSlug: string,
-    boardId: string,
+    boardSlug: string,
     taskId: string,
   ) => {
     close();
     router.push(
-      `/dashboard/projects/${projectSlug}/boards/${boardId}?task=${taskId}`,
+      `/dashboard/projects/${projectSlug}/boards/${boardSlug}?task=${taskId}`,
     );
   };
 
@@ -204,7 +204,7 @@ export function GlobalSearch() {
                         onClick={() =>
                           handleTaskSelect(
                             task.projectSlug,
-                            task.boardId,
+                            task.boardSlug,
                             task.id,
                           )
                         }

@@ -19,6 +19,7 @@ function mapTaskResult(
     columnId: task.column.id,
     columnName: task.column.name,
     boardId: task.column.board.id,
+    boardSlug: task.column.board.slug,
     boardName: task.column.board.name,
     projectId: task.column.board.project.id,
     projectSlug: task.column.board.project.slug,

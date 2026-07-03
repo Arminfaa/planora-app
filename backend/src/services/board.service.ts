@@ -1,13 +1,71 @@
 import { ApiError } from '../utils/ApiError';
+import { toSlug } from '../utils/slug';
 import { boardRepository } from '../repositories/board.repository';
+import { projectRepository } from '../repositories/project.repository';
 import { projectAccessService } from './project-access.service';
 import type {
   CreateBoardInput,
   UpdateBoardInput,
 } from '../validators/board.validator';
 
+const OBJECT_ID_PATTERN = /^[0-9a-fA-F]{24}$/;
+
 export class BoardService {
-  async listByProject(userId: string, projectId: string) {
+  private async resolveProjectId(idOrSlug: string): Promise<string> {
+    if (OBJECT_ID_PATTERN.test(idOrSlug)) {
+      return idOrSlug;
+    }
+
+    const project = await projectRepository.findBySlug(idOrSlug);
+    if (!project) {
+      throw new ApiError(404, 'Project not found');
+    }
+
+    return project.id;
+  }
+
+  private async resolveBoardId(
+    projectId: string,
+    idOrSlug: string,
+  ): Promise<string> {
+    if (OBJECT_ID_PATTERN.test(idOrSlug)) {
+      const board = await boardRepository.findById(idOrSlug);
+      if (!board || board.projectId !== projectId) {
+        throw new ApiError(404, 'Board not found');
+      }
+      return board.id;
+    }
+
+    const board = await boardRepository.findByProjectAndSlug(
+      projectId,
+      idOrSlug,
+    );
+    if (!board) {
+      throw new ApiError(404, 'Board not found');
+    }
+
+    return board.id;
+  }
+
+  private async generateUniqueSlug(
+    projectId: string,
+    name: string,
+  ): Promise<string> {
+    let slug = toSlug(name) || `board-${Date.now()}`;
+    const existing = await boardRepository.findByProjectAndSlug(
+      projectId,
+      slug,
+    );
+
+    if (existing) {
+      slug = `${slug}-${Date.now()}`;
+    }
+
+    return slug;
+  }
+
+  async listByProject(userId: string, projectIdOrSlug: string) {
+    const projectId = await this.resolveProjectId(projectIdOrSlug);
     await projectAccessService.ensureMember(userId, projectId);
     return boardRepository.findByProject(projectId);
   }
@@ -22,11 +80,29 @@ export class BoardService {
     return board;
   }
 
-  async create(userId: string, projectId: string, input: CreateBoardInput) {
+  async getByProjectAndSlug(
+    userId: string,
+    projectIdOrSlug: string,
+    boardIdOrSlug: string,
+  ) {
+    const projectId = await this.resolveProjectId(projectIdOrSlug);
+    const boardId = await this.resolveBoardId(projectId, boardIdOrSlug);
+    return this.getById(userId, boardId);
+  }
+
+  async create(
+    userId: string,
+    projectIdOrSlug: string,
+    input: CreateBoardInput,
+  ) {
+    const projectId = await this.resolveProjectId(projectIdOrSlug);
     await projectAccessService.ensureMember(userId, projectId);
+
+    const slug = await this.generateUniqueSlug(projectId, input.name);
 
     return boardRepository.createWithDefaultColumns({
       name: input.name,
+      slug,
       projectId,
       position: input.position,
     });

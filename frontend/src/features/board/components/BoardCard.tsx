@@ -24,7 +24,7 @@ export function BoardCard({
     <div className="rounded-xl border border-gray-200 bg-white p-5 shadow-sm transition hover:border-primary-300 hover:shadow-md">
       <div className="flex items-start justify-between gap-3">
         <Link
-          href={`/dashboard/projects/${projectSlug}/boards/${board.id}`}
+          href={`/dashboard/projects/${projectSlug}/boards/${board.slug}`}
           className="min-w-0 flex-1"
         >
           <h3 className="font-semibold text-gray-900 hover:text-primary-700">

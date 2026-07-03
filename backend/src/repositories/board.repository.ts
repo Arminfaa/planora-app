@@ -2,6 +2,15 @@ import type { Board, Prisma } from '@prisma/client';
 import { BaseRepository } from './base.repository';
 
 export class BoardRepository extends BaseRepository {
+  async findByProjectAndSlug(
+    projectId: string,
+    slug: string,
+  ): Promise<Board | null> {
+    return this.db.board.findUnique({
+      where: { projectId_slug: { projectId, slug } },
+    });
+  }
+
   async findById(id: string) {
     return this.db.board.findUnique({
       where: { id },
@@ -33,6 +42,7 @@ export class BoardRepository extends BaseRepository {
 
   async create(data: {
     name: string;
+    slug: string;
     projectId: string;
     position?: number;
   }): Promise<Board> {
@@ -41,6 +51,7 @@ export class BoardRepository extends BaseRepository {
 
   async createWithDefaultColumns(data: {
     name: string;
+    slug: string;
     projectId: string;
     position?: number;
   }): Promise<Board> {

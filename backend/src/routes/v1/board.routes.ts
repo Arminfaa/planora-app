@@ -3,6 +3,7 @@ import {
   createBoard,
   deleteBoard,
   getBoard,
+  getBoardBySlug,
   listBoards,
   updateBoard,
 } from '../../controllers/board.controller';
@@ -14,6 +15,7 @@ import {
 import {
   boardIdParamSchema,
   boardProjectParamSchema,
+  boardProjectSlugParamSchema,
   createBoardSchema,
   updateBoardSchema,
 } from '../../validators/board.validator';
@@ -28,6 +30,11 @@ router.post(
   validateParams(boardProjectParamSchema),
   validateBody(createBoardSchema),
   createBoard,
+);
+router.get(
+  '/:boardSlug',
+  validateParams(boardProjectSlugParamSchema),
+  getBoardBySlug,
 );
 
 const boardRouter = Router();

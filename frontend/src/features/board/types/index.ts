@@ -28,6 +28,7 @@ export interface BoardTask {
 export interface Board {
   id: string;
   name: string;
+  slug: string;
   projectId: string;
   position: number;
   createdAt: string;

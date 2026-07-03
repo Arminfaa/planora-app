@@ -6,7 +6,7 @@ import type { Board } from '../types';
 import { columnsFingerprint } from '../utils/applyRealtimeEvent';
 import { getApiErrorMessage } from '@/lib/api';
 
-export function useBoard(boardId: string) {
+export function useBoard(projectSlug: string, boardSlug: string) {
   const [board, setBoard] = useState<Board | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState('');
@@ -15,12 +15,14 @@ export function useBoard(boardId: string) {
 
   const refetch = useCallback(
     async (options?: { silent?: boolean }) => {
+      if (!projectSlug || !boardSlug) return;
+
       if (!options?.silent) {
         setIsLoading(true);
       }
       setError('');
       try {
-        const data = await boardService.getById(boardId);
+        const data = await boardService.getBySlug(projectSlug, boardSlug);
         const fingerprint = columnsFingerprint(data.columns ?? []);
 
         setBoard(data);
@@ -36,7 +38,7 @@ export function useBoard(boardId: string) {
         }
       }
     },
-    [boardId],
+    [boardSlug, projectSlug],
   );
 
   const applyBoardData = useCallback((data: Board) => {

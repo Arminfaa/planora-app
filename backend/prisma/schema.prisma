@@ -85,6 +85,7 @@ model ProjectMember {
 model Board {
   id        String   @id @default(auto()) @map("_id") @db.ObjectId
   name      String
+  slug      String
   projectId String   @db.ObjectId
   position  Int      @default(0)
   createdAt DateTime @default(now())
@@ -93,6 +94,7 @@ model Board {
   project Project  @relation(fields: [projectId], references: [id])
   columns Column[]
 
+  @@unique([projectId, slug])
   @@map("boards")
 }
 

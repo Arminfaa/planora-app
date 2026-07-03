@@ -13,6 +13,7 @@ export interface SearchTaskResult {
   columnId: string;
   columnName: string;
   boardId: string;
+  boardSlug: string;
   boardName: string;
   projectId: string;
   projectSlug: string;

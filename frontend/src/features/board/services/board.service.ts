@@ -17,6 +17,14 @@ export const boardService = {
     return data.data;
   },
 
+  async getBySlug(projectSlug: string, boardSlug: string): Promise<Board> {
+    const { data } = await api.get<ApiSuccessResponse<Board>>(
+      `/projects/${projectSlug}/boards/${boardSlug}`,
+      { params: { _t: Date.now() } },
+    );
+    return data.data;
+  },
+
   async create(projectId: string, input: CreateBoardInput): Promise<Board> {
     const { data } = await api.post<ApiSuccessResponse<Board>>(
       `/projects/${projectId}/boards`,

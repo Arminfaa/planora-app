@@ -34,6 +34,17 @@ export const getBoard = asyncHandler(
   },
 );
 
+export const getBoardBySlug = asyncHandler(
+  async (req: AuthenticatedRequest, res: Response) => {
+    const board = await boardService.getByProjectAndSlug(
+      req.user!.userId,
+      getParam(req.params, 'projectId'),
+      getParam(req.params, 'boardSlug'),
+    );
+    ApiResponse.success(res, board, 'Board retrieved');
+  },
+);
+
 export const createBoard = asyncHandler(
   async (req: AuthenticatedRequest, res: Response) => {
     const projectId = getParam(req.params, 'projectId');
@@ -49,7 +60,7 @@ export const createBoard = asyncHandler(
     };
 
     notifyProjectBoardEvent(req.user!.userId, 'board:created', {
-      projectId,
+      projectId: board.projectId,
       payload: { board: boardPayload },
     });
 

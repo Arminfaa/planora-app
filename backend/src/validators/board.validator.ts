@@ -2,12 +2,23 @@ import { z } from 'zod';
 import { objectIdSchema } from '../utils/pagination';
 import { sanitizeString } from '../utils/sanitize';
 
+const slugSchema = z
+  .string()
+  .regex(/^[a-z0-9]+(?:-[a-z0-9]+)*$/, 'Invalid slug format');
+
+const projectIdentifierSchema = z.union([objectIdSchema, slugSchema]);
+
 export const boardIdParamSchema = z.object({
   id: objectIdSchema,
 });
 
 export const boardProjectParamSchema = z.object({
-  projectId: objectIdSchema,
+  projectId: projectIdentifierSchema,
+});
+
+export const boardProjectSlugParamSchema = z.object({
+  projectId: projectIdentifierSchema,
+  boardSlug: z.union([objectIdSchema, slugSchema]),
 });
 
 export const createBoardSchema = z.object({
