@@ -19,13 +19,16 @@ type FormData = z.infer<typeof schema>;
 interface CreateProjectFormProps {
   onSubmit: (data: CreateProjectInput) => Promise<void>;
   onCancel: () => void;
+  variant?: 'default' | 'modal';
 }
 
 export function CreateProjectForm({
   onSubmit,
   onCancel,
+  variant = 'default',
 }: CreateProjectFormProps) {
   const [error, setError] = useState('');
+  const isModal = variant === 'modal';
 
   const {
     register,
@@ -49,11 +52,17 @@ export function CreateProjectForm({
   return (
     <form
       onSubmit={handleSubmit(handleFormSubmit)}
-      className="rounded-xl border border-gray-200 bg-white p-6 shadow-sm"
+      className={
+        isModal
+          ? 'space-y-4'
+          : 'rounded-xl border border-gray-200 bg-white p-6 shadow-sm'
+      }
     >
-      <h2 className="mb-4 text-lg font-semibold text-gray-900">
-        Create Project
-      </h2>
+      {!isModal && (
+        <h2 className="mb-4 text-lg font-semibold text-gray-900">
+          Create Project
+        </h2>
+      )}
 
       {error && (
         <div className="mb-4 rounded-lg bg-red-50 px-4 py-3 text-sm text-red-700">
