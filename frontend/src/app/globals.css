@@ -222,3 +222,6 @@
 .ant-segmented-item {
   padding: 0.15rem;
 }
+.ant-dropdown-menu {
+  border-radius: 8px !important;
+}
