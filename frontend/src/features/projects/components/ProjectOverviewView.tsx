@@ -11,6 +11,7 @@ import { useProjectPermissions } from '@/features/permissions/hooks/useProjectPe
 import { useProjectContext } from '@/features/projects/context/ProjectContext';
 import { LoadingSpinner } from '@/shared/components/feedback/LoadingSpinner';
 import { Button } from '@/shared/components/ui/Button';
+import { SearchInput } from '@/shared/components/ui/SearchInput';
 import { getApiErrorMessage, isForbiddenError } from '@/lib/api';
 
 function boardMatchesQuery(board: { name: string }, query: string): boolean {
@@ -48,7 +49,6 @@ export function ProjectOverviewView() {
   );
 
   const hasSearch = searchQuery.trim().length > 0;
-  const hasQuery = hasSearch;
 
   const handleCreateBoard = async (data: { name: string }) => {
     setActionError('');
@@ -174,40 +174,14 @@ export function ProjectOverviewView() {
           </div>
 
           <div className="mt-6 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-            <div className="relative min-w-0 flex-1 sm:max-w-md">
-              <span className="pointer-events-none absolute inset-y-0 left-3 flex items-center text-gray-400">
-                <svg
-                  className="h-4 w-4"
-                  fill="none"
-                  viewBox="0 0 24 24"
-                  stroke="currentColor"
-                >
-                  <path
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    strokeWidth={2}
-                    d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"
-                  />
-                </svg>
-              </span>
-              <input
-                type="search"
+            <div className="min-w-0 flex-1 sm:max-w-md">
+              <SearchInput
                 value={searchQuery}
                 onChange={(event) => setSearchQuery(event.target.value)}
                 placeholder="Search boards..."
-                className="w-full rounded-xl border border-gray-200 bg-white py-2.5 pl-9 pr-8 text-sm text-gray-900 placeholder:text-gray-400 shadow-sm focus:border-primary-400 focus:outline-none focus:ring-2 focus:ring-primary-500/20"
                 aria-label="Search boards"
+                className="rounded-xl border-gray-200 bg-white shadow-sm"
               />
-              {hasQuery && (
-                <button
-                  type="button"
-                  onClick={() => setSearchQuery('')}
-                  className="absolute inset-y-0 right-2 flex items-center text-gray-400 hover:text-gray-600"
-                  aria-label="Clear search"
-                >
-                  ×
-                </button>
-              )}
             </div>
 
             {can('board.create') && (

@@ -3,6 +3,7 @@
 import Link from 'next/link';
 import type { Project } from '../types';
 import { formatDate } from '@/features/dashboard/utils/stats';
+import { SearchInput } from '@/shared/components/ui/SearchInput';
 
 interface ProjectHeaderProps {
   project: Project;
@@ -37,8 +38,6 @@ export function ProjectHeader({
   isJoined,
   lastRemoteUpdate,
 }: ProjectHeaderProps) {
-  const hasQuery = searchQuery.trim().length > 0;
-
   return (
     <header className="relative">
       <Link
@@ -132,40 +131,14 @@ export function ProjectHeader({
             </button>
           )}
 
-          <div className="relative min-w-[200px] flex-1 sm:min-w-[220px] sm:flex-none">
-            <span className="pointer-events-none absolute inset-y-0 left-3 flex items-center text-gray-400">
-              <svg
-                className="h-4 w-4"
-                fill="none"
-                viewBox="0 0 24 24"
-                stroke="currentColor"
-              >
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  strokeWidth={2}
-                  d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"
-                />
-              </svg>
-            </span>
-            <input
-              type="search"
+          <div className="min-w-[200px] flex-1 sm:min-w-[220px] sm:flex-none">
+            <SearchInput
               value={searchQuery}
               onChange={(event) => onSearchChange(event.target.value)}
               placeholder="Search boards..."
-              className="w-full rounded-xl border border-gray-200 bg-white/80 py-2.5 pl-9 pr-8 text-sm text-gray-900 placeholder:text-gray-400 shadow-sm backdrop-blur-sm focus:border-primary-400 focus:outline-none focus:ring-2 focus:ring-primary-500/20"
               aria-label="Search boards"
+              className="rounded-xl border-gray-200 bg-white/80 shadow-sm backdrop-blur-sm"
             />
-            {hasQuery && (
-              <button
-                type="button"
-                onClick={() => onSearchChange('')}
-                className="absolute inset-y-0 right-2 flex items-center text-gray-400 hover:text-gray-600"
-                aria-label="Clear search"
-              >
-                ×
-              </button>
-            )}
           </div>
 
           {canCreateBoard && (

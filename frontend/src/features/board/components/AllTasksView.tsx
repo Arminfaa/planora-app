@@ -25,6 +25,7 @@ import { TaskChecklistPreview } from './TaskChecklistPreview';
 import { AssigneeDisplay } from './AssigneeDisplay';
 import { LoadingSpinner } from '@/shared/components/feedback/LoadingSpinner';
 import { Button } from '@/shared/components/ui/Button';
+import { SearchInput } from '@/shared/components/ui/SearchInput';
 import { getApiErrorMessage, isForbiddenError } from '@/lib/api';
 
 const TaskModal = dynamic(
@@ -225,39 +226,14 @@ export function AllTasksView({
       </div>
 
       <div className="mt-6 flex flex-col gap-3 sm:flex-row sm:items-center">
-        <div className="relative min-w-0 flex-1">
-          <span className="pointer-events-none absolute inset-y-0 left-3 flex items-center text-gray-400">
-            <svg
-              className="h-4 w-4"
-              fill="none"
-              viewBox="0 0 24 24"
-              stroke="currentColor"
-            >
-              <path
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                strokeWidth={2}
-                d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"
-              />
-            </svg>
-          </span>
-          <input
-            type="search"
+        <div className="min-w-0 flex-1">
+          <SearchInput
             value={searchQuery}
             onChange={(event) => setSearchQuery(event.target.value)}
             placeholder="Search tasks..."
-            className="w-full rounded-xl border border-gray-200 bg-white py-2.5 pl-9 pr-8 text-sm text-gray-900 shadow-sm focus:border-primary-500 focus:outline-none focus:ring-2 focus:ring-primary-500/20"
+            aria-label="Search tasks"
+            className="rounded-xl border-gray-200 bg-white shadow-sm"
           />
-          {searchQuery && (
-            <button
-              type="button"
-              onClick={() => setSearchQuery('')}
-              className="absolute inset-y-0 right-2 flex items-center text-gray-400 hover:text-gray-600"
-              aria-label="Clear search"
-            >
-              ×
-            </button>
-          )}
         </div>
 
         <Button

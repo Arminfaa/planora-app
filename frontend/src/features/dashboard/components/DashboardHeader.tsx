@@ -1,6 +1,7 @@
 'use client';
 
 import { useAuth } from '@/features/auth/hooks/useAuth';
+import { SearchInput } from '@/shared/components/ui/SearchInput';
 
 interface DashboardHeaderProps {
   projectCount: number;
@@ -17,7 +18,6 @@ export function DashboardHeader({
 }: DashboardHeaderProps) {
   const { user } = useAuth();
   const firstName = user?.name?.split(' ')[0] ?? 'there';
-  const hasQuery = searchQuery.trim().length > 0;
 
   return (
     <header className="relative">
@@ -33,40 +33,14 @@ export function DashboardHeader({
         </div>
 
         <div className="flex flex-wrap items-center gap-2">
-          <div className="relative min-w-[200px] flex-1 sm:min-w-[240px] sm:flex-none">
-            <span className="pointer-events-none absolute inset-y-0 left-3 flex items-center text-gray-400">
-              <svg
-                className="h-4 w-4"
-                fill="none"
-                viewBox="0 0 24 24"
-                stroke="currentColor"
-              >
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  strokeWidth={2}
-                  d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"
-                />
-              </svg>
-            </span>
-            <input
-              type="search"
+          <div className="min-w-[200px] flex-1 sm:min-w-[240px] sm:flex-none">
+            <SearchInput
               value={searchQuery}
               onChange={(event) => onSearchChange(event.target.value)}
               placeholder="Search projects..."
-              className="w-full rounded-xl border border-gray-200 bg-white/80 py-2.5 pl-9 pr-8 text-sm text-gray-900 placeholder:text-gray-400 shadow-sm backdrop-blur-sm focus:border-primary-400 focus:outline-none focus:ring-2 focus:ring-primary-500/20"
               aria-label="Search projects"
+              className="rounded-xl border-gray-200 bg-white/80 shadow-sm backdrop-blur-sm"
             />
-            {hasQuery && (
-              <button
-                type="button"
-                onClick={() => onSearchChange('')}
-                className="absolute inset-y-0 right-2 flex items-center text-gray-400 hover:text-gray-600"
-                aria-label="Clear search"
-              >
-                ×
-              </button>
-            )}
           </div>
 
           <button
