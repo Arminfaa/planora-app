@@ -21,14 +21,22 @@ api.interceptors.request.use((config: InternalAxiosRequestConfig) => {
 
 let refreshPromise: Promise<void> | null = null;
 
+const PUBLIC_PATH_PREFIXES = ['/', '/login', '/register', '/accept-invite'];
+
+function isPublicPath(pathname: string): boolean {
+  if (pathname === '/') return true;
+  return PUBLIC_PATH_PREFIXES.some(
+    (prefix) => prefix !== '/' && pathname.startsWith(prefix),
+  );
+}
+
 function redirectToLogin(): void {
-  if (
-    typeof window !== 'undefined' &&
-    !window.location.pathname.startsWith('/login') &&
-    !window.location.pathname.startsWith('/register')
-  ) {
-    window.location.href = '/login';
-  }
+  if (typeof window === 'undefined') return;
+
+  const pathname = window.location.pathname;
+  if (isPublicPath(pathname)) return;
+
+  window.location.href = '/login';
 }
 
 async function refreshSession(): Promise<void> {

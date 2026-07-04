@@ -21,7 +21,9 @@ export function LandingNavbar() {
           <span className="flex h-8 w-8 items-center justify-center rounded-lg bg-gradient-to-br from-primary-500 to-violet-600 text-sm font-bold text-white shadow-sm shadow-primary-500/25 transition group-hover:shadow-md group-hover:shadow-primary-500/30">
             P
           </span>
-          <span className="text-lg font-semibold text-gray-900">{appName}</span>
+          <span className="text-lg font-semibold text-gray-900 hidden md:inline-block">
+            {appName}
+          </span>
         </Link>
 
         <nav className="flex items-center gap-1 sm:gap-2">
