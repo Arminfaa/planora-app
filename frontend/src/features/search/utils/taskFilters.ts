@@ -33,7 +33,8 @@ export function isTaskFiltersActive(
   return (
     filters.priorities.length > 0 ||
     filters.assigneeId !== null ||
-    filters.dueDate !== 'all'
+    filters.dueDate !== 'all' ||
+    filters.columnId !== null
   );
 }
 
@@ -51,6 +52,10 @@ export function taskMatchesFilters(
   if (filters.assigneeId === UNASSIGNED_ASSIGNEE) {
     if (task.assignee) return false;
   } else if (filters.assigneeId && task.assignee?.id !== filters.assigneeId) {
+    return false;
+  }
+
+  if (filters.columnId && task.columnId !== filters.columnId) {
     return false;
   }
 
@@ -137,5 +142,6 @@ export function countActiveFilters(filters: TaskFilters): number {
   let count = filters.priorities.length > 0 ? 1 : 0;
   if (filters.assigneeId !== null) count += 1;
   if (filters.dueDate !== 'all') count += 1;
+  if (filters.columnId !== null) count += 1;
   return count;
 }

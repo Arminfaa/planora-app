@@ -9,6 +9,10 @@ import {
   updateBoard,
   uploadBoardBackground,
 } from '../../controllers/board.controller';
+import {
+  createBoardTask,
+  listBoardTasks,
+} from '../../controllers/task.controller';
 import { authenticate } from '../../middlewares/auth.middleware';
 import {
   validateBody,
@@ -21,6 +25,7 @@ import {
   createBoardSchema,
   updateBoardSchema,
 } from '../../validators/board.validator';
+import { createBoardTaskSchema } from '../../validators/task.validator';
 
 const router = Router({ mergeParams: true });
 
@@ -41,6 +46,17 @@ router.get(
 
 const boardRouter = Router();
 boardRouter.use(authenticate);
+boardRouter.get(
+  '/:id/tasks',
+  validateParams(boardIdParamSchema),
+  listBoardTasks,
+);
+boardRouter.post(
+  '/:id/tasks',
+  validateParams(boardIdParamSchema),
+  validateBody(createBoardTaskSchema),
+  createBoardTask,
+);
 boardRouter.get('/:id', validateParams(boardIdParamSchema), getBoard);
 boardRouter.post(
   '/:id/background',

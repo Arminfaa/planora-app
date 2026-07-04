@@ -88,6 +88,28 @@ export function BoardFilterForm({
       </div>
 
       <div className="grid gap-4 sm:grid-cols-2">
+        <label className="space-y-1.5 sm:col-span-2">
+          <span className={labelClass}>Column</span>
+          <select
+            value={filters.columnId ?? ''}
+            onChange={(event) => {
+              const value = event.target.value;
+              onChange({
+                ...filters,
+                columnId: value === '' ? null : value,
+              });
+            }}
+            className={selectClass}
+          >
+            <option value="">All columns</option>
+            {columns.map((column) => (
+              <option key={column.id} value={column.id}>
+                {column.name}
+              </option>
+            ))}
+          </select>
+        </label>
+
         <label className="space-y-1.5">
           <span className={labelClass}>Assignee</span>
           <select

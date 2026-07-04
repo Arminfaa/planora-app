@@ -2,29 +2,19 @@
 
 import { useEffect, useRef, useState } from 'react';
 import Link from 'next/link';
-import type { BoardColumn } from '../types';
-import type { TaskFilters } from '@/features/search/types';
-import {
-  countActiveFilters,
-  isTaskFiltersActive,
-} from '@/features/search/utils/taskFilters';
 import { BoardBackgroundMenu } from './BoardBackgroundMenu';
 
 interface BoardHeaderProps {
   boardName: string;
   boardId: string;
   projectSlug: string;
+  boardSlug: string;
   columnsCount: number;
   totalTasks: number;
-  matchingTaskCount: number;
-  searchQuery: string;
-  onSearchChange: (value: string) => void;
-  filters: TaskFilters;
-  onOpenFilters: () => void;
-  hasActiveView: boolean;
   backgroundUrl?: string | null;
   onBackgroundChange: (url: string | null) => void;
   canManageBackground?: boolean;
+  canViewTasks?: boolean;
   isConnected: boolean;
   isJoined: boolean;
   lastRemoteUpdate?: Date | null;
@@ -34,25 +24,19 @@ export function BoardHeader({
   boardName,
   boardId,
   projectSlug,
+  boardSlug,
   columnsCount,
   totalTasks,
-  matchingTaskCount,
-  searchQuery,
-  onSearchChange,
-  filters,
-  onOpenFilters,
-  hasActiveView,
   backgroundUrl,
   onBackgroundChange,
   canManageBackground = false,
+  canViewTasks = true,
   isConnected,
   isJoined,
   lastRemoteUpdate,
 }: BoardHeaderProps) {
   const [showBackgroundMenu, setShowBackgroundMenu] = useState(false);
   const backgroundMenuRef = useRef<HTMLDivElement>(null);
-  const activeFilterCount = countActiveFilters(filters);
-  const hasQuery = searchQuery.trim().length > 0;
 
   useEffect(() => {
     if (!showBackgroundMenu) return;
@@ -99,12 +83,6 @@ export function BoardHeader({
           </h1>
           <p className="mt-1.5 text-sm text-white/60">
             {columnsCount} columns · {totalTasks} tasks
-            {hasActiveView && (
-              <span className="text-white/80">
-                {' '}
-                · showing {matchingTaskCount}
-              </span>
-            )}
           </p>
         </div>
 
@@ -130,6 +108,28 @@ export function BoardHeader({
               </span>
             )}
           </div>
+
+          {canViewTasks && (
+            <Link
+              href={`/dashboard/projects/${projectSlug}/boards/${boardSlug}/tasks`}
+              className="inline-flex items-center gap-2 rounded-xl border border-white/20 bg-white/10 px-3.5 py-2.5 text-sm font-medium text-white backdrop-blur-md transition hover:bg-white/20"
+            >
+              <svg
+                className="h-4 w-4"
+                fill="none"
+                viewBox="0 0 24 24"
+                stroke="currentColor"
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth={2}
+                  d="M4 6h16M4 10h16M4 14h16M4 18h16"
+                />
+              </svg>
+              All tasks
+            </Link>
+          )}
 
           {canManageBackground && (
             <div className="relative" ref={backgroundMenuRef}>
@@ -165,72 +165,6 @@ export function BoardHeader({
               )}
             </div>
           )}
-
-          <button
-            type="button"
-            onClick={onOpenFilters}
-            className={`inline-flex items-center gap-2 rounded-xl border px-3.5 py-2.5 text-sm font-medium backdrop-blur-md transition ${
-              isTaskFiltersActive(filters)
-                ? 'border-primary-300 bg-primary-500/30 text-white'
-                : 'border-white/20 bg-white/10 text-white hover:bg-white/20'
-            }`}
-          >
-            <svg
-              className="h-4 w-4"
-              fill="none"
-              viewBox="0 0 24 24"
-              stroke="currentColor"
-            >
-              <path
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                strokeWidth={2}
-                d="M3 4a1 1 0 011-1h16a1 1 0 011 1v2.586a1 1 0 01-.293.707l-6.414 6.414a1 1 0 00-.293.707V17l-4 4v-6.586a1 1 0 00-.293-.707L3.293 7.293A1 1 0 013 6.586V4z"
-              />
-            </svg>
-            Filter
-            {activeFilterCount > 0 && (
-              <span className="flex h-5 min-w-5 items-center justify-center rounded-full bg-white/20 px-1.5 text-xs font-semibold">
-                {activeFilterCount}
-              </span>
-            )}
-          </button>
-
-          <div className="relative min-w-[200px] flex-1 sm:min-w-[260px] sm:flex-none">
-            <span className="pointer-events-none absolute inset-y-0 left-3 flex items-center text-white/50">
-              <svg
-                className="h-4 w-4"
-                fill="none"
-                viewBox="0 0 24 24"
-                stroke="currentColor"
-              >
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  strokeWidth={2}
-                  d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"
-                />
-              </svg>
-            </span>
-            <input
-              type="search"
-              value={searchQuery}
-              onChange={(event) => onSearchChange(event.target.value)}
-              placeholder="Search tasks..."
-              className="w-full rounded-xl border border-white/20 bg-white/10 py-2.5 pl-9 pr-8 text-sm text-white placeholder:text-white/50 backdrop-blur-md focus:border-white/40 focus:bg-white/15 focus:outline-none focus:ring-2 focus:ring-white/20"
-              aria-label="Search tasks on board"
-            />
-            {hasQuery && (
-              <button
-                type="button"
-                onClick={() => onSearchChange('')}
-                className="absolute inset-y-0 right-2 flex items-center text-white/50 hover:text-white"
-                aria-label="Clear search"
-              >
-                ×
-              </button>
-            )}
-          </div>
         </div>
       </div>
     </header>

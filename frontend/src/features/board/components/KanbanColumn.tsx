@@ -11,8 +11,6 @@ import {
 import type { BoardColumn, BoardTask } from '../types';
 import type { ProjectMember } from '@/features/projects/types';
 import type { CreateTaskInput } from '@/features/tasks/types';
-import type { TaskFilters } from '@/features/search/types';
-import { isTaskFiltersActive } from '@/features/search/utils/taskFilters';
 import { columnSortableKey } from '../utils/applyRealtimeEvent';
 import { SortableTaskCard } from './TaskCard';
 import { AddTaskForm } from './AddTaskForm';
@@ -33,10 +31,7 @@ interface KanbanColumnProps {
   canMoveTasks?: boolean;
   dragHandleProps?: HTMLAttributes<HTMLButtonElement>;
   isDragOverlay?: boolean;
-  searchQuery?: string;
-  filters?: TaskFilters;
   highlightedTaskId?: string | null;
-  taskIsVisible?: (task: BoardTask) => boolean;
   variant?: 'default' | 'glass';
 }
 
@@ -55,19 +50,11 @@ export const KanbanColumn = memo(function KanbanColumn({
   canMoveTasks = false,
   dragHandleProps,
   isDragOverlay = false,
-  searchQuery = '',
-  filters,
   highlightedTaskId = null,
-  taskIsVisible,
   variant = 'default',
 }: KanbanColumnProps) {
   const { setNodeRef, isOver } = useDroppable({ id: column.id });
   const tasks = column.tasks ?? [];
-  const hasViewFilter =
-    searchQuery.trim().length > 0 || isTaskFiltersActive(filters);
-  const visibleTasks = hasViewFilter
-    ? tasks.filter((task) => taskIsVisible?.(task) ?? true)
-    : tasks;
   const taskIds = tasks.map((t) => t.id);
   const sortableKey = columnSortableKey(column);
   const isGlass = variant === 'glass';
@@ -117,9 +104,7 @@ export const KanbanColumn = memo(function KanbanColumn({
             <span
               className={`ml-2 text-sm font-normal ${isGlass ? 'text-white/60' : 'text-gray-500'}`}
             >
-              {hasViewFilter
-                ? `${visibleTasks.length}/${tasks.length}`
-                : tasks.length}
+              {tasks.length}
             </span>
           </h3>
         </div>
@@ -166,21 +151,17 @@ export const KanbanColumn = memo(function KanbanColumn({
           items={taskIds}
           strategy={verticalListSortingStrategy}
         >
-          {tasks.map((task) => {
-            const matches = !hasViewFilter || (taskIsVisible?.(task) ?? true);
-            return (
-              <SortableTaskCard
-                key={`${task.id}-${task.position}`}
-                task={task}
-                onClick={canOpenTask ? onTaskClick : undefined}
-                onAttachmentClick={onTaskAttachmentClick}
-                isDimmed={hasViewFilter && !matches}
-                isHighlighted={highlightedTaskId === task.id}
-                canOpen={canOpenTask}
-                canDrag={canMoveTasks}
-              />
-            );
-          })}
+          {tasks.map((task) => (
+            <SortableTaskCard
+              key={`${task.id}-${task.position}`}
+              task={task}
+              onClick={canOpenTask ? onTaskClick : undefined}
+              onAttachmentClick={onTaskAttachmentClick}
+              isHighlighted={highlightedTaskId === task.id}
+              canOpen={canOpenTask}
+              canDrag={canMoveTasks}
+            />
+          ))}
         </SortableContext>
 
         {canCreateTask && (

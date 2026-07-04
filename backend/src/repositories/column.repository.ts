@@ -1,4 +1,8 @@
 import type { Column, Prisma } from '@prisma/client';
+import {
+  UNSPECIFIED_COLUMN_COLOR,
+  UNSPECIFIED_COLUMN_NAME,
+} from '../constants/column';
 import { BaseRepository } from './base.repository';
 
 export class ColumnRepository extends BaseRepository {
@@ -51,6 +55,36 @@ export class ColumnRepository extends BaseRepository {
       where: { boardId },
       orderBy: { position: 'asc' },
     });
+  }
+
+  async findByBoardAndName(
+    boardId: string,
+    name: string,
+  ): Promise<Column | null> {
+    const columns = await this.findByBoardId(boardId);
+    return columns.find((column) => column.name === name) ?? null;
+  }
+
+  async getOrCreateUnspecifiedColumn(
+    boardId: string,
+  ): Promise<{ column: Column; created: boolean }> {
+    const existing = await this.findByBoardAndName(
+      boardId,
+      UNSPECIFIED_COLUMN_NAME,
+    );
+    if (existing) {
+      return { column: existing, created: false };
+    }
+
+    const columns = await this.findByBoardId(boardId);
+    const column = await this.create({
+      name: UNSPECIFIED_COLUMN_NAME,
+      boardId,
+      position: columns.length,
+      color: UNSPECIFIED_COLUMN_COLOR,
+    });
+
+    return { column, created: true };
   }
 
   async reorder(boardId: string, orderedIds: string[]): Promise<Column[]> {

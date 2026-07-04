@@ -28,6 +28,10 @@ export const createTaskSchema = z.object({
   assigneeId: objectIdSchema.optional(),
 });
 
+export const createBoardTaskSchema = createTaskSchema.extend({
+  columnId: objectIdSchema.optional(),
+});
+
 export const updateTaskSchema = createTaskSchema.partial().extend({
   columnId: objectIdSchema.optional(),
   assigneeId: objectIdSchema.nullable().optional(),
@@ -37,4 +41,5 @@ export const updateTaskSchema = createTaskSchema.partial().extend({
 export const taskListQuerySchema = paginationSchema;
 
 export type CreateTaskInput = z.infer<typeof createTaskSchema>;
+export type CreateBoardTaskInput = z.infer<typeof createBoardTaskSchema>;
 export type UpdateTaskInput = z.infer<typeof updateTaskSchema>;

@@ -8,12 +8,14 @@ export interface TaskFilters {
   priorities: TaskPriority[];
   assigneeId: string | null;
   dueDate: DueDateFilter;
+  columnId: string | null;
 }
 
 export const defaultTaskFilters: TaskFilters = {
   priorities: [],
   assigneeId: null,
   dueDate: 'all',
+  columnId: null,
 };
 
 export type ApiDueDateFilter = Exclude<DueDateFilter, 'all'>;

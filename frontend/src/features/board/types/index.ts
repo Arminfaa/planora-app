@@ -19,6 +19,11 @@ export interface BoardTask {
   position: number;
   priority: TaskPriority;
   dueDate: string | null;
+  column?: {
+    id: string;
+    name: string;
+    color: string | null;
+  };
   assignee?: {
     id: string;
     name: string;

@@ -7,6 +7,7 @@ import { projectMemberRepository } from '../repositories/project-member.reposito
 import { taskRepository } from '../repositories/task.repository';
 import { projectAccessService } from './project-access.service';
 import type {
+  CreateBoardTaskInput,
   CreateTaskInput,
   UpdateTaskInput,
 } from '../validators/task.validator';
@@ -108,6 +109,81 @@ export class TaskService {
     }
 
     return task;
+  }
+
+  async listByBoard(userId: string, boardId: string) {
+    const projectId = await boardRepository.getProjectId(boardId);
+    if (!projectId) {
+      throw new ApiError(404, 'Board not found');
+    }
+
+    await projectAccessService.ensurePermission(userId, projectId, 'task.view');
+    return taskRepository.findByBoard(boardId);
+  }
+
+  private async resolveColumnForBoard(
+    boardId: string,
+    columnId?: string,
+  ): Promise<{
+    columnId: string;
+    createdUnspecified: boolean;
+    unspecifiedColumn?: Awaited<ReturnType<typeof columnRepository.findById>>;
+  }> {
+    if (columnId) {
+      const column = await columnRepository.findById(columnId);
+      if (!column || column.boardId !== boardId) {
+        throw new ApiError(400, 'Invalid column for this board');
+      }
+      return { columnId, createdUnspecified: false };
+    }
+
+    const result = await columnRepository.getOrCreateUnspecifiedColumn(boardId);
+    return {
+      columnId: result.column.id,
+      createdUnspecified: result.created,
+      unspecifiedColumn: result.column,
+    };
+  }
+
+  async createOnBoard(
+    userId: string,
+    boardId: string,
+    input: CreateBoardTaskInput,
+  ) {
+    const projectId = await boardRepository.getProjectId(boardId);
+    if (!projectId) {
+      throw new ApiError(404, 'Board not found');
+    }
+
+    await projectAccessService.ensurePermission(
+      userId,
+      projectId,
+      'task.create',
+    );
+
+    const { columnId, createdUnspecified, unspecifiedColumn } =
+      await this.resolveColumnForBoard(boardId, input.columnId);
+
+    if (input.assigneeId) {
+      await this.ensureAssigneeIsMember(projectId, input.assigneeId);
+    }
+
+    const slug = await this.generateUniqueSlug(boardId, input.title);
+
+    const task = await taskRepository.create({
+      title: input.title,
+      slug,
+      description: input.description,
+      columnId,
+      boardId,
+      position: input.position,
+      priority: input.priority,
+      dueDate: input.dueDate,
+      assigneeId: input.assigneeId,
+      createdById: userId,
+    });
+
+    return { task, columnId, createdUnspecified, unspecifiedColumn };
   }
 
   async create(userId: string, columnId: string, input: CreateTaskInput) {

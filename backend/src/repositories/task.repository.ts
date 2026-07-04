@@ -49,6 +49,19 @@ export class TaskRepository extends BaseRepository {
     return { items, total };
   }
 
+  async findByBoard(boardId: string) {
+    return this.db.task.findMany({
+      where: { boardId },
+      orderBy: [{ column: { position: 'asc' } }, { position: 'asc' }],
+      include: {
+        ...taskInclude,
+        column: {
+          select: { id: true, name: true, color: true, position: true },
+        },
+      },
+    });
+  }
+
   async create(data: {
     title: string;
     slug: string;

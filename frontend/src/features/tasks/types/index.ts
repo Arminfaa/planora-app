@@ -33,6 +33,7 @@ export interface CreateTaskInput {
   priority?: TaskPriority;
   dueDate?: string;
   assigneeId?: string;
+  columnId?: string;
 }
 
 export interface UpdateTaskInput {

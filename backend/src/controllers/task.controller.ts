@@ -4,13 +4,54 @@ import type { AuthenticatedRequest } from '../types';
 import { taskService } from '../services/task.service';
 import { ApiResponse } from '../utils/ApiResponse';
 import { asyncHandler } from '../utils/asyncHandler';
-import { notifyBoardTaskEvent } from '../utils/board-events';
+import {
+  notifyBoardColumnEvent,
+  notifyBoardTaskEvent,
+} from '../utils/board-events';
 import type { PaginationQuery } from '../utils/pagination';
 import { getParam } from '../utils/params';
 import type {
+  CreateBoardTaskInput,
   CreateTaskInput,
   UpdateTaskInput,
 } from '../validators/task.validator';
+
+export const listBoardTasks = asyncHandler(
+  async (req: AuthenticatedRequest, res: Response) => {
+    const tasks = await taskService.listByBoard(
+      req.user!.userId,
+      getParam(req.params, 'id'),
+    );
+    ApiResponse.success(res, tasks, 'Tasks retrieved');
+  },
+);
+
+export const createBoardTask = asyncHandler(
+  async (req: AuthenticatedRequest, res: Response) => {
+    const boardId = getParam(req.params, 'id');
+    const { task, columnId, createdUnspecified, unspecifiedColumn } =
+      await taskService.createOnBoard(
+        req.user!.userId,
+        boardId,
+        req.body as CreateBoardTaskInput,
+      );
+
+    if (createdUnspecified && unspecifiedColumn) {
+      await notifyBoardColumnEvent(req.user!.userId, 'column:created', {
+        boardId,
+        columnId: unspecifiedColumn.id,
+        payload: { column: unspecifiedColumn },
+      });
+    }
+
+    await notifyBoardTaskEvent(req.user!.userId, 'task:created', {
+      columnId,
+      payload: { task },
+    });
+
+    ApiResponse.success(res, task, 'Task created', 201);
+  },
+);
 
 export const listTasks = asyncHandler(
   async (req: AuthenticatedRequest, res: Response) => {

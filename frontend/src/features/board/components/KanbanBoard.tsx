@@ -1,6 +1,6 @@
 'use client';
 
-import { useCallback, useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import dynamic from 'next/dynamic';
 import { usePathname, useRouter, useSearchParams } from 'next/navigation';
 import { DndContext, DragOverlay, closestCorners } from '@dnd-kit/core';
@@ -25,12 +25,6 @@ import { getApiErrorMessage, isForbiddenError } from '@/lib/api';
 import { getAssetUrl } from '@/lib/assets';
 import { LoadingSpinner } from '@/shared/components/feedback/LoadingSpinner';
 import { Button } from '@/shared/components/ui/Button';
-import { BoardFilterModal } from '@/features/search/components/BoardFilterModal';
-import { defaultTaskFilters, type TaskFilters } from '@/features/search/types';
-import {
-  isTaskFiltersActive,
-  taskIsVisible,
-} from '@/features/search/utils/taskFilters';
 
 const TaskAttachmentsPreviewModal = dynamic(
   () =>
@@ -85,11 +79,7 @@ export function KanbanBoard({
   const [selectedTask, setSelectedTask] = useState<BoardTask | null>(null);
   const [editingColumn, setEditingColumn] = useState<BoardColumn | null>(null);
   const [showCreateColumn, setShowCreateColumn] = useState(false);
-  const [showFilterModal, setShowFilterModal] = useState(false);
   const [actionError, setActionError] = useState('');
-  const [boardSearchQuery, setBoardSearchQuery] = useState('');
-  const [boardFilters, setBoardFilters] =
-    useState<TaskFilters>(defaultTaskFilters);
   const [highlightedTaskId, setHighlightedTaskId] = useState<string | null>(
     null,
   );
@@ -323,23 +313,6 @@ export function KanbanBoard({
     0,
   );
 
-  const matchTask = useCallback(
-    (task: BoardTask) => taskIsVisible(task, boardSearchQuery, boardFilters),
-    [boardFilters, boardSearchQuery],
-  );
-
-  const hasActiveView =
-    boardSearchQuery.trim().length > 0 || isTaskFiltersActive(boardFilters);
-
-  const matchingTaskCount = useMemo(() => {
-    if (!hasActiveView) return totalTasks;
-    return columns.reduce(
-      (sum, col) =>
-        sum + (col.tasks?.filter((task) => matchTask(task)).length ?? 0),
-      0,
-    );
-  }, [columns, hasActiveView, matchTask, totalTasks]);
-
   useEffect(() => {
     if (!activeTaskSlug) {
       setSelectedTask(null);
@@ -400,17 +373,13 @@ export function KanbanBoard({
             boardName={boardName}
             boardId={board.id}
             projectSlug={projectSlug}
+            boardSlug={board.slug}
             columnsCount={columns.length}
             totalTasks={totalTasks}
-            matchingTaskCount={matchingTaskCount}
-            searchQuery={boardSearchQuery}
-            onSearchChange={setBoardSearchQuery}
-            filters={boardFilters}
-            onOpenFilters={() => setShowFilterModal(true)}
-            hasActiveView={hasActiveView}
             backgroundUrl={backgroundUrl}
             onBackgroundChange={setBackgroundUrl}
             canManageBackground={canManageBackground}
+            canViewTasks={canViewTasks}
             isConnected={isConnected}
             isJoined={isJoined}
             lastRemoteUpdate={lastRemoteUpdate}
@@ -461,10 +430,7 @@ export function KanbanBoard({
                     canCreateTask={canCreateTasks}
                     canOpenTask={canEditTasks}
                     canMoveTasks={canMoveTasks}
-                    searchQuery={boardSearchQuery}
-                    filters={boardFilters}
                     highlightedTaskId={highlightedTaskId}
-                    taskIsVisible={matchTask}
                     variant="glass"
                   />
                 ))}
@@ -510,15 +476,6 @@ export function KanbanBoard({
           </DndContext>
         </div>
       </div>
-
-      {showFilterModal && (
-        <BoardFilterModal
-          columns={columns}
-          filters={boardFilters}
-          onChange={setBoardFilters}
-          onClose={() => setShowFilterModal(false)}
-        />
-      )}
 
       {selectedTask && canEditTasks && (
         <TaskModal
