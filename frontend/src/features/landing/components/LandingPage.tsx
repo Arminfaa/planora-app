@@ -312,7 +312,7 @@ function GroupChatPreview() {
         </div>
       </div>
 
-      <div className="space-y-1 bg-gray-50/40 px-3 py-3">
+      <div className="space-y-1 bg-gray-50/40 px-3 py-1">
         <div className="py-1 text-center">
           <span className="text-[10px] font-medium text-gray-400">Today</span>
         </div>
@@ -430,7 +430,7 @@ export function LandingPage() {
         <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(ellipse_at_0%_90%,rgba(139,92,246,0.12),transparent_50%)]" />
         <div className="pointer-events-none absolute left-1/2 top-24 h-72 w-72 -translate-x-1/2 rounded-full bg-primary-200/20 blur-3xl landing-float" />
 
-        <div className="relative mx-auto max-w-7xl px-4 pb-16 pt-12 sm:px-6 sm:pb-20 sm:pt-16 lg:pb-28 lg:pt-20">
+        <div className="relative mx-auto max-w-7xl px-4 pb-10 pt-8 sm:px-6 sm:pb-12 sm:pt-10 lg:pb-16 lg:pt-14">
           <div className="mx-auto max-w-3xl text-center">
             <div className="mb-5 flex flex-wrap items-center justify-center gap-2">
               {highlights.map((item) => (
