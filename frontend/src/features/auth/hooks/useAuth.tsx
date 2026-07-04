@@ -6,6 +6,7 @@ import {
   useContext,
   useEffect,
   useMemo,
+  useRef,
   useState,
   type ReactNode,
 } from 'react';
@@ -34,17 +35,30 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const router = useRouter();
   const [user, setUser] = useState<User | null>(null);
   const [isLoading, setIsLoading] = useState(true);
+  const loadUserRequestId = useRef(0);
+
+  const invalidateLoadUser = useCallback(() => {
+    loadUserRequestId.current += 1;
+  }, []);
 
   const loadUser = useCallback(async () => {
+    const requestId = ++loadUserRequestId.current;
+
     try {
       const profile = await authService.getMe();
+      if (requestId !== loadUserRequestId.current) return;
+
       setUser(profile);
       connectSocket();
     } catch {
+      if (requestId !== loadUserRequestId.current) return;
+
       setUser(null);
       disconnectSocket();
     } finally {
-      setIsLoading(false);
+      if (requestId === loadUserRequestId.current) {
+        setIsLoading(false);
+      }
     }
   }, []);
 
@@ -54,22 +68,27 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   const login = useCallback(
     async (data: LoginFormData, options?: { inviteToken?: string }) => {
+      invalidateLoadUser();
+
       const result = await authService.login(data.email, data.password);
       setUser(result.user);
+      setIsLoading(false);
       connectSocket();
 
       if (options?.inviteToken) {
-        router.push(`/accept-invite?token=${options.inviteToken}`);
+        router.replace(`/accept-invite?token=${options.inviteToken}`);
         return;
       }
 
-      router.push('/dashboard');
+      router.replace('/dashboard');
     },
-    [router],
+    [invalidateLoadUser, router],
   );
 
   const register = useCallback(
     async (data: RegisterFormData, inviteToken?: string) => {
+      invalidateLoadUser();
+
       const result = await authService.register(
         data.name,
         data.email,
@@ -77,18 +96,19 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         inviteToken,
       );
       setUser(result.user);
+      setIsLoading(false);
       connectSocket();
 
       if (result.inviteAcceptance?.projectSlug) {
-        router.push(
+        router.replace(
           `/dashboard/projects/${result.inviteAcceptance.projectSlug}`,
         );
         return;
       }
 
-      router.push('/dashboard');
+      router.replace('/dashboard');
     },
-    [router],
+    [invalidateLoadUser, router],
   );
 
   const logout = useCallback(async () => {
