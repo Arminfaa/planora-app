@@ -3,6 +3,7 @@
 import type { ReactNode } from 'react';
 import Link from 'next/link';
 import { useAuth } from '@/features/auth/hooks/useAuth';
+import { useHasMounted } from '@/shared/hooks/useHasMounted';
 import { LandingNavbar } from './LandingNavbar';
 
 const highlights = [
@@ -413,11 +414,13 @@ function FeatureIcon({ icon, accent }: { icon: ReactNode; accent: string }) {
 
 export function LandingPage() {
   const { isAuthenticated, isLoading } = useAuth();
+  const hasMounted = useHasMounted();
+  const authed = hasMounted && !isLoading && isAuthenticated;
 
-  const primaryHref = isAuthenticated ? '/dashboard' : '/register';
-  const primaryLabel = isAuthenticated ? 'Go to Dashboard' : 'Get Started Free';
-  const secondaryHref = isAuthenticated ? '#features' : '/login';
-  const secondaryLabel = isAuthenticated ? 'See features' : 'Sign In';
+  const primaryHref = authed ? '/dashboard' : '/register';
+  const primaryLabel = authed ? 'Go to Dashboard' : 'Get Started Free';
+  const secondaryHref = authed ? '#features' : '/login';
+  const secondaryLabel = authed ? 'See features' : 'Sign In';
 
   return (
     <div className="min-h-screen bg-white">
@@ -455,22 +458,20 @@ export function LandingPage() {
               fast and stay aligned.
             </p>
 
-            {!isLoading && (
-              <div className="mt-8 flex flex-wrap items-center justify-center gap-3">
-                <Link
-                  href={primaryHref}
-                  className="rounded-xl bg-primary-600 px-7 py-3.5 text-sm font-semibold text-white shadow-lg shadow-primary-600/25 transition hover:bg-primary-700 hover:shadow-xl hover:shadow-primary-600/30"
-                >
-                  {primaryLabel}
-                </Link>
-                <Link
-                  href={secondaryHref}
-                  className="rounded-xl border border-gray-200/80 bg-white/80 px-7 py-3.5 text-sm font-semibold text-gray-700 shadow-sm backdrop-blur-sm transition hover:border-gray-300 hover:bg-white"
-                >
-                  {secondaryLabel}
-                </Link>
-              </div>
-            )}
+            <div className="mt-8 flex min-h-[52px] flex-wrap items-center justify-center gap-3">
+              <Link
+                href={primaryHref}
+                className="rounded-xl bg-primary-600 px-7 py-3.5 text-sm font-semibold text-white shadow-lg shadow-primary-600/25 transition hover:bg-primary-700 hover:shadow-xl hover:shadow-primary-600/30"
+              >
+                {primaryLabel}
+              </Link>
+              <Link
+                href={secondaryHref}
+                className="rounded-xl border border-gray-200/80 bg-white/80 px-7 py-3.5 text-sm font-semibold text-gray-700 shadow-sm backdrop-blur-sm transition hover:border-gray-300 hover:bg-white"
+              >
+                {secondaryLabel}
+              </Link>
+            </div>
           </div>
 
           <div className="mt-14 sm:mt-16 lg:mt-20">
@@ -593,23 +594,21 @@ export function LandingPage() {
 
         <div className="relative mx-auto max-w-3xl px-4 text-center sm:px-6">
           <h2 className="text-3xl font-bold text-white sm:text-4xl">
-            {isAuthenticated
+            {authed
               ? 'Your workspace is ready'
               : 'Ready to organize your next project?'}
           </h2>
           <p className="mx-auto mt-4 max-w-xl text-indigo-100">
-            {isAuthenticated
+            {authed
               ? 'Jump back into your boards, group chat, and team settings.'
               : 'Join free — set up projects, invite your team, and start shipping today.'}
           </p>
-          {!isLoading && (
-            <Link
-              href={isAuthenticated ? '/dashboard' : '/register'}
-              className="mt-8 inline-flex rounded-xl bg-white px-8 py-3.5 text-sm font-semibold text-primary-700 shadow-xl transition hover:bg-indigo-50 hover:shadow-2xl"
-            >
-              {isAuthenticated ? 'Open Dashboard' : 'Create free account'}
-            </Link>
-          )}
+          <Link
+            href={authed ? '/dashboard' : '/register'}
+            className="mt-8 inline-flex rounded-xl bg-white px-8 py-3.5 text-sm font-semibold text-primary-700 shadow-xl transition hover:bg-indigo-50 hover:shadow-2xl"
+          >
+            {authed ? 'Open Dashboard' : 'Create free account'}
+          </Link>
         </div>
       </section>
 
@@ -621,7 +620,7 @@ export function LandingPage() {
               P
             </span>
             <p className="text-sm text-gray-500">
-              © {new Date().getFullYear()}{' '}
+              © <span suppressHydrationWarning>{new Date().getFullYear()}</span>{' '}
               {process.env.NEXT_PUBLIC_APP_NAME ?? 'Project Management'}
             </p>
           </div>
@@ -632,7 +631,7 @@ export function LandingPage() {
             >
               Features
             </Link>
-            {!isLoading && !isAuthenticated && (
+            {!authed && (
               <>
                 <Link
                   href="/login"
@@ -648,7 +647,7 @@ export function LandingPage() {
                 </Link>
               </>
             )}
-            {!isLoading && isAuthenticated && (
+            {authed && (
               <Link
                 href="/dashboard"
                 className="text-gray-500 transition hover:text-gray-900"
