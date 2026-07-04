@@ -4,14 +4,15 @@ import { useEffect, useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
+import { Button } from 'antd';
 import {
   COLUMN_COLOR_OPTIONS,
   type BoardColumn,
   type UpdateColumnInput,
 } from '../types';
-import { Button } from '@/shared/components/ui/Button';
 import { Input } from '@/shared/components/ui/Input';
 import { getApiErrorMessage } from '@/lib/api';
+import { AppModal } from '@/shared/components/ui/AppModal';
 
 const schema = z.object({
   name: z.string().min(1, 'Name is required').max(50),
@@ -19,6 +20,8 @@ const schema = z.object({
 });
 
 type FormData = z.infer<typeof schema>;
+
+const FORM_ID = 'edit-column-form';
 
 interface EditColumnModalProps {
   column: BoardColumn;
@@ -71,63 +74,60 @@ export function EditColumnModal({
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
-      <div
-        className="absolute inset-0 bg-black/40"
-        onClick={onClose}
-        aria-hidden
-      />
-      <div className="relative z-10 w-full max-w-md rounded-xl bg-white p-6 shadow-xl">
-        <h2 className="text-lg font-semibold text-gray-900">Edit Column</h2>
+    <AppModal
+      title="Edit Column"
+      onClose={onClose}
+      footer={
+        <>
+          <Button onClick={onClose}>Cancel</Button>
+          <Button
+            type="primary"
+            htmlType="submit"
+            form={FORM_ID}
+            loading={isSubmitting}
+          >
+            Save
+          </Button>
+        </>
+      }
+    >
+      {error && (
+        <div className="mb-4 rounded-lg bg-red-50 px-4 py-3 text-sm text-red-700">
+          {error}
+        </div>
+      )}
 
-        {error && (
-          <div className="mt-4 rounded-lg bg-red-50 px-4 py-3 text-sm text-red-700">
-            {error}
+      <form
+        id={FORM_ID}
+        onSubmit={handleSubmit(handleFormSubmit)}
+        className="space-y-4"
+      >
+        <Input
+          label="Column Name"
+          error={errors.name?.message}
+          {...register('name')}
+        />
+
+        <div className="space-y-1">
+          <span className="block text-sm font-medium text-gray-700">Color</span>
+          <div className="flex flex-wrap gap-2">
+            {COLUMN_COLOR_OPTIONS.map((color) => (
+              <button
+                key={color}
+                type="button"
+                onClick={() => setValue('color', color)}
+                className={`h-8 w-8 rounded-full border-2 transition ${
+                  selectedColor === color
+                    ? 'border-gray-900 scale-110'
+                    : 'border-transparent'
+                }`}
+                style={{ backgroundColor: color }}
+                aria-label={`Color ${color}`}
+              />
+            ))}
           </div>
-        )}
-
-        <form
-          onSubmit={handleSubmit(handleFormSubmit)}
-          className="mt-4 space-y-4"
-        >
-          <Input
-            label="Column Name"
-            error={errors.name?.message}
-            {...register('name')}
-          />
-
-          <div className="space-y-1">
-            <span className="block text-sm font-medium text-gray-700">
-              Color
-            </span>
-            <div className="flex flex-wrap gap-2">
-              {COLUMN_COLOR_OPTIONS.map((color) => (
-                <button
-                  key={color}
-                  type="button"
-                  onClick={() => setValue('color', color)}
-                  className={`h-8 w-8 rounded-full border-2 transition ${
-                    selectedColor === color
-                      ? 'border-gray-900 scale-110'
-                      : 'border-transparent'
-                  }`}
-                  style={{ backgroundColor: color }}
-                  aria-label={`Color ${color}`}
-                />
-              ))}
-            </div>
-          </div>
-
-          <div className="flex justify-end gap-2">
-            <Button type="button" variant="secondary" onClick={onClose}>
-              Cancel
-            </Button>
-            <Button type="submit" isLoading={isSubmitting}>
-              Save
-            </Button>
-          </div>
-        </form>
-      </div>
-    </div>
+        </div>
+      </form>
+    </AppModal>
   );
 }

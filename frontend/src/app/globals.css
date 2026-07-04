@@ -12,3 +12,17 @@
     @apply bg-white text-gray-900 antialiased;
   }
 }
+.ant-modal-container {
+  padding: 20px 0px !important;
+}
+.ant-modal-header {
+  padding: 0 24px 10px 24px !important;
+  border-bottom: 1px solid #f0f0f0 !important;
+}
+.ant-modal-body {
+  padding: 10px 24px !important;
+}
+.ant-modal-footer {
+  border-top: 1px solid #f0f0f0 !important;
+  padding: 10px 24px 0 24px !important;
+}

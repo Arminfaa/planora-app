@@ -4,6 +4,7 @@ import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import { useState } from 'react';
+import { Button } from 'antd';
 import type { BoardColumn, BoardTask } from '../types';
 import type { ProjectMember } from '@/features/projects/types';
 import { LabelBadges } from '@/features/labels/components/LabelBadges';
@@ -19,9 +20,9 @@ import {
   priorityStyles,
 } from '@/features/tasks/types';
 import { toDateInputValue } from '@/features/tasks/utils/dates';
-import { Button } from '@/shared/components/ui/Button';
 import { Input } from '@/shared/components/ui/Input';
 import { getApiErrorMessage } from '@/lib/api';
+import { AppModal } from '@/shared/components/ui/AppModal';
 import { MemberMultiSelect } from './MemberMultiSelect';
 import { TaskChecklistEditor } from './TaskChecklistEditor';
 
@@ -133,139 +134,126 @@ export function TaskModal({
     'block w-full rounded-lg border border-gray-300 px-3 py-2.5 text-sm shadow-sm focus:border-primary-500 focus:outline-none focus:ring-1 focus:ring-primary-500';
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
-      <div
-        className="absolute inset-0 bg-black/40"
-        onClick={onClose}
-        aria-hidden
-      />
-      <div className="relative z-10 flex max-h-[90vh] w-full max-w-2xl flex-col overflow-hidden rounded-xl bg-white shadow-xl">
-        <div className="shrink-0 border-b border-gray-100 px-6 py-4">
-          <h2 className="text-lg font-semibold text-gray-900">Edit Task</h2>
-        </div>
-
-        <div className="min-h-0 flex-1 overflow-y-auto px-6 py-4">
-          {error && (
-            <div className="mb-4 rounded-lg bg-red-50 px-4 py-3 text-sm text-red-700">
-              {error}
-            </div>
-          )}
-
-          <form
-            id={FORM_ID}
-            onSubmit={handleSubmit(onSubmit)}
-            className="space-y-4"
-          >
-            <Input
-              label="Title"
-              error={errors.title?.message}
-              {...register('title')}
-            />
-
-            <div className="space-y-1">
-              <label className="block text-sm font-medium text-gray-700">
-                Description
-              </label>
-              <textarea
-                className="block w-full rounded-lg border border-gray-300 px-3 py-2 text-sm shadow-sm focus:border-primary-500 focus:outline-none focus:ring-1 focus:ring-primary-500"
-                rows={3}
-                {...register('description')}
-              />
-            </div>
-
-            <div className="grid gap-4 sm:grid-cols-2">
-              <div className="space-y-1">
-                <label className="block text-sm font-medium text-gray-700">
-                  Priority
-                </label>
-                <select className={selectClassName} {...register('priority')}>
-                  {PRIORITY_OPTIONS.map((p) => (
-                    <option key={p} value={p}>
-                      {priorityStyles[p].label}
-                    </option>
-                  ))}
-                </select>
-              </div>
-
-              <Input
-                label="Due Date"
-                type="date"
-                error={errors.dueDate?.message}
-                {...register('dueDate')}
-              />
-            </div>
-
-            <div className="space-y-1">
-              <label className="block text-sm font-medium text-gray-700">
-                Assignees
-              </label>
-              <MemberMultiSelect
-                members={members}
-                value={assigneeIds}
-                onChange={setAssigneeIds}
-              />
-            </div>
-
-            <div className="space-y-1">
-              <label className="block text-sm font-medium text-gray-700">
-                Column
-              </label>
-              <select className={selectClassName} {...register('columnId')}>
-                {columns.map((col) => (
-                  <option key={col.id} value={col.id}>
-                    {col.name}
-                  </option>
-                ))}
-              </select>
-            </div>
-          </form>
-
-          <div className="mt-6 space-y-6 border-t border-gray-100 pt-6">
-            <TaskChecklistEditor
-              taskId={task.id}
-              items={checklistItems}
-              onChange={onRefresh}
-            />
-
-            <div className="space-y-2">
-              <h3 className="text-sm font-semibold text-gray-900">Labels</h3>
-              <LabelBadges labels={taskLabels} />
-              <TaskLabelPicker
-                taskId={task.id}
-                projectLabels={projectLabels}
-                selectedLabels={taskLabels}
-                onChange={onRefresh}
-                onCreateLabel={async (name, color) =>
-                  createLabel({ name, color })
-                }
-              />
-            </div>
-
-            <TaskComments taskId={task.id} />
-            <TaskAttachments taskId={task.id} />
-          </div>
-        </div>
-
-        <div className="flex shrink-0 items-center justify-between gap-3 border-t border-gray-100 bg-white px-6 py-4">
-          <Button
-            type="button"
-            variant="ghost"
-            onClick={handleDelete}
-            isLoading={isDeleting}
-            className="text-red-600 hover:bg-red-50 hover:text-red-700"
-          >
+    <AppModal
+      title="Edit Task"
+      onClose={onClose}
+      width={672}
+      footer={
+        <div className="flex w-full items-center justify-between gap-3">
+          <Button danger loading={isDeleting} onClick={handleDelete}>
             Delete
           </Button>
           <div className="flex gap-2">
-            <Button type="button" variant="secondary" onClick={onClose}>
-              Cancel
-            </Button>
-            <Button type="submit" form={FORM_ID} isLoading={isSubmitting}>
+            <Button onClick={onClose}>Cancel</Button>
+            <Button
+              type="primary"
+              htmlType="submit"
+              form={FORM_ID}
+              loading={isSubmitting}
+            >
               Save
             </Button>
           </div>
         </div>
+      }
+    >
+      {error && (
+        <div className="mb-4 rounded-lg bg-red-50 px-4 py-3 text-sm text-red-700">
+          {error}
+        </div>
+      )}
+
+      <form
+        id={FORM_ID}
+        onSubmit={handleSubmit(onSubmit)}
+        className="space-y-4"
+      >
+        <Input
+          label="Title"
+          error={errors.title?.message}
+          {...register('title')}
+        />
+
+        <div className="space-y-1">
+          <label className="block text-sm font-medium text-gray-700">
+            Description
+          </label>
+          <textarea
+            className="block w-full rounded-lg border border-gray-300 px-3 py-2 text-sm shadow-sm focus:border-primary-500 focus:outline-none focus:ring-1 focus:ring-primary-500"
+            rows={3}
+            {...register('description')}
+          />
+        </div>
+
+        <div className="grid gap-4 sm:grid-cols-2">
+          <div className="space-y-1">
+            <label className="block text-sm font-medium text-gray-700">
+              Priority
+            </label>
+            <select className={selectClassName} {...register('priority')}>
+              {PRIORITY_OPTIONS.map((p) => (
+                <option key={p} value={p}>
+                  {priorityStyles[p].label}
+                </option>
+              ))}
+            </select>
+          </div>
+
+          <Input
+            label="Due Date"
+            type="date"
+            error={errors.dueDate?.message}
+            {...register('dueDate')}
+          />
+        </div>
+
+        <div className="space-y-1">
+          <label className="block text-sm font-medium text-gray-700">
+            Assignees
+          </label>
+          <MemberMultiSelect
+            members={members}
+            value={assigneeIds}
+            onChange={setAssigneeIds}
+          />
+        </div>
+
+        <div className="space-y-1">
+          <label className="block text-sm font-medium text-gray-700">
+            Column
+          </label>
+          <select className={selectClassName} {...register('columnId')}>
+            {columns.map((col) => (
+              <option key={col.id} value={col.id}>
+                {col.name}
+              </option>
+            ))}
+          </select>
+        </div>
+      </form>
+
+      <div className="mt-6 space-y-6 border-t border-gray-100 pt-6">
+        <TaskChecklistEditor
+          taskId={task.id}
+          items={checklistItems}
+          onChange={onRefresh}
+        />
+
+        <div className="space-y-2">
+          <h3 className="text-sm font-semibold text-gray-900">Labels</h3>
+          <LabelBadges labels={taskLabels} />
+          <TaskLabelPicker
+            taskId={task.id}
+            projectLabels={projectLabels}
+            selectedLabels={taskLabels}
+            onChange={onRefresh}
+            onCreateLabel={async (name, color) => createLabel({ name, color })}
+          />
+        </div>
+
+        <TaskComments taskId={task.id} />
+        <TaskAttachments taskId={task.id} />
       </div>
-    </div>
+    </AppModal>
   );
 }

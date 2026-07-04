@@ -1,8 +1,13 @@
 'use client';
 
-import { useEffect } from 'react';
-import { CreateBoardForm } from '@/features/board/components/CreateBoardForm';
+import { useState } from 'react';
+import { Button } from 'antd';
+import {
+  CREATE_BOARD_FORM_ID,
+  CreateBoardForm,
+} from '@/features/board/components/CreateBoardForm';
 import type { CreateBoardInput } from '@/features/board/types';
+import { AppModal } from '@/shared/components/ui/AppModal';
 
 interface CreateBoardModalProps {
   onSubmit: (data: CreateBoardInput) => Promise<void>;
@@ -10,66 +15,35 @@ interface CreateBoardModalProps {
 }
 
 export function CreateBoardModal({ onSubmit, onClose }: CreateBoardModalProps) {
-  useEffect(() => {
-    const handleKeyDown = (event: KeyboardEvent) => {
-      if (event.key === 'Escape') onClose();
-    };
-    document.addEventListener('keydown', handleKeyDown);
-    return () => document.removeEventListener('keydown', handleKeyDown);
-  }, [onClose]);
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
   return (
-    <div className="fixed inset-0 z-50 flex items-end justify-center p-4 sm:items-center">
-      <div
-        className="absolute inset-0 bg-black/50 backdrop-blur-sm"
-        onClick={onClose}
-        aria-hidden
+    <AppModal
+      title="New board"
+      onClose={onClose}
+      footer={
+        <>
+          <Button onClick={onClose}>Cancel</Button>
+          <Button
+            type="primary"
+            htmlType="submit"
+            form={CREATE_BOARD_FORM_ID}
+            loading={isSubmitting}
+          >
+            Create Board
+          </Button>
+        </>
+      }
+    >
+      <CreateBoardForm
+        onSubmit={async (data) => {
+          await onSubmit(data);
+          onClose();
+        }}
+        onCancel={onClose}
+        variant="modal"
+        onSubmittingChange={setIsSubmitting}
       />
-      <div
-        role="dialog"
-        aria-modal="true"
-        aria-labelledby="create-board-title"
-        className="relative z-10 w-full max-w-md overflow-hidden rounded-2xl bg-white shadow-2xl"
-      >
-        <div className="flex items-center justify-between border-b border-gray-100 px-6 py-4">
-          <h2
-            id="create-board-title"
-            className="text-lg font-semibold text-gray-900"
-          >
-            New board
-          </h2>
-          <button
-            type="button"
-            onClick={onClose}
-            className="rounded-lg p-2 text-gray-400 transition hover:bg-gray-100 hover:text-gray-600"
-            aria-label="Close"
-          >
-            <svg
-              className="h-5 w-5"
-              fill="none"
-              viewBox="0 0 24 24"
-              stroke="currentColor"
-            >
-              <path
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                strokeWidth={2}
-                d="M6 18L18 6M6 6l12 12"
-              />
-            </svg>
-          </button>
-        </div>
-        <div className="p-6">
-          <CreateBoardForm
-            onSubmit={async (data) => {
-              await onSubmit(data);
-              onClose();
-            }}
-            onCancel={onClose}
-            variant="modal"
-          />
-        </div>
-      </div>
-    </div>
+    </AppModal>
   );
 }

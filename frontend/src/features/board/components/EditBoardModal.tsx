@@ -4,16 +4,19 @@ import { useEffect, useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
+import { Button } from 'antd';
 import type { Board, UpdateBoardInput } from '../types';
-import { Button } from '@/shared/components/ui/Button';
 import { Input } from '@/shared/components/ui/Input';
 import { getApiErrorMessage } from '@/lib/api';
+import { AppModal } from '@/shared/components/ui/AppModal';
 
 const schema = z.object({
   name: z.string().min(2, 'Name must be at least 2 characters').max(100),
 });
 
 type FormData = z.infer<typeof schema>;
+
+const FORM_ID = 'edit-board-form';
 
 interface EditBoardModalProps {
   board: Board;
@@ -53,40 +56,40 @@ export function EditBoardModal({
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
-      <div
-        className="absolute inset-0 bg-black/40"
-        onClick={onClose}
-        aria-hidden
-      />
-      <div className="relative z-10 w-full max-w-md rounded-xl bg-white p-6 shadow-xl">
-        <h2 className="text-lg font-semibold text-gray-900">Edit Board</h2>
+    <AppModal
+      title="Edit Board"
+      onClose={onClose}
+      footer={
+        <>
+          <Button onClick={onClose}>Cancel</Button>
+          <Button
+            type="primary"
+            htmlType="submit"
+            form={FORM_ID}
+            loading={isSubmitting}
+          >
+            Save
+          </Button>
+        </>
+      }
+    >
+      {error && (
+        <div className="mb-4 rounded-lg bg-red-50 px-4 py-3 text-sm text-red-700">
+          {error}
+        </div>
+      )}
 
-        {error && (
-          <div className="mt-4 rounded-lg bg-red-50 px-4 py-3 text-sm text-red-700">
-            {error}
-          </div>
-        )}
-
-        <form
-          onSubmit={handleSubmit(handleFormSubmit)}
-          className="mt-4 space-y-4"
-        >
-          <Input
-            label="Board Name"
-            error={errors.name?.message}
-            {...register('name')}
-          />
-          <div className="flex justify-end gap-2">
-            <Button type="button" variant="secondary" onClick={onClose}>
-              Cancel
-            </Button>
-            <Button type="submit" isLoading={isSubmitting}>
-              Save
-            </Button>
-          </div>
-        </form>
-      </div>
-    </div>
+      <form
+        id={FORM_ID}
+        onSubmit={handleSubmit(handleFormSubmit)}
+        className="space-y-4"
+      >
+        <Input
+          label="Board Name"
+          error={errors.name?.message}
+          {...register('name')}
+        />
+      </form>
+    </AppModal>
   );
 }

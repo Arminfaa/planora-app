@@ -29,18 +29,20 @@ const schema = z
 
 type FormData = z.infer<typeof schema>;
 
-const FORM_ID = 'create-project-form';
+export const CREATE_PROJECT_FORM_ID = 'create-project-form';
 
 interface CreateProjectFormProps {
   onSubmit: (data: CreateProjectInput) => Promise<void>;
   onCancel: () => void;
   variant?: 'default' | 'modal';
+  onSubmittingChange?: (isSubmitting: boolean) => void;
 }
 
 export function CreateProjectForm({
   onSubmit,
   onCancel,
   variant = 'default',
+  onSubmittingChange,
 }: CreateProjectFormProps) {
   const [error, setError] = useState('');
   const [customRoles, setCustomRoles] = useState<
@@ -63,9 +65,10 @@ export function CreateProjectForm({
 
   const handleFormSubmit = async (data: FormData) => {
     setError('');
+    onSubmittingChange?.(true);
 
-    if (permissionMode === 'CUSTOM') {
-      try {
+    try {
+      if (permissionMode === 'CUSTOM') {
         const validRoles = validateCustomRoles(customRoles);
         await onSubmit({
           name: data.name,
@@ -75,13 +78,9 @@ export function CreateProjectForm({
         });
         reset();
         setCustomRoles([{ name: 'Project Manager', permissions: [] }]);
-      } catch (err) {
-        setError(getApiErrorMessage(err));
+        return;
       }
-      return;
-    }
 
-    try {
       await onSubmit({
         name: data.name,
         description: data.description,
@@ -90,6 +89,8 @@ export function CreateProjectForm({
       reset();
     } catch (err) {
       setError(getApiErrorMessage(err));
+    } finally {
+      onSubmittingChange?.(false);
     }
   };
 
@@ -180,26 +181,13 @@ export function CreateProjectForm({
 
   if (isModal) {
     return (
-      <>
-        <form
-          id={FORM_ID}
-          onSubmit={handleSubmit(handleFormSubmit)}
-          className="flex min-h-0 flex-1 flex-col overflow-hidden"
-        >
-          <div className="min-h-0 flex-1 space-y-4 overflow-y-auto px-6 py-4">
-            {formFields}
-          </div>
-        </form>
-
-        <div className="flex shrink-0 justify-end gap-3 border-t border-gray-100 bg-white px-6 py-4">
-          <Button type="button" variant="secondary" onClick={onCancel}>
-            Cancel
-          </Button>
-          <Button type="submit" form={FORM_ID} isLoading={isSubmitting}>
-            Create Project
-          </Button>
-        </div>
-      </>
+      <form
+        id={CREATE_PROJECT_FORM_ID}
+        onSubmit={handleSubmit(handleFormSubmit)}
+        className="space-y-4"
+      >
+        {formFields}
+      </form>
     );
   }
 
