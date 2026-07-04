@@ -17,6 +17,9 @@
     "db:seed": "tsx prisma/seed.ts",
     "db:init": "tsx prisma/init-replica-set.ts",
     "db:start": "node scripts/start-mongo.mjs",
+    "db:migrate-atlas": "node scripts/migrate-to-atlas.mjs all",
+    "db:dump-local": "node scripts/migrate-to-atlas.mjs export",
+    "db:restore-atlas": "node scripts/migrate-to-atlas.mjs import",
     "test:smoke": "tsx tests/smoke/api.smoke.ts"
   },
   "prisma": {

@@ -38,5 +38,5 @@ coverage/
 backend/prisma/*.db
 backend/prisma/*.db-journal
 
-# TypeScript
-*.tsbuildinfo
+# MongoDB dump (local export before Atlas import)
+backend/mongo-dump/
