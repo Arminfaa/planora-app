@@ -1,9 +1,10 @@
 'use client';
 
-import { useForm } from 'react-hook-form';
+import { useForm, Controller } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import { useState } from 'react';
+import { Radio } from 'antd';
 import { Button } from '@/shared/components/ui/Button';
 import { Input } from '@/shared/components/ui/Input';
 import { getApiErrorMessage } from '@/lib/api';
@@ -52,6 +53,7 @@ export function CreateProjectForm({
 
   const {
     register,
+    control,
     handleSubmit,
     watch,
     reset,
@@ -115,40 +117,39 @@ export function CreateProjectForm({
 
       <div className="space-y-2">
         <p className="text-sm font-medium text-gray-700">Access model</p>
-        <div className="grid gap-2 sm:grid-cols-2">
-          <label className="flex cursor-pointer items-start gap-3 rounded-lg border border-gray-200 p-3 has-[:checked]:border-primary-500 has-[:checked]:bg-primary-50/40">
-            <input
-              type="radio"
-              value="DEFAULT"
-              {...register('permissionMode')}
-              className="mt-1"
-            />
-            <span>
-              <span className="block text-sm font-medium text-gray-900">
-                Default
-              </span>
-              <span className="block text-xs text-gray-500">
-                Owner, Admin, Member
-              </span>
-            </span>
-          </label>
-          <label className="flex cursor-pointer items-start gap-3 rounded-lg border border-gray-200 p-3 has-[:checked]:border-primary-500 has-[:checked]:bg-primary-50/40">
-            <input
-              type="radio"
-              value="CUSTOM"
-              {...register('permissionMode')}
-              className="mt-1"
-            />
-            <span>
-              <span className="block text-sm font-medium text-gray-900">
-                Custom
-              </span>
-              <span className="block text-xs text-gray-500">
-                Define your own roles
-              </span>
-            </span>
-          </label>
-        </div>
+        <Controller
+          name="permissionMode"
+          control={control}
+          render={({ field }) => (
+            <Radio.Group
+              {...field}
+              className="grid w-full gap-2 sm:grid-cols-2"
+            >
+              <label className="flex cursor-pointer items-start gap-3 rounded-lg border border-gray-200 p-3 has-[:checked]:border-primary-500 has-[:checked]:bg-primary-50/40">
+                <Radio value="DEFAULT" className="mt-1" />
+                <span>
+                  <span className="block text-sm font-medium text-gray-900">
+                    Default
+                  </span>
+                  <span className="block text-xs text-gray-500">
+                    Owner, Admin, Member
+                  </span>
+                </span>
+              </label>
+              <label className="flex cursor-pointer items-start gap-3 rounded-lg border border-gray-200 p-3 has-[:checked]:border-primary-500 has-[:checked]:bg-primary-50/40">
+                <Radio value="CUSTOM" className="mt-1" />
+                <span>
+                  <span className="block text-sm font-medium text-gray-900">
+                    Custom
+                  </span>
+                  <span className="block text-xs text-gray-500">
+                    Define your own roles
+                  </span>
+                </span>
+              </label>
+            </Radio.Group>
+          )}
+        />
       </div>
 
       {permissionMode === 'DEFAULT' && (

@@ -8,6 +8,9 @@ import type { CreateTaskInput } from '@/features/tasks/types';
 import { PRIORITY_OPTIONS, priorityStyles } from '@/features/tasks/types';
 import { taskService } from '@/features/tasks/services/task.service';
 import { Input } from '@/shared/components/ui/Input';
+import { TextArea } from '@/shared/components/ui/TextArea';
+import { SelectField } from '@/shared/components/ui/SelectField';
+import { DateInput } from '@/shared/components/ui/DateInput';
 import { getApiErrorMessage } from '@/lib/api';
 import { AppModal } from '@/shared/components/ui/AppModal';
 import { MemberMultiSelect } from './MemberMultiSelect';
@@ -39,8 +42,15 @@ export function AllTasksCreateModal({
   const [error, setError] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
 
-  const selectClassName =
-    'block w-full rounded-lg border border-gray-300 px-3 py-2 text-sm shadow-sm focus:border-primary-500 focus:outline-none focus:ring-1 focus:ring-primary-500';
+  const columnOptions = [
+    { value: '', label: 'نامشخص (auto)' },
+    ...columns.map((column) => ({ value: column.id, label: column.name })),
+  ];
+
+  const priorityOptions = PRIORITY_OPTIONS.map((option) => ({
+    value: option,
+    label: priorityStyles[option].label,
+  }));
 
   const handleSubmit = async (event: React.FormEvent) => {
     event.preventDefault();
@@ -107,68 +117,45 @@ export function AllTasksCreateModal({
             required
           />
 
-          <label className="block space-y-1.5">
-            <span className="text-sm font-medium text-gray-700">
-              Description (optional)
-            </span>
-            <textarea
-              value={description}
-              onChange={(event) => setDescription(event.target.value)}
-              rows={3}
-              className="block w-full rounded-lg border border-gray-300 px-3 py-2 text-sm shadow-sm focus:border-primary-500 focus:outline-none focus:ring-1 focus:ring-primary-500"
-            />
-          </label>
-
-          <label className="block space-y-1.5">
-            <span className="text-sm font-medium text-gray-700">Column</span>
-            <select
-              value={columnId}
-              onChange={(event) => setColumnId(event.target.value)}
-              className={selectClassName}
-            >
-              <option value="">نامشخص (auto)</option>
-              {columns.map((column) => (
-                <option key={column.id} value={column.id}>
-                  {column.name}
-                </option>
-              ))}
-            </select>
-          </label>
-
-          <label className="block space-y-1.5">
-            <span className="text-sm font-medium text-gray-700">Priority</span>
-            <select
-              value={priority}
-              onChange={(event) =>
-                setPriority(event.target.value as CreateTaskInput['priority'])
-              }
-              className={selectClassName}
-            >
-              {PRIORITY_OPTIONS.map((option) => (
-                <option key={option} value={option}>
-                  {priorityStyles[option].label}
-                </option>
-              ))}
-            </select>
-          </label>
-
-          <Input
-            label="Due date (optional)"
-            type="date"
-            value={dueDate}
-            onChange={(event) => setDueDate(event.target.value)}
+          <TextArea
+            label="Description (optional)"
+            value={description}
+            onChange={(event) => setDescription(event.target.value)}
+            rows={3}
           />
 
-          <label className="block space-y-1.5">
-            <span className="text-sm font-medium text-gray-700">
+          <SelectField
+            label="Column"
+            value={columnId}
+            onChange={setColumnId}
+            options={columnOptions}
+          />
+
+          <SelectField
+            label="Priority"
+            value={priority}
+            onChange={(value) =>
+              setPriority(value as CreateTaskInput['priority'])
+            }
+            options={priorityOptions}
+          />
+
+          <DateInput
+            label="Due date (optional)"
+            value={dueDate}
+            onChange={setDueDate}
+          />
+
+          <div className="space-y-1">
+            <label className="block text-sm font-medium text-gray-700">
               Assignees (optional)
-            </span>
+            </label>
             <MemberMultiSelect
               members={members}
               value={assigneeIds}
               onChange={setAssigneeIds}
             />
-          </label>
+          </div>
         </div>
       </form>
     </AppModal>

@@ -386,7 +386,7 @@ export function KanbanBoard({
   const hasCustomBackground = Boolean(backgroundUrl);
 
   return (
-    <div className="relative flex min-h-[calc(100dvh-65px)] w-full flex-col overflow-hidden px-6">
+    <div className="relative flex min-h-[calc(100dvh-65px)] w-full flex-col overflow-hidden px-4 sm:px-6">
       {/* Background layer */}
       <div className="pointer-events-none absolute inset-0">
         {hasCustomBackground ? (

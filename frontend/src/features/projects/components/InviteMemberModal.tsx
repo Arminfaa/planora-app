@@ -1,7 +1,7 @@
 'use client';
 
 import { useState } from 'react';
-import { useForm } from 'react-hook-form';
+import { useForm, Controller } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import { Button } from 'antd';
@@ -12,6 +12,7 @@ import type {
   ProjectRoleDefinition,
 } from '../types';
 import { Input } from '@/shared/components/ui/Input';
+import { SelectField } from '@/shared/components/ui/SelectField';
 import { getApiErrorMessage } from '@/lib/api';
 import { AppModal } from '@/shared/components/ui/AppModal';
 
@@ -50,6 +51,7 @@ export function InviteMemberModal({
 
   const {
     register,
+    control,
     handleSubmit,
     formState: { errors, isSubmitting },
   } = useForm<FormData>({
@@ -99,8 +101,15 @@ export function InviteMemberModal({
     setCopied(true);
   };
 
-  const selectClassName =
-    'block w-full rounded-lg border border-gray-300 px-3 py-2.5 text-sm shadow-sm focus:border-primary-500 focus:outline-none focus:ring-1 focus:ring-primary-500';
+  const customRoleOptions = customRoles.map((role) => ({
+    value: role.id,
+    label: role.name,
+  }));
+
+  const defaultRoleOptions = [
+    { value: 'MEMBER', label: 'Member' },
+    { value: 'ADMIN', label: 'Admin' },
+  ];
 
   return (
     <AppModal
@@ -156,28 +165,31 @@ export function InviteMemberModal({
             error={errors.email?.message}
             {...register('email')}
           />
-          <div className="space-y-1">
-            <label className="block text-sm font-medium text-gray-700">
-              Role
-            </label>
-            {permissionMode === 'CUSTOM' ? (
-              <select
-                className={selectClassName}
-                {...register('roleDefinitionId')}
-              >
-                {customRoles.map((role) => (
-                  <option key={role.id} value={role.id}>
-                    {role.name}
-                  </option>
-                ))}
-              </select>
-            ) : (
-              <select className={selectClassName} {...register('role')}>
-                <option value="MEMBER">Member</option>
-                <option value="ADMIN">Admin</option>
-              </select>
-            )}
-          </div>
+          {permissionMode === 'CUSTOM' ? (
+            <Controller
+              name="roleDefinitionId"
+              control={control}
+              render={({ field }) => (
+                <SelectField
+                  label="Role"
+                  options={customRoleOptions}
+                  {...field}
+                />
+              )}
+            />
+          ) : (
+            <Controller
+              name="role"
+              control={control}
+              render={({ field }) => (
+                <SelectField
+                  label="Role"
+                  options={defaultRoleOptions}
+                  {...field}
+                />
+              )}
+            />
+          )}
         </form>
       )}
     </AppModal>

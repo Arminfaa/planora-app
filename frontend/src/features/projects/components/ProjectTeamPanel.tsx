@@ -11,6 +11,7 @@ import type {
 } from '../types';
 import { InviteMemberModal } from './InviteMemberModal';
 import { Button } from '@/shared/components/ui/Button';
+import { SelectField } from '@/shared/components/ui/SelectField';
 import { formatDate } from '@/features/dashboard/utils/stats';
 import { getApiErrorMessage } from '@/lib/api';
 
@@ -157,37 +158,35 @@ export function ProjectTeamPanel({
                   <div className="flex items-center gap-2">
                     {canChangeRole && !isOwner ? (
                       permissionMode === 'CUSTOM' ? (
-                        <select
+                        <SelectField
                           value={member.roleDefinitionId ?? ''}
-                          onChange={(event) =>
+                          onChange={(value) =>
                             void handleUpdateRole(member.id, {
-                              roleDefinitionId: event.target.value,
+                              roleDefinitionId: value,
                             })
                           }
-                          className="rounded-lg border border-gray-300 px-2 py-1 text-sm"
-                        >
-                          {customRoles.map((role) => (
-                            <option key={role.id} value={role.id}>
-                              {role.name}
-                            </option>
-                          ))}
-                        </select>
+                          options={customRoles.map((role) => ({
+                            value: role.id,
+                            label: role.name,
+                          }))}
+                          size="medium"
+                          className="min-w-[8rem]"
+                        />
                       ) : (
-                        <select
+                        <SelectField
                           value={member.role ?? 'MEMBER'}
-                          onChange={(event) =>
+                          onChange={(value) =>
                             void handleUpdateRole(member.id, {
-                              role: event.target.value as Exclude<
-                                ProjectRole,
-                                'OWNER'
-                              >,
+                              role: value as Exclude<ProjectRole, 'OWNER'>,
                             })
                           }
-                          className="rounded-lg border border-gray-300 px-2 py-1 text-sm"
-                        >
-                          <option value="MEMBER">Member</option>
-                          <option value="ADMIN">Admin</option>
-                        </select>
+                          options={[
+                            { value: 'MEMBER', label: 'Member' },
+                            { value: 'ADMIN', label: 'Admin' },
+                          ]}
+                          size="medium"
+                          className="min-w-[7rem]"
+                        />
                       )
                     ) : (
                       <span className="rounded-full bg-gray-100 px-2.5 py-0.5 text-xs font-medium text-gray-700">

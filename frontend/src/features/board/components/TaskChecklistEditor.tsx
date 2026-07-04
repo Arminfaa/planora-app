@@ -1,9 +1,11 @@
 'use client';
 
 import { useState } from 'react';
+import { Checkbox } from 'antd';
 import type { TaskChecklistItem } from '@/features/tasks/types';
 import { checklistService } from '@/features/tasks/services/checklist.service';
 import { Button } from '@/shared/components/ui/Button';
+import { Input } from '@/shared/components/ui/Input';
 import { getApiErrorMessage } from '@/lib/api';
 
 interface TaskChecklistEditorProps {
@@ -122,21 +124,19 @@ export function TaskChecklistEditor({
               key={item.id}
               className="flex items-start gap-2 rounded-md border border-gray-100 bg-gray-50 px-2 py-1.5"
             >
-              <input
-                type="checkbox"
+              <Checkbox
                 checked={item.isDone}
                 disabled={!canToggle}
                 onChange={() => void handleToggle(item)}
-                className="mt-0.5 rounded border-gray-300 text-primary-600 focus:ring-primary-500 disabled:cursor-default"
+                className="mt-0.5"
               />
 
               {editingId === item.id ? (
-                <input
-                  type="text"
+                <Input
                   value={editTitle}
                   onChange={(event) => setEditTitle(event.target.value)}
                   autoFocus
-                  className="min-w-0 flex-1 rounded border border-gray-300 px-2 py-0.5 text-sm focus:border-primary-500 focus:outline-none focus:ring-1 focus:ring-primary-500"
+                  className="min-w-0 flex-1 py-0.5 text-sm"
                   onKeyDown={(event) => {
                     if (event.key === 'Enter') {
                       event.preventDefault();
@@ -193,12 +193,11 @@ export function TaskChecklistEditor({
 
       {canManage && (
         <div className="flex gap-2">
-          <input
-            type="text"
+          <Input
             value={newTitle}
             onChange={(event) => setNewTitle(event.target.value)}
             placeholder="Add checklist item..."
-            className="block min-w-0 flex-1 rounded-lg border border-gray-300 px-3 py-2 text-sm shadow-sm focus:border-primary-500 focus:outline-none focus:ring-1 focus:ring-primary-500"
+            className="min-w-0 flex-1"
             onKeyDown={(event) => {
               if (event.key === 'Enter') {
                 event.preventDefault();

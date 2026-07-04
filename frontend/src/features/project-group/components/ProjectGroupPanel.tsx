@@ -9,6 +9,7 @@ import {
 } from '../utils/formatDateTime';
 import { useAuth } from '@/features/auth/hooks/useAuth';
 import { Button } from '@/shared/components/ui/Button';
+import { TextArea } from '@/shared/components/ui/TextArea';
 import { getApiErrorMessage } from '@/lib/api';
 import { getAssetUrl } from '@/lib/assets';
 import { useProjectGroup } from '../hooks/useProjectGroup';
@@ -193,11 +194,10 @@ function GroupMessageItem({
 
           {isEditing ? (
             <div className="w-full min-w-[16rem] space-y-2 rounded-2xl border border-gray-200 bg-white p-3 shadow-sm">
-              <textarea
+              <TextArea
                 value={editContent}
                 onChange={(e) => setEditContent(e.target.value)}
                 rows={3}
-                className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:border-primary-500 focus:outline-none focus:ring-1 focus:ring-primary-500"
               />
               <div className="flex gap-2">
                 <Button
@@ -500,7 +500,7 @@ export function ProjectGroupPanel({
         {(canSend || canUpload) && (
           <div className="shrink-0 border-t border-gray-100 bg-white px-5 py-4">
             <div className="flex gap-2">
-              <textarea
+              <TextArea
                 value={content}
                 onChange={(e) => setContent(e.target.value)}
                 placeholder={
@@ -514,7 +514,7 @@ export function ProjectGroupPanel({
                     void handleSend();
                   }
                 }}
-                className="flex-1 resize-none rounded-lg border border-gray-300 px-3 py-2 text-sm focus:border-primary-500 focus:outline-none focus:ring-1 focus:ring-primary-500 disabled:bg-gray-50"
+                className="flex-1 resize-none"
               />
               <div className="flex flex-col gap-2">
                 {canUpload && (

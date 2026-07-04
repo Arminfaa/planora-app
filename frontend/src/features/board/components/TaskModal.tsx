@@ -1,6 +1,6 @@
 'use client';
 
-import { useForm } from 'react-hook-form';
+import { useForm, Controller } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import { useState } from 'react';
@@ -21,6 +21,9 @@ import {
 } from '@/features/tasks/types';
 import { toDateInputValue } from '@/features/tasks/utils/dates';
 import { Input } from '@/shared/components/ui/Input';
+import { TextArea } from '@/shared/components/ui/TextArea';
+import { SelectField } from '@/shared/components/ui/SelectField';
+import { DateInput } from '@/shared/components/ui/DateInput';
 import { getApiErrorMessage } from '@/lib/api';
 import { AppModal } from '@/shared/components/ui/AppModal';
 import { MemberMultiSelect } from './MemberMultiSelect';
@@ -77,6 +80,7 @@ export function TaskModal({
 
   const {
     register,
+    control,
     handleSubmit,
     formState: { errors, isSubmitting },
   } = useForm<FormData>({
@@ -130,8 +134,15 @@ export function TaskModal({
     }
   };
 
-  const selectClassName =
-    'block w-full rounded-lg border border-gray-300 px-3 py-2.5 text-sm shadow-sm focus:border-primary-500 focus:outline-none focus:ring-1 focus:ring-primary-500';
+  const priorityOptions = PRIORITY_OPTIONS.map((priority) => ({
+    value: priority,
+    label: priorityStyles[priority].label,
+  }));
+
+  const columnOptions = columns.map((column) => ({
+    value: column.id,
+    label: column.name,
+  }));
 
   return (
     <AppModal
@@ -174,36 +185,39 @@ export function TaskModal({
           {...register('title')}
         />
 
-        <div className="space-y-1">
-          <label className="block text-sm font-medium text-gray-700">
-            Description
-          </label>
-          <textarea
-            className="block w-full rounded-lg border border-gray-300 px-3 py-2 text-sm shadow-sm focus:border-primary-500 focus:outline-none focus:ring-1 focus:ring-primary-500"
-            rows={3}
-            {...register('description')}
-          />
-        </div>
+        <Controller
+          name="description"
+          control={control}
+          render={({ field }) => (
+            <TextArea label="Description" rows={3} {...field} />
+          )}
+        />
 
         <div className="grid gap-4 sm:grid-cols-2">
-          <div className="space-y-1">
-            <label className="block text-sm font-medium text-gray-700">
-              Priority
-            </label>
-            <select className={selectClassName} {...register('priority')}>
-              {PRIORITY_OPTIONS.map((p) => (
-                <option key={p} value={p}>
-                  {priorityStyles[p].label}
-                </option>
-              ))}
-            </select>
-          </div>
+          <Controller
+            name="priority"
+            control={control}
+            render={({ field }) => (
+              <SelectField
+                label="Priority"
+                options={priorityOptions}
+                {...field}
+              />
+            )}
+          />
 
-          <Input
-            label="Due Date"
-            type="date"
-            error={errors.dueDate?.message}
-            {...register('dueDate')}
+          <Controller
+            name="dueDate"
+            control={control}
+            render={({ field }) => (
+              <DateInput
+                label="Due Date"
+                error={errors.dueDate?.message}
+                value={field.value ?? ''}
+                onChange={field.onChange}
+                onBlur={field.onBlur}
+              />
+            )}
           />
         </div>
 
@@ -218,18 +232,13 @@ export function TaskModal({
           />
         </div>
 
-        <div className="space-y-1">
-          <label className="block text-sm font-medium text-gray-700">
-            Column
-          </label>
-          <select className={selectClassName} {...register('columnId')}>
-            {columns.map((col) => (
-              <option key={col.id} value={col.id}>
-                {col.name}
-              </option>
-            ))}
-          </select>
-        </div>
+        <Controller
+          name="columnId"
+          control={control}
+          render={({ field }) => (
+            <SelectField label="Column" options={columnOptions} {...field} />
+          )}
+        />
       </form>
 
       <div className="mt-6 space-y-6 border-t border-gray-100 pt-6">

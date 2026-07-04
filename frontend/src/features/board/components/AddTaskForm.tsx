@@ -5,6 +5,7 @@ import type { ProjectMember } from '@/features/projects/types';
 import type { CreateTaskInput } from '@/features/tasks/types';
 import { Button } from '@/shared/components/ui/Button';
 import { Input } from '@/shared/components/ui/Input';
+import { DateInput } from '@/shared/components/ui/DateInput';
 import { MemberMultiSelect } from './MemberMultiSelect';
 
 interface AddTaskFormProps {
@@ -63,11 +64,7 @@ export function AddTaskForm({ members, onSubmit }: AddTaskFormProps) {
         onChange={(e) => setTitle(e.target.value)}
         autoFocus
       />
-      <Input
-        type="date"
-        value={dueDate}
-        onChange={(e) => setDueDate(e.target.value)}
-      />
+      <DateInput value={dueDate} onChange={setDueDate} placeholder="Due date" />
       <div className="space-y-1">
         <span className="text-xs font-medium text-gray-600">Assignees</span>
         <MemberMultiSelect

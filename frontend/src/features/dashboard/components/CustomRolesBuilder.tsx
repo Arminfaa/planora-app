@@ -1,6 +1,7 @@
 'use client';
 
 import { useState } from 'react';
+import { Checkbox } from 'antd';
 import {
   PERMISSION_GROUPS,
   type Permission,
@@ -132,42 +133,34 @@ export function CustomRolesBuilder({
                           key={group.key}
                           className="rounded-lg border border-gray-200 bg-white p-3"
                         >
-                          <label className="mb-2 flex items-center gap-2 text-sm font-medium text-gray-800">
-                            <input
-                              type="checkbox"
-                              checked={allSelected}
-                              ref={(el) => {
-                                if (el) el.indeterminate = someSelected;
-                              }}
-                              onChange={(event) =>
-                                toggleGroup(
-                                  index,
-                                  group.key,
-                                  event.target.checked,
-                                )
-                              }
-                              className="rounded border-gray-300 text-primary-600 focus:ring-primary-500"
-                            />
+                          <Checkbox
+                            indeterminate={someSelected}
+                            checked={allSelected}
+                            onChange={(event) =>
+                              toggleGroup(
+                                index,
+                                group.key,
+                                event.target.checked,
+                              )
+                            }
+                            className="text-sm font-medium text-gray-800"
+                          >
                             {group.label}
-                          </label>
-                          <div className="grid gap-1.5 sm:grid-cols-2">
+                          </Checkbox>
+                          <div className="mt-2 grid gap-1.5 sm:grid-cols-2">
                             {group.permissions.map((permission) => (
-                              <label
+                              <Checkbox
                                 key={permission.key}
-                                className="flex items-center gap-2 text-sm text-gray-600"
+                                checked={role.permissions.includes(
+                                  permission.key,
+                                )}
+                                onChange={() =>
+                                  togglePermission(index, permission.key)
+                                }
+                                className="text-sm text-gray-600"
                               >
-                                <input
-                                  type="checkbox"
-                                  checked={role.permissions.includes(
-                                    permission.key,
-                                  )}
-                                  onChange={() =>
-                                    togglePermission(index, permission.key)
-                                  }
-                                  className="rounded border-gray-300 text-primary-600 focus:ring-primary-500"
-                                />
                                 {permission.label}
-                              </label>
+                              </Checkbox>
                             ))}
                           </div>
                         </div>

@@ -6,6 +6,7 @@ import {
   priorityStyles,
   type TaskPriority,
 } from '@/features/tasks/types';
+import { SelectField } from '@/shared/components/ui/SelectField';
 import {
   DUE_DATE_FILTER_OPTIONS,
   UNASSIGNED_ASSIGNEE,
@@ -45,9 +46,24 @@ export function BoardFilterForm({
     ? 'text-xs font-medium uppercase tracking-wide text-gray-400'
     : 'text-xs font-medium uppercase tracking-wide text-gray-400';
 
-  const selectClass = isModal
-    ? 'w-full rounded-lg border border-gray-300 bg-white px-3 py-2.5 text-sm text-gray-900 focus:border-primary-500 focus:outline-none focus:ring-2 focus:ring-primary-500/20'
-    : 'w-full rounded-lg border border-gray-300 bg-white px-3 py-2 text-sm text-gray-900 focus:border-primary-500 focus:outline-none focus:ring-1 focus:ring-primary-500';
+  const columnOptions = [
+    { value: '', label: 'All columns' },
+    ...columns.map((column) => ({ value: column.id, label: column.name })),
+  ];
+
+  const assigneeOptions = [
+    { value: '', label: 'All assignees' },
+    { value: UNASSIGNED_ASSIGNEE, label: 'Unassigned' },
+    ...assignees.map((assignee) => ({
+      value: assignee.id,
+      label: assignee.name,
+    })),
+  ];
+
+  const dueDateOptions = DUE_DATE_FILTER_OPTIONS.map((option) => ({
+    value: option.value,
+    label: option.label,
+  }));
 
   return (
     <div className={isModal ? 'space-y-5' : 'space-y-3'}>
@@ -88,70 +104,43 @@ export function BoardFilterForm({
       </div>
 
       <div className="grid gap-4 sm:grid-cols-2">
-        <label className="space-y-1.5 sm:col-span-2">
-          <span className={labelClass}>Column</span>
-          <select
+        <div className="sm:col-span-2">
+          <SelectField
+            label={<span className={labelClass}>Column</span>}
             value={filters.columnId ?? ''}
-            onChange={(event) => {
-              const value = event.target.value;
+            onChange={(value) =>
               onChange({
                 ...filters,
                 columnId: value === '' ? null : value,
-              });
-            }}
-            className={selectClass}
-          >
-            <option value="">All columns</option>
-            {columns.map((column) => (
-              <option key={column.id} value={column.id}>
-                {column.name}
-              </option>
-            ))}
-          </select>
-        </label>
-
-        <label className="space-y-1.5">
-          <span className={labelClass}>Assignee</span>
-          <select
-            value={filters.assigneeId ?? ''}
-            onChange={(event) => {
-              const value = event.target.value;
-              onChange({
-                ...filters,
-                assigneeId: value === '' ? null : value,
-              });
-            }}
-            className={selectClass}
-          >
-            <option value="">All assignees</option>
-            <option value={UNASSIGNED_ASSIGNEE}>Unassigned</option>
-            {assignees.map((assignee) => (
-              <option key={assignee.id} value={assignee.id}>
-                {assignee.name}
-              </option>
-            ))}
-          </select>
-        </label>
-
-        <label className="space-y-1.5">
-          <span className={labelClass}>Due date</span>
-          <select
-            value={filters.dueDate}
-            onChange={(event) =>
-              onChange({
-                ...filters,
-                dueDate: event.target.value as TaskFilters['dueDate'],
               })
             }
-            className={selectClass}
-          >
-            {DUE_DATE_FILTER_OPTIONS.map((option) => (
-              <option key={option.value} value={option.value}>
-                {option.label}
-              </option>
-            ))}
-          </select>
-        </label>
+            options={columnOptions}
+          />
+        </div>
+
+        <SelectField
+          label={<span className={labelClass}>Assignee</span>}
+          value={filters.assigneeId ?? ''}
+          onChange={(value) =>
+            onChange({
+              ...filters,
+              assigneeId: value === '' ? null : value,
+            })
+          }
+          options={assigneeOptions}
+        />
+
+        <SelectField
+          label={<span className={labelClass}>Due date</span>}
+          value={filters.dueDate}
+          onChange={(value) =>
+            onChange({
+              ...filters,
+              dueDate: value as TaskFilters['dueDate'],
+            })
+          }
+          options={dueDateOptions}
+        />
       </div>
     </div>
   );

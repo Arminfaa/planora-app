@@ -4,6 +4,7 @@ import { useCallback, useEffect, useState } from 'react';
 import { commentService } from '../services/comment.service';
 import type { TaskComment } from '../types';
 import { Button } from '@/shared/components/ui/Button';
+import { TextArea } from '@/shared/components/ui/TextArea';
 import { getApiErrorMessage } from '@/lib/api';
 import { useAuth } from '@/features/auth/hooks/useAuth';
 import { formatDate } from '@/features/dashboard/utils/stats';
@@ -145,8 +146,7 @@ export function TaskComments({ taskId }: TaskCommentsProps) {
 
                 {isEditing ? (
                   <div className="mt-2 space-y-2">
-                    <textarea
-                      className="block w-full rounded-lg border border-gray-300 px-3 py-2 text-sm"
+                    <TextArea
                       rows={2}
                       value={editContent}
                       onChange={(event) => setEditContent(event.target.value)}
@@ -182,8 +182,7 @@ export function TaskComments({ taskId }: TaskCommentsProps) {
       )}
 
       <div className="space-y-2">
-        <textarea
-          className="block w-full rounded-lg border border-gray-300 px-3 py-2 text-sm shadow-sm focus:border-primary-500 focus:outline-none focus:ring-1 focus:ring-primary-500"
+        <TextArea
           rows={2}
           placeholder="Write a comment..."
           value={content}

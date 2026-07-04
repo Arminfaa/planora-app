@@ -4,6 +4,7 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 import Link from 'next/link';
 import { useDebounce } from '@/shared/hooks/useDebounce';
 import { getApiErrorMessage } from '@/lib/api';
+import { SearchInput } from '@/shared/components/ui/SearchInput';
 import { searchService } from '../services/search.service';
 import type { SearchProjectResult } from '../types';
 
@@ -86,33 +87,14 @@ export function GlobalSearch() {
 
   return (
     <div ref={containerRef} className="relative w-full max-w-md">
-      <div className="relative">
-        <span className="pointer-events-none absolute inset-y-0 left-3 flex items-center text-gray-400">
-          <svg
-            className="h-4 w-4"
-            fill="none"
-            viewBox="0 0 24 24"
-            stroke="currentColor"
-            aria-hidden
-          >
-            <path
-              strokeLinecap="round"
-              strokeLinejoin="round"
-              strokeWidth={2}
-              d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"
-            />
-          </svg>
-        </span>
-        <input
-          type="search"
-          value={query}
-          onChange={(event) => setQuery(event.target.value)}
-          onFocus={() => setIsOpen(true)}
-          placeholder="Search projects..."
-          className="w-full rounded-lg border border-gray-300 bg-gray-50 py-2 pl-9 pr-3 text-sm text-gray-900 placeholder:text-gray-400 focus:border-primary-500 focus:bg-white focus:outline-none focus:ring-1 focus:ring-primary-500"
-          aria-label="Search projects"
-        />
-      </div>
+      <SearchInput
+        value={query}
+        onChange={(event) => setQuery(event.target.value)}
+        onFocus={() => setIsOpen(true)}
+        placeholder="Search projects..."
+        aria-label="Search projects"
+        className="rounded-lg border-gray-300 bg-gray-50 shadow-sm focus-within:bg-white"
+      />
 
       {showResults && (
         <div
