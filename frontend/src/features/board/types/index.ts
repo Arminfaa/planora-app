@@ -20,6 +20,7 @@ export interface BoardTask {
   position: number;
   priority: TaskPriority;
   dueDate: string | null;
+  isCompleted?: boolean;
   column?: {
     id: string;
     name: string;

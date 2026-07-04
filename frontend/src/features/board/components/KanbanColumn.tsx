@@ -19,7 +19,13 @@ import { GripVerticalIcon } from './GripVerticalIcon';
 interface KanbanColumnProps {
   column: BoardColumn;
   members: ProjectMember[];
-  onTaskClick: (task: BoardTask) => void;
+  onTaskEdit: (task: BoardTask) => void;
+  onTaskToggleComplete?: (task: BoardTask, completed: boolean) => void;
+  onChecklistItemToggle?: (
+    taskId: string,
+    itemId: string,
+    isDone: boolean,
+  ) => void | Promise<void>;
   onTaskAttachmentClick?: (task: BoardTask) => void;
   onAddTask: (columnId: string, input: CreateTaskInput) => Promise<void>;
   onEdit?: (column: BoardColumn) => void;
@@ -27,7 +33,9 @@ interface KanbanColumnProps {
   canDelete?: boolean;
   canReorder?: boolean;
   canCreateTask?: boolean;
-  canOpenTask?: boolean;
+  canEditTask?: boolean;
+  canToggleComplete?: boolean;
+  canToggleChecklist?: boolean;
   canMoveTasks?: boolean;
   dragHandleProps?: HTMLAttributes<HTMLButtonElement>;
   isDragOverlay?: boolean;
@@ -38,7 +46,9 @@ interface KanbanColumnProps {
 export const KanbanColumn = memo(function KanbanColumn({
   column,
   members,
-  onTaskClick,
+  onTaskEdit,
+  onTaskToggleComplete,
+  onChecklistItemToggle,
   onTaskAttachmentClick,
   onAddTask,
   onEdit,
@@ -46,7 +56,9 @@ export const KanbanColumn = memo(function KanbanColumn({
   canDelete = false,
   canReorder = false,
   canCreateTask = false,
-  canOpenTask = false,
+  canEditTask = false,
+  canToggleComplete = false,
+  canToggleChecklist = false,
   canMoveTasks = false,
   dragHandleProps,
   isDragOverlay = false,
@@ -155,10 +167,19 @@ export const KanbanColumn = memo(function KanbanColumn({
             <SortableTaskCard
               key={`${task.id}-${task.position}`}
               task={task}
-              onClick={canOpenTask ? onTaskClick : undefined}
+              isCompleted={Boolean(task.isCompleted)}
+              onEdit={canEditTask ? onTaskEdit : undefined}
+              onToggleComplete={
+                canToggleComplete ? onTaskToggleComplete : undefined
+              }
+              onChecklistItemToggle={
+                canToggleChecklist ? onChecklistItemToggle : undefined
+              }
               onAttachmentClick={onTaskAttachmentClick}
               isHighlighted={highlightedTaskId === task.id}
-              canOpen={canOpenTask}
+              canEdit={canEditTask}
+              canToggleComplete={canToggleComplete}
+              canToggleChecklist={canToggleChecklist}
               canDrag={canMoveTasks}
             />
           ))}

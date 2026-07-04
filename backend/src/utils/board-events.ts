@@ -29,6 +29,7 @@ function serializeTask(task: Record<string, unknown>) {
     dueDate: task.dueDate
       ? new Date(task.dueDate as string | Date).toISOString()
       : null,
+    isCompleted: Boolean(task.isCompleted),
     assignees: task.assignees ?? [],
     checklistItems: Array.isArray(task.checklistItems)
       ? task.checklistItems.map((item) => ({

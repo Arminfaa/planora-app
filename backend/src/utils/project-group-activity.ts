@@ -15,6 +15,7 @@ const FIELD_LABELS: Record<string, string> = {
   assigneeIds: 'assignees',
   columnId: 'column',
   position: 'position',
+  isCompleted: 'completion',
 };
 
 function formatAssignees(task: {
@@ -38,6 +39,9 @@ function formatValue(field: string, value: unknown): string | null {
   if (field === 'assigneeIds' && Array.isArray(value)) {
     return value.length > 0 ? `${value.length} member(s)` : 'none';
   }
+  if (field === 'isCompleted') {
+    return value ? 'Completed' : 'Incomplete';
+  }
   return String(value);
 }
 
@@ -51,6 +55,7 @@ export function buildTaskActivityChanges(
     assignees?: Array<{ name: string }>;
     columnId: string;
     position: number;
+    isCompleted: boolean;
   },
   input: UpdateTaskInput,
   updated: {
@@ -61,6 +66,7 @@ export function buildTaskActivityChanges(
     assigneeIds: string[];
     assignees?: Array<{ name: string }>;
     columnId: string;
+    isCompleted: boolean;
   },
 ): ActivityChange[] {
   const changes: ActivityChange[] = [];
@@ -71,6 +77,7 @@ export function buildTaskActivityChanges(
     'dueDate',
     'assigneeIds',
     'columnId',
+    'isCompleted',
   ];
 
   for (const field of fields) {

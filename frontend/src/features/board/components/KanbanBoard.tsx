@@ -19,6 +19,7 @@ import { useBoardSocket } from '../hooks/useBoardSocket';
 import type { BoardSocketEvent } from '../types/socket';
 import { columnService } from '../services/column.service';
 import { taskService } from '@/features/tasks/services/task.service';
+import { checklistService } from '@/features/tasks/services/checklist.service';
 import type { CreateTaskInput } from '@/features/tasks/types';
 import { useProjectMembers } from '@/features/projects/hooks/useProjectMembers';
 import { getApiErrorMessage, isForbiddenError } from '@/lib/api';
@@ -308,6 +309,39 @@ export function KanbanBoard({
     closeTask();
   }, [closeTask, onRefresh]);
 
+  const handleToggleComplete = useCallback(
+    async (task: BoardTask, completed: boolean) => {
+      if (Boolean(task.isCompleted) === completed) return;
+
+      setActionError('');
+      try {
+        await taskService.update(task.id, { isCompleted: completed });
+        await onRefresh({ silent: true });
+      } catch (err) {
+        if (!isForbiddenError(err)) {
+          setActionError(getApiErrorMessage(err));
+        }
+      }
+    },
+    [onRefresh],
+  );
+
+  const handleChecklistItemToggle = useCallback(
+    async (taskId: string, itemId: string, isDone: boolean) => {
+      setActionError('');
+      try {
+        await checklistService.update(taskId, itemId, { isDone });
+        await onRefresh({ silent: true });
+      } catch (err) {
+        if (!isForbiddenError(err)) {
+          setActionError(getApiErrorMessage(err));
+        }
+        throw err;
+      }
+    },
+    [onRefresh],
+  );
+
   const totalTasks = columns.reduce(
     (sum, col) => sum + (col.tasks?.length ?? 0),
     0,
@@ -420,7 +454,9 @@ export function KanbanBoard({
                     key={column.id}
                     column={column}
                     members={members}
-                    onTaskClick={openTask}
+                    onTaskEdit={openTask}
+                    onTaskToggleComplete={handleToggleComplete}
+                    onChecklistItemToggle={handleChecklistItemToggle}
                     onTaskAttachmentClick={openTaskAttachments}
                     onAddTask={handleAddTask}
                     onEdit={canEditColumns ? setEditingColumn : undefined}
@@ -428,7 +464,9 @@ export function KanbanBoard({
                     canDelete={canDeleteColumns}
                     canReorder={canReorderColumns}
                     canCreateTask={canCreateTasks}
-                    canOpenTask={canEditTasks}
+                    canEditTask={canEditTasks}
+                    canToggleComplete={canEditTasks}
+                    canToggleChecklist={canEditTasks}
                     canMoveTasks={canMoveTasks}
                     highlightedTaskId={highlightedTaskId}
                     variant="glass"
@@ -459,13 +497,17 @@ export function KanbanBoard({
 
             <DragOverlay>
               {activeTask ? (
-                <TaskCard task={activeTask} onClick={() => {}} isDragOverlay />
+                <TaskCard
+                  task={activeTask}
+                  isCompleted={Boolean(activeTask.isCompleted)}
+                  isDragOverlay
+                />
               ) : null}
               {activeColumn ? (
                 <KanbanColumn
                   column={activeColumn}
                   members={members}
-                  onTaskClick={() => {}}
+                  onTaskEdit={() => {}}
                   onAddTask={async () => {}}
                   canReorder={canReorderColumns}
                   isDragOverlay

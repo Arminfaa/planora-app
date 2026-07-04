@@ -7,6 +7,7 @@ function normalizeTask(task: BoardTask): BoardTask {
     id: String(task.id),
     columnId: String(task.columnId),
     position: Number(task.position),
+    isCompleted: Boolean(task.isCompleted),
   };
 }
 

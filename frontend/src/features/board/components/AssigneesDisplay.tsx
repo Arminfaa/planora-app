@@ -1,5 +1,6 @@
 'use client';
 
+import { Tooltip } from 'antd';
 import type { TaskAssignee } from '@/features/tasks/types';
 import { getTaskAssignees } from '@/features/tasks/types';
 
@@ -27,20 +28,27 @@ export function AssigneesDisplay({
     return null;
   }
 
-  const tooltip = list.map((assignee) => assignee.name).join(', ');
-
   if (list.length === 1) {
-    return (
-      <span className={className} title={tooltip}>
-        {list[0].name}
-      </span>
-    );
+    return <span className={className}>{list[0].name}</span>;
   }
 
   return (
-    <span className={className} title={tooltip}>
-      {list[0].name}{' '}
-      <span className="font-medium text-gray-400">+{list.length - 1}</span>
-    </span>
+    <Tooltip
+      placement="topRight"
+      title={
+        <ul className="m-0 list-none space-y-0.5 p-0">
+          {list.map((assignee) => (
+            <li key={assignee.id}>{assignee.name}</li>
+          ))}
+        </ul>
+      }
+    >
+      <span
+        className={`inline-flex max-w-full cursor-default items-center gap-0.5 ${className}`}
+      >
+        {list[0].name}{' '}
+        <span className="font-medium text-gray-400">+{list.length - 1}</span>
+      </span>
+    </Tooltip>
   );
 }

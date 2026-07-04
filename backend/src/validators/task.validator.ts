@@ -36,6 +36,7 @@ export const updateTaskSchema = createTaskSchema.partial().extend({
   columnId: objectIdSchema.optional(),
   assigneeIds: z.array(objectIdSchema).optional(),
   dueDate: z.coerce.date().nullable().optional(),
+  isCompleted: z.boolean().optional(),
 });
 
 export const taskListQuerySchema = paginationSchema;

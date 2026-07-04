@@ -1,5 +1,6 @@
 'use client';
 
+import { Checkbox } from 'antd';
 import { memo } from 'react';
 import { useSortable } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
@@ -10,43 +11,60 @@ import { normalizeTaskLabels } from '@/features/labels/types';
 import { formatDueDate, isDueDateOverdue } from '@/features/tasks/utils/dates';
 import { getTaskAttachmentCount } from '../utils/taskMeta';
 import { PaperclipIcon } from './PaperclipIcon';
+import { EditIcon } from './EditIcon';
 import { TaskChecklistPreview } from './TaskChecklistPreview';
 import { AssigneeDisplay } from './AssigneeDisplay';
 
 interface TaskCardProps {
   task: BoardTask;
-  onClick?: (task: BoardTask) => void;
+  isCompleted?: boolean;
+  onEdit?: (task: BoardTask) => void;
+  onToggleComplete?: (task: BoardTask, completed: boolean) => void;
+  onChecklistItemToggle?: (
+    taskId: string,
+    itemId: string,
+    isDone: boolean,
+  ) => void | Promise<void>;
   onAttachmentClick?: (task: BoardTask) => void;
   isDragOverlay?: boolean;
   isDimmed?: boolean;
   isHighlighted?: boolean;
-  canOpen?: boolean;
+  canEdit?: boolean;
+  canToggleComplete?: boolean;
+  canToggleChecklist?: boolean;
 }
 
 export const TaskCard = memo(function TaskCard({
   task,
-  onClick,
+  isCompleted = false,
+  onEdit,
+  onToggleComplete,
+  onChecklistItemToggle,
   onAttachmentClick,
   isDragOverlay = false,
   isDimmed = false,
   isHighlighted = false,
-  canOpen = true,
+  canEdit = false,
+  canToggleComplete = false,
+  canToggleChecklist = false,
 }: TaskCardProps) {
   const style = priorityStyles[task.priority];
   const labels = normalizeTaskLabels(task.labels);
   const attachmentCount = getTaskAttachmentCount(task);
 
+  const stopCardPointer = (event: React.SyntheticEvent) => {
+    event.stopPropagation();
+  };
+
   return (
     <div
-      className={`relative w-full rounded-lg border bg-white shadow-sm transition ${
-        canOpen ? 'hover:border-primary-300 hover:shadow-md' : ''
-      } ${
+      className={`relative cursor-default w-full rounded-lg border bg-white shadow-sm transition ${
         isDragOverlay ? 'rotate-2 shadow-lg ring-2 ring-primary-200' : ''
       } ${isDimmed ? 'opacity-35' : ''} ${
         isHighlighted
           ? 'border-primary-400 ring-2 ring-primary-100'
           : 'border-gray-200'
-      }`}
+      } ${isCompleted ? 'bg-green-100/70' : ''}`}
     >
       {attachmentCount > 0 && (
         <button
@@ -55,7 +73,7 @@ export const TaskCard = memo(function TaskCard({
             event.stopPropagation();
             onAttachmentClick?.(task);
           }}
-          onPointerDown={(event) => event.stopPropagation()}
+          onPointerDown={stopCardPointer}
           className="absolute right-2 top-2 z-10 flex items-center gap-0.5 rounded-md bg-white/90 px-1.5 py-1 text-gray-600 shadow-sm ring-1 ring-gray-200 hover:bg-primary-50 hover:text-primary-600"
           aria-label={`View ${attachmentCount} attachment${attachmentCount === 1 ? '' : 's'}`}
           title={`${attachmentCount} attachment${attachmentCount === 1 ? '' : 's'}`}
@@ -69,71 +87,129 @@ export const TaskCard = memo(function TaskCard({
         </button>
       )}
 
-      <button
-        type="button"
-        onClick={() => canOpen && onClick?.(task)}
-        disabled={!canOpen}
-        className={`w-full p-3 text-left ${attachmentCount > 0 ? 'pr-10' : ''} ${
-          canOpen ? 'cursor-pointer' : 'cursor-default'
-        }`}
-      >
-        <p className="text-sm font-medium text-gray-900">{task.title}</p>
-        {task.description && (
-          <p className="mt-1 line-clamp-2 text-xs text-gray-500">
-            {task.description}
-          </p>
-        )}
-        <LabelBadges labels={labels} className="mt-2" />
-        <TaskChecklistPreview items={task.checklistItems} />
-        <div className="mt-3 flex items-center justify-between gap-2">
-          <span
-            className={`rounded px-2 py-0.5 text-xs font-medium ${style.badge}`}
+      <div className={`p-3 ${attachmentCount > 0 ? 'pr-10' : ''}`}>
+        <div className="flex items-start gap-2">
+          <div
+            className="shrink-0 pt-0.5"
+            onClick={stopCardPointer}
+            onPointerDown={stopCardPointer}
           >
-            {style.label}
-          </span>
-          <div className="flex min-w-0 flex-col items-end gap-0.5">
-            {task.dueDate && (
-              <span
-                className={`text-xs ${
-                  isDueDateOverdue(task.dueDate)
-                    ? 'font-medium text-red-600'
-                    : 'text-gray-500'
+            <Checkbox
+              checked={isCompleted}
+              disabled={!canToggleComplete}
+              onChange={(event) =>
+                onToggleComplete?.(task, event.target.checked)
+              }
+            />
+          </div>
+
+          <div className="min-w-0 flex-1">
+            <div className="flex items-start justify-between gap-2">
+              <p
+                className={`text-sm font-medium ${
+                  isCompleted ? 'text-gray-500 line-through' : 'text-gray-900'
                 }`}
               >
-                {formatDueDate(task.dueDate)}
-              </span>
+                {task.title}
+              </p>
+              {canEdit && onEdit && (
+                <button
+                  type="button"
+                  onClick={(event) => {
+                    event.stopPropagation();
+                    onEdit(task);
+                  }}
+                  onPointerDown={stopCardPointer}
+                  className="shrink-0 rounded p-1 text-gray-400 transition hover:bg-gray-100 hover:text-primary-600"
+                  aria-label={`Edit ${task.title}`}
+                  title="Edit task"
+                >
+                  <EditIcon className="h-3.5 w-3.5" />
+                </button>
+              )}
+            </div>
+
+            {task.description && (
+              <p className="mt-1 line-clamp-2 text-xs text-gray-500">
+                {task.description}
+              </p>
             )}
-            <span
-              className="inline-flex max-w-full justify-end"
-              onPointerDown={(event) => event.stopPropagation()}
-              onClick={(event) => event.stopPropagation()}
-            >
-              <AssigneeDisplay task={task} className="text-xs text-gray-500" />
-            </span>
+
+            <LabelBadges labels={labels} className="mt-2" />
+
+            <TaskChecklistPreview
+              items={task.checklistItems}
+              interactive={canToggleChecklist}
+              onToggleItem={
+                canToggleChecklist && onChecklistItemToggle
+                  ? (itemId, isDone) =>
+                      onChecklistItemToggle(task.id, itemId, isDone)
+                  : undefined
+              }
+            />
+
+            <div className="mt-3 flex items-center justify-between gap-2">
+              <span
+                className={`rounded px-2 py-0.5 text-xs font-medium ${style.badge}`}
+              >
+                {style.label}
+              </span>
+              <div className="flex min-w-0 flex-col items-end gap-0.5">
+                {task.dueDate && (
+                  <span
+                    className={`text-xs ${
+                      isDueDateOverdue(task.dueDate)
+                        ? 'font-medium text-red-600'
+                        : 'text-gray-500'
+                    }`}
+                  >
+                    {formatDueDate(task.dueDate)}
+                  </span>
+                )}
+                <AssigneeDisplay
+                  task={task}
+                  className="text-xs text-gray-500"
+                />
+              </div>
+            </div>
           </div>
         </div>
-      </button>
+      </div>
     </div>
   );
 });
 
 interface SortableTaskCardProps {
   task: BoardTask;
-  onClick?: (task: BoardTask) => void;
+  isCompleted?: boolean;
+  onEdit?: (task: BoardTask) => void;
+  onToggleComplete?: (task: BoardTask, completed: boolean) => void;
+  onChecklistItemToggle?: (
+    taskId: string,
+    itemId: string,
+    isDone: boolean,
+  ) => void | Promise<void>;
   onAttachmentClick?: (task: BoardTask) => void;
   isDimmed?: boolean;
   isHighlighted?: boolean;
-  canOpen?: boolean;
+  canEdit?: boolean;
+  canToggleComplete?: boolean;
+  canToggleChecklist?: boolean;
   canDrag?: boolean;
 }
 
 export const SortableTaskCard = memo(function SortableTaskCard({
   task,
-  onClick,
+  isCompleted = false,
+  onEdit,
+  onToggleComplete,
+  onChecklistItemToggle,
   onAttachmentClick,
   isDimmed = false,
   isHighlighted = false,
-  canOpen = true,
+  canEdit = false,
+  canToggleComplete = false,
+  canToggleChecklist = false,
   canDrag = true,
 }: SortableTaskCardProps) {
   const {
@@ -164,11 +240,16 @@ export const SortableTaskCard = memo(function SortableTaskCard({
     >
       <TaskCard
         task={task}
-        onClick={onClick}
+        isCompleted={isCompleted}
+        onEdit={onEdit}
+        onToggleComplete={onToggleComplete}
+        onChecklistItemToggle={onChecklistItemToggle}
         onAttachmentClick={onAttachmentClick}
         isDimmed={isDimmed}
         isHighlighted={isHighlighted}
-        canOpen={canOpen}
+        canEdit={canEdit}
+        canToggleComplete={canToggleComplete}
+        canToggleChecklist={canToggleChecklist}
       />
     </div>
   );

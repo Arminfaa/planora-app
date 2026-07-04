@@ -23,6 +23,7 @@ export interface Task {
   position: number;
   priority: TaskPriority;
   dueDate: string | null;
+  isCompleted?: boolean;
   assigneeIds: string[];
   createdById: string;
   createdAt: string;
@@ -54,6 +55,7 @@ export interface UpdateTaskInput {
   position?: number;
   dueDate?: string | null;
   assigneeIds?: string[];
+  isCompleted?: boolean;
 }
 
 export const PRIORITY_OPTIONS: TaskPriority[] = [
