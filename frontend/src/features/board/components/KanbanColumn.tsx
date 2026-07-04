@@ -167,6 +167,13 @@ export const KanbanColumn = memo(function KanbanColumn({
             : ''
         }`}
       >
+        {canCreateTask && (
+          <AddTaskForm
+            members={members}
+            onSubmit={(input) => onAddTask(column.id, input)}
+          />
+        )}
+
         <SortableContext
           key={sortableKey}
           items={taskIds}
@@ -204,13 +211,6 @@ export const KanbanColumn = memo(function KanbanColumn({
           >
             Drop tasks here
           </div>
-        )}
-
-        {canCreateTask && (
-          <AddTaskForm
-            members={members}
-            onSubmit={(input) => onAddTask(column.id, input)}
-          />
         )}
       </div>
     </div>
