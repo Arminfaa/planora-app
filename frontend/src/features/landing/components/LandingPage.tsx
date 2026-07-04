@@ -6,7 +6,7 @@ import { useAuth } from '@/features/auth/hooks/useAuth';
 import { LandingNavbar } from './LandingNavbar';
 
 const highlights = [
-  'Project group chat',
+  'Project group',
   'Custom roles',
   'All tasks view',
   'Live collaboration',
@@ -14,9 +14,9 @@ const highlights = [
 
 const features = [
   {
-    title: 'Project group chat',
+    title: 'Project group',
     description:
-      'Keep the whole team aligned with real-time messaging, file uploads, and an automatic activity feed for every task change.',
+      'Chat with your team in a thread built for work — message bubbles, avatars, file uploads, and a live activity feed for every task change.',
     icon: (
       <path
         strokeLinecap="round"
@@ -171,7 +171,7 @@ const stats = [
   { value: 'Kanban', label: 'Drag-and-drop boards' },
   { value: 'Live', label: 'Real-time updates' },
   { value: 'Roles', label: 'Granular permissions' },
-  { value: 'Chat', label: 'Team + activity feed' },
+  { value: 'Group', label: 'Project group' },
 ];
 
 function KanbanPreview() {
@@ -266,82 +266,112 @@ function KanbanPreview() {
   );
 }
 
-function GroupChatPreview() {
-  const messages = [
-    {
-      type: 'activity' as const,
-      text: 'Sarah moved "Board UI" to In Progress',
-      time: '2m ago',
-    },
-    {
-      type: 'user' as const,
-      author: 'Alex',
-      text: 'Uploaded the wireframes — take a look!',
-      time: '5m ago',
-      own: false,
-    },
-    {
-      type: 'user' as const,
-      author: 'You',
-      text: "Looks great. I'll review after standup.",
-      time: 'Just now',
-      own: true,
-    },
-  ];
+function PreviewAvatar({
+  name,
+  className = '',
+}: {
+  name: string;
+  className?: string;
+}) {
+  const initials = name
+    .split(' ')
+    .filter(Boolean)
+    .slice(0, 2)
+    .map((part) => part[0]?.toUpperCase() ?? '')
+    .join('');
 
   return (
-    <div className="overflow-hidden rounded-2xl border border-indigo-200/60 bg-white/90 shadow-xl backdrop-blur-sm">
-      <div className="border-b border-indigo-100 bg-gradient-to-r from-indigo-50 to-violet-50/50 px-4 py-3">
+    <span
+      className={`flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-gradient-to-br from-primary-500 to-violet-600 text-[10px] font-semibold text-white ${className}`}
+    >
+      {initials}
+    </span>
+  );
+}
+
+function GroupChatPreview() {
+  return (
+    <div className="overflow-hidden rounded-2xl border border-gray-200/80 bg-white shadow-xl backdrop-blur-sm">
+      <div className="border-b border-gray-100 bg-white px-4 py-3">
         <div className="flex items-center justify-between">
           <div>
-            <p className="text-[10px] font-medium uppercase tracking-wider text-indigo-400">
+            <p className="text-[10px] font-medium uppercase tracking-wider text-gray-400">
               Project group
             </p>
             <p className="text-sm font-semibold text-gray-900">
               Product launch
             </p>
           </div>
-          <span className="rounded-full bg-indigo-100 px-2 py-0.5 text-[10px] font-medium text-indigo-700">
-            4 online
+          <span className="inline-flex items-center gap-1.5 rounded-full bg-emerald-50 px-2.5 py-1 text-[10px] font-medium text-emerald-700 ring-1 ring-emerald-100">
+            <span className="relative flex h-1.5 w-1.5">
+              <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-emerald-400 opacity-75" />
+              <span className="relative inline-flex h-1.5 w-1.5 rounded-full bg-emerald-500" />
+            </span>
+            Live
           </span>
         </div>
       </div>
-      <div className="space-y-2 p-3">
-        {messages.map((msg, i) =>
-          msg.type === 'activity' ? (
-            <div
-              key={i}
-              className="rounded-lg border border-indigo-100 bg-indigo-50/60 px-3 py-2"
-            >
-              <p className="text-[11px] text-gray-700">{msg.text}</p>
-              <p className="mt-0.5 text-[9px] text-gray-400">{msg.time}</p>
+
+      <div className="space-y-1 bg-gray-50/40 px-3 py-3">
+        <div className="py-1 text-center">
+          <span className="text-[10px] font-medium text-gray-400">Today</span>
+        </div>
+
+        <div className="flex flex-col items-center gap-1.5 py-1">
+          <div className="max-w-[90%] rounded-full bg-gray-100 px-3 py-1.5 text-center">
+            <p className="text-[10px] leading-relaxed text-gray-600">
+              Sarah moved <span className="font-medium">Board UI</span> to In
+              Progress
+            </p>
+          </div>
+        </div>
+
+        <div className="flex w-full justify-start py-0.5">
+          <div className="flex max-w-[85%] gap-2">
+            <div className="flex shrink-0 items-end pb-4">
+              <PreviewAvatar name="Alex Chen" />
             </div>
-          ) : (
-            <div
-              key={i}
-              className={`rounded-lg border px-3 py-2 ${
-                msg.own
-                  ? 'ml-6 border-primary-200 bg-primary-50/70'
-                  : 'mr-6 border-gray-200 bg-white'
-              }`}
-            >
-              {!msg.own && (
-                <p className="text-[9px] font-medium text-gray-500">
-                  {msg.author}
+            <div className="min-w-0">
+              <p className="mb-0.5 px-1 text-[10px] font-medium text-gray-400">
+                Alex Chen
+              </p>
+              <div className="relative rounded-2xl bg-gray-100 px-3 py-2 pb-5">
+                <p className="pe-8 text-[11px] leading-relaxed text-gray-900">
+                  Uploaded the wireframes — take a look!
                 </p>
-              )}
-              <p className="text-[11px] text-gray-800">{msg.text}</p>
-              <p className="mt-0.5 text-[9px] text-gray-400">{msg.time}</p>
+                <span className="absolute bottom-1.5 end-2.5 text-[9px] text-gray-400">
+                  10:24
+                </span>
+              </div>
             </div>
-          ),
-        )}
-        <div className="mt-1 flex items-center gap-2 rounded-lg border border-gray-200 bg-gray-50 px-3 py-2">
-          <span className="flex-1 text-[11px] text-gray-400">
-            Message the team…
-          </span>
-          <span className="rounded-md bg-primary-600 px-2 py-0.5 text-[9px] font-medium text-white">
-            Send
-          </span>
+          </div>
+        </div>
+
+        <div className="flex w-full justify-end py-0.5">
+          <div className="flex max-w-[85%] flex-row-reverse gap-2">
+            <div className="flex shrink-0 items-end pb-4">
+              <PreviewAvatar name="You" />
+            </div>
+            <div className="min-w-0">
+              <p className="mb-0.5 px-1 text-end text-[10px] font-medium text-gray-400">
+                You
+              </p>
+              <div className="relative rounded-2xl bg-primary-100 px-3 py-2 pb-5">
+                <p className="pe-8 text-[11px] leading-relaxed text-gray-900">
+                  Looks great. I&apos;ll review after standup.
+                </p>
+                <span className="absolute bottom-1.5 end-2.5 text-[9px] text-gray-400">
+                  10:31
+                </span>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div className="border-t border-gray-100 bg-white px-3 py-2.5">
+        <div className="rounded-lg border border-gray-200 bg-gray-50 px-3 py-2">
+          <span className="text-[11px] text-gray-400">Write a message...</span>
         </div>
       </div>
     </div>
@@ -352,11 +382,11 @@ function ProductPreview() {
   return (
     <div className="relative mx-auto max-w-5xl">
       <div className="absolute -inset-6 rounded-[2rem] bg-gradient-to-r from-primary-400/20 via-violet-400/15 to-indigo-400/20 blur-3xl" />
-      <div className="relative grid gap-4 lg:grid-cols-5 lg:gap-5">
-        <div className="lg:col-span-3 lg:translate-y-2">
+      <div className="relative grid gap-4 lg:grid-cols-5 lg:gap-5 items-center">
+        <div className="lg:col-span-3">
           <KanbanPreview />
         </div>
-        <div className="lg:col-span-2 lg:-translate-y-2">
+        <div className="lg:col-span-2">
           <GroupChatPreview />
         </div>
       </div>
@@ -420,9 +450,9 @@ export function LandingPage() {
               </span>
             </h1>
             <p className="mx-auto mt-5 max-w-2xl text-lg leading-relaxed text-gray-600">
-              Kanban boards, project group chat with file uploads, custom roles,
-              and granular permissions — built for teams that move fast and stay
-              aligned.
+              Kanban boards, Project group with chat bubbles and activity logs,
+              custom roles, and granular permissions — built for teams that move
+              fast and stay aligned.
             </p>
 
             {!isLoading && (
