@@ -1,7 +1,7 @@
 'use client';
 
 import { useCallback, useEffect, useState } from 'react';
-import { getApiErrorMessage } from '@/lib/api';
+import { getApiErrorMessage, isForbiddenError } from '@/lib/api';
 import { boardService } from '../services/board.service';
 import type { Board, CreateBoardInput, UpdateBoardInput } from '../types';
 import { useProjectSocket } from '@/features/projects/hooks/useProjectSocket';
@@ -22,7 +22,9 @@ export function useBoards(projectId: string | null) {
       const result = await boardService.listByProject(projectId);
       setBoards(result);
     } catch (err) {
-      setError(getApiErrorMessage(err));
+      if (!isForbiddenError(err)) {
+        setError(getApiErrorMessage(err));
+      }
     } finally {
       setIsLoading(false);
     }

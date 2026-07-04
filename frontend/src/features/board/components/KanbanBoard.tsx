@@ -21,7 +21,7 @@ import { columnService } from '../services/column.service';
 import { taskService } from '@/features/tasks/services/task.service';
 import type { CreateTaskInput } from '@/features/tasks/types';
 import { useProjectMembers } from '@/features/projects/hooks/useProjectMembers';
-import { getApiErrorMessage } from '@/lib/api';
+import { getApiErrorMessage, isForbiddenError } from '@/lib/api';
 import { getAssetUrl } from '@/lib/assets';
 import { LoadingSpinner } from '@/shared/components/feedback/LoadingSpinner';
 import { Button } from '@/shared/components/ui/Button';
@@ -100,6 +100,7 @@ export function KanbanBoard({
   }, [board.backgroundUrl]);
 
   const handleError = useCallback((message: string) => {
+    if (message.toLowerCase().includes('permission')) return;
     setActionError(message);
   }, []);
 
@@ -192,7 +193,9 @@ export function KanbanBoard({
         await taskService.create(columnId, input);
         await onRefresh();
       } catch (err) {
-        setActionError(getApiErrorMessage(err));
+        if (!isForbiddenError(err)) {
+          setActionError(getApiErrorMessage(err));
+        }
       }
     },
     [onRefresh],
@@ -209,7 +212,9 @@ export function KanbanBoard({
         setShowCreateColumn(false);
         await onRefresh();
       } catch (err) {
-        setActionError(getApiErrorMessage(err));
+        if (!isForbiddenError(err)) {
+          setActionError(getApiErrorMessage(err));
+        }
         throw err;
       }
     },
@@ -240,7 +245,9 @@ export function KanbanBoard({
         await columnService.delete(column.id);
         await onRefresh();
       } catch (err) {
-        setActionError(getApiErrorMessage(err));
+        if (!isForbiddenError(err)) {
+          setActionError(getApiErrorMessage(err));
+        }
       }
     },
     [onRefresh],

@@ -74,6 +74,24 @@ export class ProjectMemberRepository extends BaseRepository {
     });
   }
 
+  async clearRoleDefinitions(projectId: string): Promise<void> {
+    await this.db.projectMember.updateMany({
+      where: { projectId },
+      data: { roleDefinitionId: null },
+    });
+  }
+
+  async assignRoleDefinition(
+    projectId: string,
+    userId: string,
+    roleDefinitionId: string,
+  ): Promise<void> {
+    await this.db.projectMember.update({
+      where: { projectId_userId: { projectId, userId } },
+      data: { roleDefinitionId },
+    });
+  }
+
   async countUniqueMembersForUserProjects(userId: string): Promise<number> {
     const members = await this.db.projectMember.findMany({
       where: {

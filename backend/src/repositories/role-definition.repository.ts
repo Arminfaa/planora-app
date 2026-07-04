@@ -54,6 +54,10 @@ export class RoleDefinitionRepository extends BaseRepository {
     await this.db.projectRoleDefinition.delete({ where: { id } });
   }
 
+  async deleteByProject(projectId: string): Promise<void> {
+    await this.db.projectRoleDefinition.deleteMany({ where: { projectId } });
+  }
+
   async countMembersWithRole(roleDefinitionId: string): Promise<number> {
     return this.db.projectMember.count({
       where: { roleDefinitionId },

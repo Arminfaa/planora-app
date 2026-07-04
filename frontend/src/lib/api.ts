@@ -37,13 +37,36 @@ api.interceptors.response.use(
   },
 );
 
+export const getApiStatus = (error: unknown): number | undefined => {
+  if (axios.isAxiosError(error)) {
+    return error.response?.status;
+  }
+  return undefined;
+};
+
+export const isForbiddenError = (error: unknown): boolean =>
+  getApiStatus(error) === 403;
+
+export const isNotFoundError = (error: unknown): boolean =>
+  getApiStatus(error) === 404;
+
 export const getApiErrorMessage = (error: unknown): string => {
   if (axios.isAxiosError<ApiErrorResponse>(error)) {
     const data = error.response?.data;
     if (data?.errors?.length) {
       return data.errors.join(', ');
     }
-    return data?.message ?? 'Something went wrong';
+    if (data?.message) {
+      return data.message;
+    }
+    if (error.response?.status === 403) {
+      return 'You do not have permission to perform this action';
+    }
   }
+
+  if (error instanceof Error && !error.message.includes('status code')) {
+    return error.message;
+  }
+
   return 'Something went wrong';
 };

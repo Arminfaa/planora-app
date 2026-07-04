@@ -83,10 +83,11 @@ export function CustomRolesBuilder({
       ) : (
         roles.map((role, index) => {
           const isExpanded = expandedIndex === index;
+          const roleKey = role.id ?? `new-${index}`;
 
           return (
             <div
-              key={index}
+              key={roleKey}
               className="rounded-lg border border-gray-200 bg-gray-50/50"
             >
               <button
@@ -183,6 +184,11 @@ export function CustomRolesBuilder({
                     >
                       Remove role
                     </Button>
+                  )}
+                  {roles.length === 1 && !role.id && (
+                    <p className="text-xs text-gray-500">
+                      At least one role is required.
+                    </p>
                   )}
                 </div>
               )}

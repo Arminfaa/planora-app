@@ -12,6 +12,7 @@ export interface ProjectRoleDefinition {
 }
 
 export interface CustomRoleInput {
+  id?: string;
   name: string;
   permissions: string[];
 }
@@ -50,6 +51,8 @@ export interface CreateProjectInput {
 export interface UpdateProjectInput {
   name?: string;
   description?: string;
+  permissionMode?: PermissionMode;
+  customRoles?: CustomRoleInput[];
 }
 
 export interface ProjectMember {

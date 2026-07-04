@@ -11,15 +11,25 @@ import type {
   ProjectMember,
   UpdateProjectMemberInput,
 } from '../types';
+import { getApiErrorMessage, isForbiddenError } from '@/lib/api';
 
-export function useProjectTeam(projectId: string | null, canManage: boolean) {
+export function useProjectTeam(
+  projectId: string | null,
+  enabled = true,
+  canManageInvites = false,
+) {
   const [members, setMembers] = useState<ProjectMember[]>([]);
   const [invites, setInvites] = useState<ProjectInvite[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState('');
 
   const fetchTeam = useCallback(async () => {
-    if (!projectId) return;
+    if (!projectId || !enabled) {
+      setMembers([]);
+      setInvites([]);
+      setError('');
+      return;
+    }
 
     setIsLoading(true);
     setError('');
@@ -27,18 +37,31 @@ export function useProjectTeam(projectId: string | null, canManage: boolean) {
       const memberList = await projectMemberService.list(projectId);
       setMembers(memberList);
 
-      if (canManage) {
-        const inviteList = await projectMemberService.listInvites(projectId);
-        setInvites(inviteList);
+      if (canManageInvites) {
+        try {
+          const inviteList = await projectMemberService.listInvites(projectId);
+          setInvites(inviteList);
+        } catch (err) {
+          if (!isForbiddenError(err)) {
+            throw err;
+          }
+          setInvites([]);
+        }
       } else {
         setInvites([]);
       }
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed to load team');
+      if (isForbiddenError(err)) {
+        setMembers([]);
+        setInvites([]);
+        setError('');
+        return;
+      }
+      setError(getApiErrorMessage(err));
     } finally {
       setIsLoading(false);
     }
-  }, [canManage, projectId]);
+  }, [canManageInvites, enabled, projectId]);
 
   useEffect(() => {
     void fetchTeam();
@@ -115,7 +138,7 @@ export function useInvitePreview(token: string | null) {
         setPreview(data);
       } catch (err) {
         setPreview(null);
-        setError(err instanceof Error ? err.message : 'Invalid invite');
+        setError(getApiErrorMessage(err));
       } finally {
         setIsLoading(false);
       }

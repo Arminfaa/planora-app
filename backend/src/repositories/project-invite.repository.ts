@@ -55,6 +55,13 @@ export class ProjectInviteRepository extends BaseRepository {
   async delete(id: string): Promise<void> {
     await this.db.projectInvite.delete({ where: { id } });
   }
+
+  async clearRoleDefinitions(projectId: string): Promise<void> {
+    await this.db.projectInvite.updateMany({
+      where: { projectId },
+      data: { roleDefinitionId: null },
+    });
+  }
 }
 
 export const projectInviteRepository = new ProjectInviteRepository();

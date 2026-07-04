@@ -59,19 +59,35 @@ export const createProjectSchema = z
     }
   });
 
-export const updateProjectSchema = z.object({
-  name: z
-    .string()
-    .min(2, 'Name must be at least 2 characters')
-    .max(100)
-    .transform(sanitizeString)
-    .optional(),
-  description: z
-    .string()
-    .max(500)
-    .optional()
-    .transform((v) => (v ? sanitizeString(v) : undefined)),
-});
+export const updateProjectSchema = z
+  .object({
+    name: z
+      .string()
+      .min(2, 'Name must be at least 2 characters')
+      .max(100)
+      .transform(sanitizeString)
+      .optional(),
+    description: z
+      .string()
+      .max(500)
+      .optional()
+      .transform((v) => (v ? sanitizeString(v) : undefined)),
+    permissionMode: z
+      .enum([PermissionMode.DEFAULT, PermissionMode.CUSTOM])
+      .optional(),
+    customRoles: z.array(customRoleSchema).optional(),
+  })
+  .superRefine((data, ctx) => {
+    if (data.permissionMode === PermissionMode.CUSTOM && data.customRoles) {
+      if (data.customRoles.length === 0) {
+        ctx.addIssue({
+          code: z.ZodIssueCode.custom,
+          message: 'At least one custom role is required',
+          path: ['customRoles'],
+        });
+      }
+    }
+  });
 
 export const projectListQuerySchema = paginationSchema;
 

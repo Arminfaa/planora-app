@@ -10,6 +10,7 @@ import type { Board } from '@/features/board/types';
 import { StatsCard } from '@/features/dashboard/components/StatsCard';
 import { EditProjectModal } from '@/features/projects/components/EditProjectModal';
 import { ProjectHeader } from '@/features/projects/components/ProjectHeader';
+import { ProjectRolesPanel } from '@/features/projects/components/ProjectRolesPanel';
 import { ProjectTeamPanel } from '@/features/projects/components/ProjectTeamPanel';
 import { useProjectTeam } from '@/features/projects/hooks/useProjectTeam';
 import { projectService } from '@/features/projects/services/project.service';
@@ -18,11 +19,12 @@ import type {
   AddProjectMemberInput,
   Project,
   ProjectRoleDefinition,
+  UpdateProjectInput,
 } from '@/features/projects/types';
 import { useAuth } from '@/features/auth/hooks/useAuth';
 import { LoadingSpinner } from '@/shared/components/feedback/LoadingSpinner';
 import { Button } from '@/shared/components/ui/Button';
-import { getApiErrorMessage } from '@/lib/api';
+import { getApiErrorMessage, isForbiddenError } from '@/lib/api';
 
 function boardMatchesQuery(board: { name: string }, query: string): boolean {
   const normalized = query.trim().toLowerCase();
@@ -46,11 +48,10 @@ export function ProjectDetailView() {
   const { user } = useAuth();
   const { can } = useProjectPermissions(project);
 
-  const canManageTeam =
-    can('team.invite') ||
-    can('team.change_role') ||
-    can('team.remove') ||
-    can('team.manage_invites');
+  const canViewTeam = can('team.view');
+  const canManageInvites = can('team.manage_invites');
+  const canManageRoles = can('role.manage');
+  const isCustomProject = project?.permissionMode === 'CUSTOM';
 
   const {
     boards,
@@ -73,7 +74,7 @@ export function ProjectDetailView() {
     updateMemberRole,
     removeMember,
     revokeInvite,
-  } = useProjectTeam(project?.id ?? null, canManageTeam);
+  } = useProjectTeam(project?.id ?? null, canViewTeam, canManageInvites);
 
   useEffect(() => {
     if (!project?.id || project.permissionMode !== 'CUSTOM') {
@@ -119,27 +120,15 @@ export function ProjectDetailView() {
 
   const handleUpdateProject = async (
     projectId: string,
-    data: { name?: string; description?: string },
+    data: UpdateProjectInput,
   ) => {
     setActionError('');
-    const updated = await projectService.update(projectId, data);
-    setProject((prev) =>
-      prev
-        ? {
-            ...prev,
-            ...updated,
-            currentUserRole: prev.currentUserRole,
-            currentUserRoleName: prev.currentUserRoleName,
-            currentUserPermissions: prev.currentUserPermissions,
-            permissionMode: prev.permissionMode,
-            owner: prev.owner,
-            _count: prev._count,
-          }
-        : prev,
-    );
+    await projectService.update(projectId, data);
+    const refreshed = await projectService.getBySlug(slug);
+    setProject(refreshed);
 
-    if (updated.slug !== slug) {
-      router.replace(`/dashboard/projects/${updated.slug}`);
+    if (refreshed.slug !== slug) {
+      router.replace(`/dashboard/projects/${refreshed.slug}`);
     }
   };
 
@@ -166,7 +155,9 @@ export function ProjectDetailView() {
     try {
       await createBoard(data);
     } catch (err) {
-      setActionError(getApiErrorMessage(err));
+      if (!isForbiddenError(err)) {
+        setActionError(getApiErrorMessage(err));
+      }
       throw err;
     }
   };
@@ -198,7 +189,9 @@ export function ProjectDetailView() {
     try {
       await deleteBoard(board.id);
     } catch (err) {
-      setActionError(getApiErrorMessage(err));
+      if (!isForbiddenError(err)) {
+        setActionError(getApiErrorMessage(err));
+      }
     }
   };
 
@@ -218,7 +211,9 @@ export function ProjectDetailView() {
       await projectService.delete(project.id);
       router.push('/dashboard');
     } catch (err) {
-      setActionError(getApiErrorMessage(err));
+      if (!isForbiddenError(err)) {
+        setActionError(getApiErrorMessage(err));
+      }
     }
   };
 
@@ -341,23 +336,38 @@ export function ProjectDetailView() {
       </div>
 
       <div className="mx-auto max-w-7xl space-y-8 px-4 py-8 sm:px-6">
-        <ProjectTeamPanel
-          members={members}
-          invites={invites}
-          isLoading={loadingTeam}
-          error={teamError}
-          canInvite={can('team.invite')}
-          canChangeRole={can('team.change_role')}
-          canRemove={can('team.remove')}
-          canManageInvites={can('team.manage_invites')}
-          permissionMode={project.permissionMode ?? 'DEFAULT'}
-          customRoles={customRoles}
-          currentUserId={user?.id}
-          onInvite={handleInviteMember}
-          onUpdateRole={updateMemberRole}
-          onRemove={removeMember}
-          onRevokeInvite={revokeInvite}
-        />
+        {canViewTeam && (
+          <ProjectTeamPanel
+            members={members}
+            invites={invites}
+            isLoading={loadingTeam}
+            error={teamError}
+            canInvite={can('team.invite')}
+            canChangeRole={can('team.change_role')}
+            canRemove={can('team.remove')}
+            canManageInvites={canManageInvites}
+            permissionMode={project.permissionMode ?? 'DEFAULT'}
+            customRoles={customRoles}
+            currentUserId={user?.id}
+            onInvite={handleInviteMember}
+            onUpdateRole={updateMemberRole}
+            onRemove={removeMember}
+            onRevokeInvite={revokeInvite}
+          />
+        )}
+
+        {isCustomProject && (
+          <ProjectRolesPanel
+            projectId={project.id}
+            canManage={canManageRoles}
+            currentUserRole={{
+              id: project.currentUserRoleDefinitionId,
+              name: project.currentUserRoleName,
+              permissions: project.currentUserPermissions ?? [],
+            }}
+            onRolesChange={setCustomRoles}
+          />
+        )}
 
         <section>
           <div className="mb-5">
@@ -436,8 +446,10 @@ export function ProjectDetailView() {
       {showEditProject && (
         <EditProjectModal
           project={project}
+          canManageRoles={canManageRoles}
           onClose={() => setShowEditProject(false)}
           onSubmit={handleUpdateProject}
+          onRolesUpdated={setCustomRoles}
         />
       )}
     </div>
