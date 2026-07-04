@@ -163,43 +163,10 @@
   color: #111827;
 }
 
-.auth-card-stage {
-  position: relative;
+.auth-showcase-illustration {
   width: 100%;
-  max-width: 380px;
-  height: 360px;
-  margin: 0 auto;
-}
-
-.auth-card-slot {
-  position: absolute;
+  max-width: 300px;
   will-change: transform;
-}
-
-/* بالا وسط — کارت اصلی */
-.auth-card-slot-hero {
-  top: 0;
-  left: 50%;
-  z-index: 20;
-  transform: translateX(-52%) rotate(-2deg);
-}
-
-/* پایین چپ — کارت کوچک */
-.auth-card-slot-bottom-left {
-  bottom: 0;
-  left: -20px;
-  z-index: 30;
-  transform: scale(0.9) rotate(3deg);
-  transform-origin: bottom left;
-}
-
-/* راست — کارت میانی */
-.auth-card-slot-top-right {
-  top: 96px;
-  right: -24px;
-  z-index: 25;
-  transform: scale(0.94) rotate(-3.5deg);
-  transform-origin: top right;
 }
 .ant-modal-container {
   padding: 20px 0px !important;
