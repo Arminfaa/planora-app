@@ -428,7 +428,7 @@ export function ProjectGroupPanel({
 
   return (
     <section
-      className={`flex flex-col rounded-xl border border-gray-200 bg-white shadow-sm ${
+      className={`flex flex-col overflow-hidden rounded-xl border border-gray-200 bg-white shadow-sm ${
         fullHeight ? 'min-h-0 flex-1' : ''
       }`}
     >
@@ -446,7 +446,7 @@ export function ProjectGroupPanel({
       >
         <div
           ref={messagesContainerRef}
-          className="flex-1 overflow-y-auto bg-[#fafafa] px-4 py-4 sm:px-5 max-h-[calc(100dvh-260px)]"
+          className="flex-1 overflow-y-auto bg-[#fafafa] px-4 py-4 sm:px-5 max-h-[calc(100dvh-290px)] sm:max-h-[calc(100dvh-260px)]"
         >
           {hasMore && (
             <div className="mb-4 text-center">
@@ -499,7 +499,7 @@ export function ProjectGroupPanel({
 
         {(canSend || canUpload) && (
           <div className="shrink-0 border-t border-gray-100 bg-white px-5 py-4">
-            <div className="flex gap-2">
+            <div className="flex flex-col sm:flex-row items-start gap-2">
               <TextArea
                 value={content}
                 onChange={(e) => setContent(e.target.value)}
@@ -514,9 +514,9 @@ export function ProjectGroupPanel({
                     void handleSend();
                   }
                 }}
-                className="flex-1 resize-none"
+                className="flex-1 resize-none w-full"
               />
-              <div className="flex flex-col gap-2">
+              <div className="flex gap-2">
                 {canUpload && (
                   <>
                     <input
@@ -553,7 +553,7 @@ export function ProjectGroupPanel({
                   <Button
                     disabled={isSubmitting || !content.trim()}
                     onClick={() => void handleSend()}
-                    className="px-3 py-2 text-sm"
+                    className="px-5 py-2 text-sm"
                   >
                     Send
                   </Button>

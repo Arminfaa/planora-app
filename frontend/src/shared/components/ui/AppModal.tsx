@@ -2,9 +2,17 @@
 
 import { Modal } from 'antd';
 import type { ModalProps } from 'antd';
-import type { ReactNode } from 'react';
+import { composeRef } from '@rc-component/util';
+import {
+  useCallback,
+  useId,
+  useLayoutEffect,
+  useRef,
+  type ReactNode,
+} from 'react';
+import { cn } from '@/lib/utils';
 
-const MODAL_BODY_MAX_HEIGHT = 'calc(100vh - 200px)';
+const MOBILE_MODAL_QUERY = '(max-width: 639px)';
 
 export interface AppModalProps {
   title: ReactNode;
@@ -41,6 +49,29 @@ function ModalTitle({
   );
 }
 
+function getModalContainer(panel: HTMLDivElement): HTMLDivElement {
+  return panel.querySelector<HTMLDivElement>('.ant-modal-container') ?? panel;
+}
+
+function measureModalChromeHeight(container: HTMLDivElement): number {
+  const header = container.querySelector<HTMLElement>('.ant-modal-header');
+  const footer = container.querySelector<HTMLElement>('.ant-modal-footer');
+
+  const styles = window.getComputedStyle(container);
+  const containerPadding =
+    Number.parseFloat(styles.paddingTop) +
+    Number.parseFloat(styles.paddingBottom);
+
+  return (
+    (header?.offsetHeight ?? 0) + (footer?.offsetHeight ?? 0) + containerPadding
+  );
+}
+
+function applyModalChromeHeight(container: HTMLDivElement) {
+  const chromeHeight = measureModalChromeHeight(container);
+  container.style.setProperty('--app-modal-chrome-height', `${chromeHeight}px`);
+}
+
 export function AppModal({
   title,
   subtitle,
@@ -55,11 +86,80 @@ export function AppModal({
   className,
   modalProps,
 }: AppModalProps) {
-  const { mask: maskProp, ...restModalProps } = modalProps ?? {};
+  const instanceId = useId().replace(/:/g, '');
+  const instanceClass = `app-modal-root-${instanceId}`;
+  const containerRef = useRef<HTMLDivElement | null>(null);
+  const resizeObserverRef = useRef<ResizeObserver | null>(null);
+
+  const {
+    mask: maskProp,
+    styles: modalStyles,
+    afterOpenChange,
+    panelRef: externalPanelRef,
+    ...restModalProps
+  } = modalProps ?? {};
   const maskConfig =
     typeof maskProp === 'object' && maskProp !== null
       ? { closable: maskClosable, ...maskProp }
       : { closable: maskClosable };
+
+  const measureChromeHeight = useCallback(() => {
+    if (!window.matchMedia(MOBILE_MODAL_QUERY).matches) return;
+
+    const container = containerRef.current;
+    if (!container) return;
+
+    applyModalChromeHeight(container);
+  }, []);
+
+  const bindContainerRef = useCallback(
+    (panel: HTMLDivElement | null) => {
+      resizeObserverRef.current?.disconnect();
+      resizeObserverRef.current = null;
+
+      if (!panel) {
+        containerRef.current = null;
+        return;
+      }
+
+      const container = getModalContainer(panel);
+      containerRef.current = container;
+      measureChromeHeight();
+
+      if (typeof ResizeObserver !== 'undefined') {
+        const observer = new ResizeObserver(measureChromeHeight);
+        resizeObserverRef.current = observer;
+        observer.observe(container);
+        const header = container.querySelector('.ant-modal-header');
+        const footerEl = container.querySelector('.ant-modal-footer');
+        if (header) observer.observe(header);
+        if (footerEl) observer.observe(footerEl);
+      }
+    },
+    [measureChromeHeight],
+  );
+
+  useLayoutEffect(() => {
+    if (!open) return;
+
+    measureChromeHeight();
+    const frame = window.requestAnimationFrame(measureChromeHeight);
+    const timeout = window.setTimeout(measureChromeHeight, 50);
+    window.addEventListener('resize', measureChromeHeight);
+
+    return () => {
+      window.cancelAnimationFrame(frame);
+      window.clearTimeout(timeout);
+      window.removeEventListener('resize', measureChromeHeight);
+    };
+  }, [open, measureChromeHeight, title, subtitle, footer]);
+
+  useLayoutEffect(
+    () => () => {
+      resizeObserverRef.current?.disconnect();
+    },
+    [],
+  );
 
   return (
     <Modal
@@ -72,17 +172,25 @@ export function AppModal({
       zIndex={zIndex}
       mask={maskConfig}
       destroyOnHidden
-      className={className}
+      rootClassName={cn('app-modal-root', instanceClass)}
+      className={cn('app-modal', className)}
+      panelRef={
+        externalPanelRef
+          ? composeRef(bindContainerRef, externalPanelRef)
+          : bindContainerRef
+      }
+      afterOpenChange={(visible) => {
+        if (visible) {
+          window.requestAnimationFrame(measureChromeHeight);
+          window.setTimeout(measureChromeHeight, 50);
+        }
+        afterOpenChange?.(visible);
+      }}
       styles={{
-        body: {
-          maxHeight: MODAL_BODY_MAX_HEIGHT,
-          overflowY: 'auto',
-          paddingTop: 16,
-        },
         footer: {
           textAlign: 'unset',
         },
-        ...restModalProps.styles,
+        ...modalStyles,
       }}
       {...restModalProps}
     >

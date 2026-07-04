@@ -210,10 +210,49 @@
 }
 .ant-modal-body {
   padding: 10px 24px !important;
+  max-height: calc(100dvh - 200px);
+  overflow-y: auto;
 }
 .ant-modal-footer {
   border-top: 1px solid #f0f0f0 !important;
   padding: 10px 24px 0 24px !important;
+}
+
+/* AppModal — full width & height below Tailwind sm (640px) */
+@media (max-width: 639px) {
+  .app-modal-root .ant-modal-wrap {
+    align-items: flex-start !important;
+    justify-content: flex-start !important;
+    overflow: hidden;
+  }
+
+  .app-modal-root .ant-modal-wrap.ant-modal-centered {
+    overflow: hidden !important;
+  }
+
+  .app-modal-root .ant-modal-container {
+    width: 100% !important;
+    max-width: 100% !important;
+    min-height: 100dvh;
+    border-radius: 0 !important;
+  }
+
+  .app-modal-root .ant-modal {
+    top: 0 !important;
+    width: 100% !important;
+    max-width: 100% !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    border-radius: 0 !important;
+  }
+
+  .app-modal-root .ant-modal-body {
+    min-height: calc(100dvh - var(--app-modal-chrome-height, 0px) - 15px);
+    /* max-height: none !important; */
+    height: auto !important;
+    overflow-y: auto;
+    -webkit-overflow-scrolling: touch;
+  }
 }
 .ant-segmented-group {
   padding: 0.35rem;
