@@ -1,7 +1,7 @@
 'use client';
 
 import { useRef, useState } from 'react';
-import { formatDate } from '@/features/dashboard/utils/stats';
+import { formatMessageDateTime } from '../utils/formatDateTime';
 import { useAuth } from '@/features/auth/hooks/useAuth';
 import { Button } from '@/shared/components/ui/Button';
 import { getApiErrorMessage } from '@/lib/api';
@@ -54,7 +54,7 @@ function GroupMessageItem({
           </ul>
         )}
         <p className="mt-1.5 text-xs text-gray-400">
-          {formatDate(message.createdAt)}
+          {formatMessageDateTime(message.createdAt)}
         </p>
       </div>
     );
@@ -170,7 +170,7 @@ function GroupMessageItem({
 
       <div className="mt-2 flex items-center justify-between gap-2">
         <p className="text-xs text-gray-400">
-          {formatDate(message.createdAt)}
+          {formatMessageDateTime(message.createdAt)}
           {message.editedAt && ' (edited)'}
         </p>
         <div className="flex gap-2">
