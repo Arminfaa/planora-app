@@ -52,6 +52,11 @@ export default function BoardPage() {
       canReorderColumns={can('column.reorder')}
       canManageBackground={can('board.change_background')}
       canCreateColumns={can('column.create')}
+      canEditColumns={can('column.edit')}
+      canCreateTasks={can('task.create')}
+      canEditTasks={can('task.edit')}
+      canMoveTasks={can('task.move')}
+      canViewTasks={can('task.view')}
     />
   );
 }

@@ -28,6 +28,9 @@ interface KanbanColumnProps {
   onDelete?: (column: BoardColumn) => void;
   canDelete?: boolean;
   canReorder?: boolean;
+  canCreateTask?: boolean;
+  canOpenTask?: boolean;
+  canMoveTasks?: boolean;
   dragHandleProps?: HTMLAttributes<HTMLButtonElement>;
   isDragOverlay?: boolean;
   searchQuery?: string;
@@ -47,6 +50,9 @@ export const KanbanColumn = memo(function KanbanColumn({
   onDelete,
   canDelete = false,
   canReorder = false,
+  canCreateTask = false,
+  canOpenTask = false,
+  canMoveTasks = false,
   dragHandleProps,
   isDragOverlay = false,
   searchQuery = '',
@@ -166,19 +172,23 @@ export const KanbanColumn = memo(function KanbanColumn({
               <SortableTaskCard
                 key={`${task.id}-${task.position}`}
                 task={task}
-                onClick={onTaskClick}
+                onClick={canOpenTask ? onTaskClick : undefined}
                 onAttachmentClick={onTaskAttachmentClick}
                 isDimmed={hasViewFilter && !matches}
                 isHighlighted={highlightedTaskId === task.id}
+                canOpen={canOpenTask}
+                canDrag={canMoveTasks}
               />
             );
           })}
         </SortableContext>
 
-        <AddTaskForm
-          members={members}
-          onSubmit={(input) => onAddTask(column.id, input)}
-        />
+        {canCreateTask && (
+          <AddTaskForm
+            members={members}
+            onSubmit={(input) => onAddTask(column.id, input)}
+          />
+        )}
       </div>
     </div>
   );

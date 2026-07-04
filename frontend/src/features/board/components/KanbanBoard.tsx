@@ -55,6 +55,11 @@ interface KanbanBoardProps {
   canReorderColumns?: boolean;
   canManageBackground?: boolean;
   canCreateColumns?: boolean;
+  canEditColumns?: boolean;
+  canCreateTasks?: boolean;
+  canEditTasks?: boolean;
+  canMoveTasks?: boolean;
+  canViewTasks?: boolean;
 }
 
 export function KanbanBoard({
@@ -67,6 +72,11 @@ export function KanbanBoard({
   canReorderColumns = false,
   canManageBackground = false,
   canCreateColumns = true,
+  canEditColumns = false,
+  canCreateTasks = false,
+  canEditTasks = false,
+  canMoveTasks = false,
+  canViewTasks = true,
 }: KanbanBoardProps) {
   const router = useRouter();
   const pathname = usePathname();
@@ -281,11 +291,12 @@ export function KanbanBoard({
 
   const openTask = useCallback(
     (task: BoardTask) => {
+      if (!canEditTasks) return;
       setSelectedTask(task);
       setHighlightedTaskId(task.id);
       updateTaskQuery(task.slug);
     },
-    [updateTaskQuery],
+    [canEditTasks, updateTaskQuery],
   );
 
   const openTaskAttachments = useCallback((task: BoardTask) => {
@@ -336,6 +347,11 @@ export function KanbanBoard({
       return;
     }
 
+    if (!canEditTasks) {
+      updateTaskQuery(null);
+      return;
+    }
+
     const task = columns
       .flatMap((col) => col.tasks ?? [])
       .find((item) => item.slug === activeTaskSlug);
@@ -344,7 +360,7 @@ export function KanbanBoard({
       setSelectedTask(task);
       setHighlightedTaskId(task.id);
     }
-  }, [activeTaskSlug, columns]);
+  }, [activeTaskSlug, canEditTasks, columns, updateTaskQuery]);
 
   const hasCustomBackground = Boolean(backgroundUrl);
 
@@ -400,6 +416,13 @@ export function KanbanBoard({
             lastRemoteUpdate={lastRemoteUpdate}
           />
 
+          {!canViewTasks && (
+            <div className="mt-4 rounded-xl border border-amber-400/30 bg-amber-500/20 px-4 py-3 text-sm text-amber-50 backdrop-blur-sm">
+              You can view this board, but you do not have permission to see
+              tasks.
+            </div>
+          )}
+
           {actionError && (
             <div className="mt-4 rounded-xl border border-red-400/30 bg-red-500/20 px-4 py-3 text-sm text-red-100 backdrop-blur-sm">
               {actionError}
@@ -431,10 +454,13 @@ export function KanbanBoard({
                     onTaskClick={openTask}
                     onTaskAttachmentClick={openTaskAttachments}
                     onAddTask={handleAddTask}
-                    onEdit={setEditingColumn}
+                    onEdit={canEditColumns ? setEditingColumn : undefined}
                     onDelete={handleDeleteColumn}
                     canDelete={canDeleteColumns}
                     canReorder={canReorderColumns}
+                    canCreateTask={canCreateTasks}
+                    canOpenTask={canEditTasks}
+                    canMoveTasks={canMoveTasks}
                     searchQuery={boardSearchQuery}
                     filters={boardFilters}
                     highlightedTaskId={highlightedTaskId}
@@ -494,7 +520,7 @@ export function KanbanBoard({
         />
       )}
 
-      {selectedTask && (
+      {selectedTask && canEditTasks && (
         <TaskModal
           task={selectedTask}
           columns={columns}

@@ -3,6 +3,7 @@ import { toSlug } from '../utils/slug';
 import type { Prisma } from '@prisma/client';
 import { boardRepository } from '../repositories/board.repository';
 import { projectRepository } from '../repositories/project.repository';
+import { permissionService } from './permission.service';
 import { projectAccessService } from './project-access.service';
 import { removeStoredFile, storeUploadedFile } from './storage/storage.service';
 import { isImageMimeType } from './storage/storage.config';
@@ -70,8 +71,36 @@ export class BoardService {
 
   async listByProject(userId: string, projectIdOrSlug: string) {
     const projectId = await this.resolveProjectId(projectIdOrSlug);
-    await projectAccessService.ensureMember(userId, projectId);
+    await projectAccessService.ensurePermission(
+      userId,
+      projectId,
+      'board.view',
+    );
     return boardRepository.findByProject(projectId);
+  }
+
+  private async sanitizeBoardTasks(
+    userId: string,
+    projectId: string,
+    board: NonNullable<Awaited<ReturnType<typeof boardRepository.findById>>>,
+  ) {
+    const canViewTasks = await permissionService.can(
+      userId,
+      projectId,
+      'task.view',
+    );
+
+    if (canViewTasks) {
+      return board;
+    }
+
+    return {
+      ...board,
+      columns: board.columns.map((column) => ({
+        ...column,
+        tasks: [],
+      })),
+    };
   }
 
   async getById(userId: string, boardId: string) {
@@ -80,8 +109,13 @@ export class BoardService {
       throw new ApiError(404, 'Board not found');
     }
 
-    await projectAccessService.ensureMember(userId, board.projectId);
-    return board;
+    await projectAccessService.ensurePermission(
+      userId,
+      board.projectId,
+      'board.view',
+    );
+
+    return this.sanitizeBoardTasks(userId, board.projectId, board);
   }
 
   async getByProjectAndSlug(

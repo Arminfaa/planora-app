@@ -7,10 +7,12 @@ const ADMIN_PERMISSIONS: Permission[] = ALL_PERMISSIONS.filter(
 
 const MEMBER_PERMISSIONS: Permission[] = [
   'project.view',
+  'board.view',
   'board.change_background',
   'column.create',
   'column.edit',
   'column.reorder',
+  'task.view',
   'task.create',
   'task.edit',
   'task.delete',

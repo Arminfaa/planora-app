@@ -8,13 +8,18 @@ import { useProjectSocket } from '@/features/projects/hooks/useProjectSocket';
 import { applyProjectBoardEvent } from '@/features/projects/utils/applyProjectBoardEvent';
 import type { ProjectSocketEvent } from '@/features/projects/types/socket';
 
-export function useBoards(projectId: string | null) {
+export function useBoards(projectId: string | null, canViewBoards = true) {
   const [boards, setBoards] = useState<Board[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState('');
 
   const fetchBoards = useCallback(async () => {
-    if (!projectId) return;
+    if (!projectId || !canViewBoards) {
+      setBoards([]);
+      setError('');
+      setIsLoading(false);
+      return;
+    }
 
     setIsLoading(true);
     setError('');
@@ -25,10 +30,11 @@ export function useBoards(projectId: string | null) {
       if (!isForbiddenError(err)) {
         setError(getApiErrorMessage(err));
       }
+      setBoards([]);
     } finally {
       setIsLoading(false);
     }
-  }, [projectId]);
+  }, [canViewBoards, projectId]);
 
   useEffect(() => {
     void fetchBoards();

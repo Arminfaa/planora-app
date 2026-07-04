@@ -49,6 +49,7 @@ export function ProjectDetailView() {
   const { can } = useProjectPermissions(project);
 
   const canViewTeam = can('team.view');
+  const canViewBoards = can('board.view');
   const canManageInvites = can('team.manage_invites');
   const canManageRoles = can('role.manage');
   const isCustomProject = project?.permissionMode === 'CUSTOM';
@@ -63,7 +64,7 @@ export function ProjectDetailView() {
     isConnected,
     isJoined,
     lastRemoteUpdate,
-  } = useBoards(project?.id ?? null);
+  } = useBoards(project?.id ?? null, canViewBoards);
 
   const {
     members,
@@ -372,58 +373,68 @@ export function ProjectDetailView() {
         <section>
           <div className="mb-5">
             <h2 className="text-lg font-semibold text-gray-900">Boards</h2>
-            {hasSearch && (
+            {hasSearch && canViewBoards && (
               <p className="mt-0.5 text-sm text-gray-500">
                 {filteredBoards.length} of {boards.length} shown
               </p>
             )}
           </div>
 
-          {(boardsError || actionError) && (
-            <div className="mb-4 rounded-xl bg-red-50 px-4 py-3 text-sm text-red-700">
-              {boardsError || actionError}
-            </div>
-          )}
-
-          {loadingBoards ? (
-            <LoadingSpinner />
-          ) : boards.length === 0 ? (
-            <div className="rounded-xl border border-dashed border-gray-200 bg-white py-16 text-center">
-              <p className="text-gray-600">No boards yet</p>
-              {can('board.create') && (
-                <Button
-                  className="mt-4"
-                  onClick={() => setShowCreateModal(true)}
-                >
-                  Create your first board
-                </Button>
-              )}
-            </div>
-          ) : filteredBoards.length === 0 ? (
-            <div className="rounded-xl border border-dashed border-gray-200 bg-white py-16 text-center">
-              <p className="text-gray-600">No boards match your search</p>
-              <button
-                type="button"
-                onClick={() => setSearchQuery('')}
-                className="mt-3 text-sm font-medium text-primary-600 hover:text-primary-700"
-              >
-                Clear search
-              </button>
+          {!canViewBoards ? (
+            <div className="rounded-xl border border-dashed border-gray-200 bg-white py-12 text-center">
+              <p className="text-sm text-gray-500">
+                You do not have permission to view boards in this project.
+              </p>
             </div>
           ) : (
-            <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-              {filteredBoards.map((board) => (
-                <BoardCard
-                  key={board.id}
-                  board={board}
-                  projectSlug={project.slug}
-                  canDelete={can('board.delete')}
-                  canEdit={can('board.edit')}
-                  onEdit={setEditingBoard}
-                  onDelete={handleDeleteBoard}
-                />
-              ))}
-            </div>
+            <>
+              {(boardsError || actionError) && (
+                <div className="mb-4 rounded-xl bg-red-50 px-4 py-3 text-sm text-red-700">
+                  {boardsError || actionError}
+                </div>
+              )}
+
+              {loadingBoards ? (
+                <LoadingSpinner />
+              ) : boards.length === 0 ? (
+                <div className="rounded-xl border border-dashed border-gray-200 bg-white py-16 text-center">
+                  <p className="text-gray-600">No boards yet</p>
+                  {can('board.create') && (
+                    <Button
+                      className="mt-4"
+                      onClick={() => setShowCreateModal(true)}
+                    >
+                      Create your first board
+                    </Button>
+                  )}
+                </div>
+              ) : filteredBoards.length === 0 ? (
+                <div className="rounded-xl border border-dashed border-gray-200 bg-white py-16 text-center">
+                  <p className="text-gray-600">No boards match your search</p>
+                  <button
+                    type="button"
+                    onClick={() => setSearchQuery('')}
+                    className="mt-3 text-sm font-medium text-primary-600 hover:text-primary-700"
+                  >
+                    Clear search
+                  </button>
+                </div>
+              ) : (
+                <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+                  {filteredBoards.map((board) => (
+                    <BoardCard
+                      key={board.id}
+                      board={board}
+                      projectSlug={project.slug}
+                      canDelete={can('board.delete')}
+                      canEdit={can('board.edit')}
+                      onEdit={setEditingBoard}
+                      onDelete={handleDeleteBoard}
+                    />
+                  ))}
+                </div>
+              )}
+            </>
           )}
         </section>
       </div>

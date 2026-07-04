@@ -13,11 +13,12 @@ import { PaperclipIcon } from './PaperclipIcon';
 
 interface TaskCardProps {
   task: BoardTask;
-  onClick: (task: BoardTask) => void;
+  onClick?: (task: BoardTask) => void;
   onAttachmentClick?: (task: BoardTask) => void;
   isDragOverlay?: boolean;
   isDimmed?: boolean;
   isHighlighted?: boolean;
+  canOpen?: boolean;
 }
 
 export const TaskCard = memo(function TaskCard({
@@ -27,6 +28,7 @@ export const TaskCard = memo(function TaskCard({
   isDragOverlay = false,
   isDimmed = false,
   isHighlighted = false,
+  canOpen = true,
 }: TaskCardProps) {
   const style = priorityStyles[task.priority];
   const labels = normalizeTaskLabels(task.labels);
@@ -34,7 +36,9 @@ export const TaskCard = memo(function TaskCard({
 
   return (
     <div
-      className={`relative w-full rounded-lg border bg-white shadow-sm transition hover:border-primary-300 hover:shadow-md ${
+      className={`relative w-full rounded-lg border bg-white shadow-sm transition ${
+        canOpen ? 'hover:border-primary-300 hover:shadow-md' : ''
+      } ${
         isDragOverlay ? 'rotate-2 shadow-lg ring-2 ring-primary-200' : ''
       } ${isDimmed ? 'opacity-35' : ''} ${
         isHighlighted
@@ -65,8 +69,11 @@ export const TaskCard = memo(function TaskCard({
 
       <button
         type="button"
-        onClick={() => onClick(task)}
-        className={`w-full p-3 text-left ${attachmentCount > 0 ? 'pr-10' : ''}`}
+        onClick={() => canOpen && onClick?.(task)}
+        disabled={!canOpen}
+        className={`w-full p-3 text-left ${attachmentCount > 0 ? 'pr-10' : ''} ${
+          canOpen ? 'cursor-pointer' : 'cursor-default'
+        }`}
       >
         <p className="text-sm font-medium text-gray-900">{task.title}</p>
         {task.description && (
@@ -107,10 +114,12 @@ export const TaskCard = memo(function TaskCard({
 
 interface SortableTaskCardProps {
   task: BoardTask;
-  onClick: (task: BoardTask) => void;
+  onClick?: (task: BoardTask) => void;
   onAttachmentClick?: (task: BoardTask) => void;
   isDimmed?: boolean;
   isHighlighted?: boolean;
+  canOpen?: boolean;
+  canDrag?: boolean;
 }
 
 export const SortableTaskCard = memo(function SortableTaskCard({
@@ -119,6 +128,8 @@ export const SortableTaskCard = memo(function SortableTaskCard({
   onAttachmentClick,
   isDimmed = false,
   isHighlighted = false,
+  canOpen = true,
+  canDrag = true,
 }: SortableTaskCardProps) {
   const {
     attributes,
@@ -129,6 +140,7 @@ export const SortableTaskCard = memo(function SortableTaskCard({
     isDragging,
   } = useSortable({
     id: task.id,
+    disabled: !canDrag,
     data: { type: 'task', columnId: task.columnId },
   });
 
@@ -139,13 +151,19 @@ export const SortableTaskCard = memo(function SortableTaskCard({
   };
 
   return (
-    <div ref={setNodeRef} style={style} {...attributes} {...listeners}>
+    <div
+      ref={setNodeRef}
+      style={style}
+      {...(canDrag ? attributes : {})}
+      {...(canDrag ? listeners : {})}
+    >
       <TaskCard
         task={task}
         onClick={onClick}
         onAttachmentClick={onAttachmentClick}
         isDimmed={isDimmed}
         isHighlighted={isHighlighted}
+        canOpen={canOpen}
       />
     </div>
   );

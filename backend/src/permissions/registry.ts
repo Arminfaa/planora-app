@@ -2,6 +2,7 @@ export const PERMISSIONS = [
   'project.view',
   'project.edit',
   'project.delete',
+  'board.view',
   'board.create',
   'board.edit',
   'board.delete',
@@ -11,6 +12,7 @@ export const PERMISSIONS = [
   'column.edit',
   'column.delete',
   'column.reorder',
+  'task.view',
   'task.create',
   'task.edit',
   'task.delete',
@@ -58,6 +60,7 @@ export const PERMISSION_GROUPS: {
     key: 'board',
     label: 'Board',
     permissions: [
+      { key: 'board.view', label: 'View boards' },
       { key: 'board.create', label: 'Create board' },
       { key: 'board.edit', label: 'Edit board' },
       { key: 'board.delete', label: 'Delete board' },
@@ -79,6 +82,7 @@ export const PERMISSION_GROUPS: {
     key: 'task',
     label: 'Task',
     permissions: [
+      { key: 'task.view', label: 'View tasks' },
       { key: 'task.create', label: 'Create task' },
       { key: 'task.edit', label: 'Edit task' },
       { key: 'task.delete', label: 'Delete task' },

@@ -87,7 +87,7 @@ export class TaskService {
     limit: number,
   ) {
     const projectId = await this.resolveProjectIdFromColumn(columnId);
-    await projectAccessService.ensureMember(userId, projectId);
+    await projectAccessService.ensurePermission(userId, projectId, 'task.view');
 
     const { items, total } = await taskRepository.findByColumn(
       columnId,
@@ -100,7 +100,7 @@ export class TaskService {
 
   async getById(userId: string, taskId: string) {
     const projectId = await this.resolveProjectIdFromTask(taskId);
-    await projectAccessService.ensureMember(userId, projectId);
+    await projectAccessService.ensurePermission(userId, projectId, 'task.view');
 
     const task = await taskRepository.findById(taskId);
     if (!task) {
