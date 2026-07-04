@@ -51,6 +51,7 @@ export class ProjectRepository extends BaseRepository {
     slug: string;
     description?: string;
     ownerId: string;
+    permissionMode?: import('@prisma/client').PermissionMode;
   }): Promise<Project> {
     return this.db.project.create({ data });
   }
@@ -99,6 +100,8 @@ export class ProjectRepository extends BaseRepository {
       }
 
       await tx.label.deleteMany({ where: { projectId: id } });
+      await tx.projectInvite.deleteMany({ where: { projectId: id } });
+      await tx.projectRoleDefinition.deleteMany({ where: { projectId: id } });
       await tx.projectMember.deleteMany({ where: { projectId: id } });
       await tx.project.delete({ where: { id } });
     });

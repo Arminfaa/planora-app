@@ -1,9 +1,10 @@
 import { randomBytes } from 'crypto';
-import { ProjectRole } from '@prisma/client';
+import { PermissionMode, ProjectRole } from '@prisma/client';
 import { ApiError } from '../utils/ApiError';
 import { projectInviteRepository } from '../repositories/project-invite.repository';
 import { projectMemberRepository } from '../repositories/project-member.repository';
 import { projectRepository } from '../repositories/project.repository';
+import { roleDefinitionRepository } from '../repositories/role-definition.repository';
 import { userRepository } from '../repositories/user.repository';
 import { projectAccessService } from './project-access.service';
 import { projectMemberService } from './project-member.service';
@@ -15,14 +16,18 @@ function serializeInvite(invite: {
   id: string;
   email: string;
   role: ProjectRole;
+  roleDefinitionId: string | null;
   token: string;
   expiresAt: Date;
   createdAt: Date;
+  roleDefinition?: { id: string; name: string } | null;
 }) {
   return {
     id: invite.id,
     email: invite.email,
-    role: invite.role,
+    role: invite.roleDefinitionId ? undefined : invite.role,
+    roleDefinitionId: invite.roleDefinitionId ?? undefined,
+    roleName: invite.roleDefinition?.name,
     token: invite.token,
     expiresAt: invite.expiresAt.toISOString(),
     createdAt: invite.createdAt.toISOString(),
@@ -34,10 +39,54 @@ export class InviteService {
     return randomBytes(32).toString('hex');
   }
 
+  private async resolveRoleAssignment(
+    projectId: string,
+    input: { role?: ProjectRole; roleDefinitionId?: string },
+  ) {
+    const project = await projectRepository.findById(projectId);
+    if (!project) {
+      throw new ApiError(404, 'Project not found');
+    }
+
+    if (project.permissionMode === PermissionMode.CUSTOM) {
+      if (!input.roleDefinitionId) {
+        throw new ApiError(
+          400,
+          'roleDefinitionId is required for custom projects',
+        );
+      }
+
+      const roleDefinition = await roleDefinitionRepository.findById(
+        input.roleDefinitionId,
+      );
+      if (!roleDefinition || roleDefinition.projectId !== projectId) {
+        throw new ApiError(404, 'Role not found');
+      }
+
+      return {
+        role: ProjectRole.MEMBER,
+        roleDefinitionId: input.roleDefinitionId,
+      };
+    }
+
+    if (!input.role) {
+      throw new ApiError(400, 'role is required for default role projects');
+    }
+
+    return {
+      role: input.role,
+      roleDefinitionId: null as string | null,
+    };
+  }
+
   async listPending(userId: string, projectIdOrSlug: string) {
     const projectId =
       await projectMemberService.resolveProjectId(projectIdOrSlug);
-    await projectAccessService.ensureAdmin(userId, projectId);
+    await projectAccessService.ensurePermission(
+      userId,
+      projectId,
+      'team.manage_invites',
+    );
 
     const invites =
       await projectInviteRepository.findPendingByProject(projectId);
@@ -51,9 +100,14 @@ export class InviteService {
   ) {
     const projectId =
       await projectMemberService.resolveProjectId(projectIdOrSlug);
-    const project = await projectAccessService.ensureAdmin(userId, projectId);
+    const project = await projectAccessService.ensurePermission(
+      userId,
+      projectId,
+      'team.invite',
+    );
 
     const email = input.email.toLowerCase();
+    const assignment = await this.resolveRoleAssignment(projectId, input);
     const existingUser = await userRepository.findByEmail(email);
 
     if (existingUser) {
@@ -73,7 +127,9 @@ export class InviteService {
         userId,
         projectId,
         existingUser.id,
-        input.role,
+        assignment.role,
+        assignment.roleDefinitionId,
+        project,
       );
     }
 
@@ -88,7 +144,8 @@ export class InviteService {
     const invite = await projectInviteRepository.create({
       projectId,
       email,
-      role: input.role,
+      role: assignment.role,
+      roleDefinitionId: assignment.roleDefinitionId,
       token: this.createToken(),
       invitedBy: userId,
       expiresAt: new Date(Date.now() + INVITE_TTL_MS),
@@ -104,7 +161,11 @@ export class InviteService {
   async revoke(userId: string, projectIdOrSlug: string, inviteId: string) {
     const projectId =
       await projectMemberService.resolveProjectId(projectIdOrSlug);
-    await projectAccessService.ensureAdmin(userId, projectId);
+    await projectAccessService.ensurePermission(
+      userId,
+      projectId,
+      'team.manage_invites',
+    );
 
     const invites =
       await projectInviteRepository.findPendingByProject(projectId);
@@ -125,9 +186,15 @@ export class InviteService {
     const expired = invite.expiresAt < new Date();
     const accepted = invite.acceptedAt !== null;
 
+    const roleDefinition = invite.roleDefinitionId
+      ? await roleDefinitionRepository.findById(invite.roleDefinitionId)
+      : null;
+
     return {
       email: invite.email,
-      role: invite.role,
+      role: invite.roleDefinitionId ? undefined : invite.role,
+      roleDefinitionId: invite.roleDefinitionId ?? undefined,
+      roleName: roleDefinition?.name,
       projectName: invite.project.name,
       projectSlug: invite.project.slug,
       expired,
@@ -173,6 +240,7 @@ export class InviteService {
         projectId: invite.projectId,
         userId,
         role: invite.role,
+        roleDefinitionId: invite.roleDefinitionId,
       });
     }
 

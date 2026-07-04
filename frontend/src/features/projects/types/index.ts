@@ -1,4 +1,20 @@
+export type PermissionMode = 'DEFAULT' | 'CUSTOM';
+
 export type ProjectRole = 'OWNER' | 'ADMIN' | 'MEMBER';
+
+export interface ProjectRoleDefinition {
+  id: string;
+  name: string;
+  permissions: string[];
+  position: number;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface CustomRoleInput {
+  name: string;
+  permissions: string[];
+}
 
 export interface Project {
   id: string;
@@ -6,9 +22,13 @@ export interface Project {
   slug: string;
   description: string | null;
   ownerId: string;
+  permissionMode?: PermissionMode;
   createdAt: string;
   updatedAt: string;
   currentUserRole?: ProjectRole;
+  currentUserRoleName?: string | null;
+  currentUserRoleDefinitionId?: string | null;
+  currentUserPermissions?: string[];
   owner?: {
     id: string;
     name: string;
@@ -23,6 +43,8 @@ export interface Project {
 export interface CreateProjectInput {
   name: string;
   description?: string;
+  permissionMode?: PermissionMode;
+  customRoles?: CustomRoleInput[];
 }
 
 export interface UpdateProjectInput {
@@ -36,14 +58,18 @@ export interface ProjectMember {
   name: string;
   email: string;
   avatar: string | null;
-  role: ProjectRole;
+  role?: ProjectRole;
+  roleDefinitionId?: string;
+  roleName?: string;
   joinedAt?: string;
 }
 
 export interface ProjectInvite {
   id: string;
   email: string;
-  role: ProjectRole;
+  role?: ProjectRole;
+  roleDefinitionId?: string;
+  roleName?: string;
   token: string;
   expiresAt: string;
   createdAt: string;
@@ -51,7 +77,9 @@ export interface ProjectInvite {
 
 export interface InvitePreview {
   email: string;
-  role: ProjectRole;
+  role?: ProjectRole;
+  roleDefinitionId?: string;
+  roleName?: string;
   projectName: string;
   projectSlug: string;
   expired: boolean;
@@ -62,6 +90,12 @@ export interface InvitePreview {
 export interface AddProjectMemberInput {
   email: string;
   role?: Exclude<ProjectRole, 'OWNER'>;
+  roleDefinitionId?: string;
+}
+
+export interface UpdateProjectMemberInput {
+  role?: Exclude<ProjectRole, 'OWNER'>;
+  roleDefinitionId?: string;
 }
 
 export interface AddMemberResult {

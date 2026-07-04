@@ -9,7 +9,7 @@ import type {
   AddProjectMemberInput,
   ProjectInvite,
   ProjectMember,
-  ProjectRole,
+  UpdateProjectMemberInput,
 } from '../types';
 
 export function useProjectTeam(projectId: string | null, canManage: boolean) {
@@ -55,9 +55,9 @@ export function useProjectTeam(projectId: string | null, canManage: boolean) {
   );
 
   const updateMemberRole = useCallback(
-    async (userId: string, role: Exclude<ProjectRole, 'OWNER'>) => {
+    async (userId: string, input: UpdateProjectMemberInput) => {
       if (!projectId) return;
-      await projectMemberService.updateRole(projectId, userId, role);
+      await projectMemberService.updateRole(projectId, userId, input);
       await fetchTeam();
     },
     [fetchTeam, projectId],

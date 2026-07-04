@@ -1,7 +1,14 @@
 'use client';
 
 import { useState } from 'react';
-import type { ProjectInvite, ProjectMember, ProjectRole } from '../types';
+import type {
+  PermissionMode,
+  ProjectInvite,
+  ProjectMember,
+  ProjectRole,
+  ProjectRoleDefinition,
+  UpdateProjectMemberInput,
+} from '../types';
 import { InviteMemberModal } from './InviteMemberModal';
 import { Button } from '@/shared/components/ui/Button';
 import { formatDate } from '@/features/dashboard/utils/stats';
@@ -12,7 +19,12 @@ interface ProjectTeamPanelProps {
   invites: ProjectInvite[];
   isLoading: boolean;
   error: string;
-  canManage: boolean;
+  canInvite: boolean;
+  canChangeRole: boolean;
+  canRemove: boolean;
+  canManageInvites: boolean;
+  permissionMode: PermissionMode;
+  customRoles: ProjectRoleDefinition[];
   currentUserId?: string;
   onInvite: (
     input: import('../types').AddProjectMemberInput,
@@ -23,7 +35,7 @@ interface ProjectTeamPanelProps {
   >;
   onUpdateRole: (
     userId: string,
-    role: Exclude<ProjectRole, 'OWNER'>,
+    input: UpdateProjectMemberInput,
   ) => Promise<void>;
   onRemove: (userId: string) => Promise<void>;
   onRevokeInvite: (inviteId: string) => Promise<void>;
@@ -35,12 +47,29 @@ const roleLabels: Record<ProjectRole, string> = {
   MEMBER: 'Member',
 };
 
+function getMemberRoleLabel(member: ProjectMember): string {
+  if (member.roleName) return member.roleName;
+  if (member.role) return roleLabels[member.role];
+  return 'Member';
+}
+
+function getInviteRoleLabel(invite: ProjectInvite): string {
+  if (invite.roleName) return invite.roleName;
+  if (invite.role) return roleLabels[invite.role];
+  return 'Member';
+}
+
 export function ProjectTeamPanel({
   members,
   invites,
   isLoading,
   error,
-  canManage,
+  canInvite,
+  canChangeRole,
+  canRemove,
+  canManageInvites,
+  permissionMode,
+  customRoles,
   currentUserId,
   onInvite,
   onUpdateRole,
@@ -52,11 +81,11 @@ export function ProjectTeamPanel({
 
   const handleUpdateRole = async (
     userId: string,
-    role: Exclude<ProjectRole, 'OWNER'>,
+    input: UpdateProjectMemberInput,
   ) => {
     setActionError('');
     try {
-      await onUpdateRole(userId, role);
+      await onUpdateRole(userId, input);
     } catch (err) {
       setActionError(getApiErrorMessage(err));
     }
@@ -88,7 +117,7 @@ export function ProjectTeamPanel({
         <h2 className="text-base font-semibold text-gray-900">
           Team · {members.length}
         </h2>
-        {canManage && (
+        {canInvite && (
           <Button
             type="button"
             variant="secondary"
@@ -126,27 +155,47 @@ export function ProjectTeamPanel({
                   </div>
 
                   <div className="flex items-center gap-2">
-                    {canManage && !isOwner ? (
-                      <select
-                        value={member.role}
-                        onChange={(event) =>
-                          void handleUpdateRole(
-                            member.id,
-                            event.target.value as Exclude<ProjectRole, 'OWNER'>,
-                          )
-                        }
-                        className="rounded-lg border border-gray-300 px-2 py-1 text-sm"
-                      >
-                        <option value="MEMBER">Member</option>
-                        <option value="ADMIN">Admin</option>
-                      </select>
+                    {canChangeRole && !isOwner ? (
+                      permissionMode === 'CUSTOM' ? (
+                        <select
+                          value={member.roleDefinitionId ?? ''}
+                          onChange={(event) =>
+                            void handleUpdateRole(member.id, {
+                              roleDefinitionId: event.target.value,
+                            })
+                          }
+                          className="rounded-lg border border-gray-300 px-2 py-1 text-sm"
+                        >
+                          {customRoles.map((role) => (
+                            <option key={role.id} value={role.id}>
+                              {role.name}
+                            </option>
+                          ))}
+                        </select>
+                      ) : (
+                        <select
+                          value={member.role ?? 'MEMBER'}
+                          onChange={(event) =>
+                            void handleUpdateRole(member.id, {
+                              role: event.target.value as Exclude<
+                                ProjectRole,
+                                'OWNER'
+                              >,
+                            })
+                          }
+                          className="rounded-lg border border-gray-300 px-2 py-1 text-sm"
+                        >
+                          <option value="MEMBER">Member</option>
+                          <option value="ADMIN">Admin</option>
+                        </select>
+                      )
                     ) : (
                       <span className="rounded-full bg-gray-100 px-2.5 py-0.5 text-xs font-medium text-gray-700">
-                        {roleLabels[member.role]}
+                        {getMemberRoleLabel(member)}
                       </span>
                     )}
 
-                    {canManage && !isOwner && !isSelf && (
+                    {canRemove && !isOwner && !isSelf && (
                       <Button
                         type="button"
                         variant="ghost"
@@ -163,7 +212,7 @@ export function ProjectTeamPanel({
           </div>
         )}
 
-        {canManage && invites.length > 0 && (
+        {canManageInvites && invites.length > 0 && (
           <div className="mt-5 border-t border-gray-100 pt-4">
             <h3 className="mb-2 text-xs font-medium uppercase tracking-wide text-gray-400">
               Pending invites
@@ -177,7 +226,7 @@ export function ProjectTeamPanel({
                   <div>
                     <p className="font-medium text-gray-900">{invite.email}</p>
                     <p className="text-gray-500">
-                      {roleLabels[invite.role]} · expires{' '}
+                      {getInviteRoleLabel(invite)} · expires{' '}
                       {formatDate(invite.expiresAt)}
                     </p>
                   </div>
@@ -197,6 +246,8 @@ export function ProjectTeamPanel({
 
         {showInviteModal && (
           <InviteMemberModal
+            permissionMode={permissionMode}
+            customRoles={customRoles}
             onClose={() => setShowInviteModal(false)}
             onSubmit={onInvite}
           />

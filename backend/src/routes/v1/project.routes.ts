@@ -2,6 +2,7 @@ import { Router } from 'express';
 import {
   createProject,
   deleteProject,
+  getPermissionCatalog,
   getProject,
   listProjects,
   updateProject,
@@ -23,6 +24,7 @@ const router = Router();
 
 router.use(authenticate);
 
+router.get('/permissions', getPermissionCatalog);
 router.get('/', validateQuery(projectListQuerySchema), listProjects);
 router.post('/', validateBody(createProjectSchema), createProject);
 router.get('/:id', validateParams(projectParamsSchema), getProject);

@@ -100,7 +100,11 @@ export class BoardService {
     input: CreateBoardInput,
   ) {
     const projectId = await this.resolveProjectId(projectIdOrSlug);
-    await projectAccessService.ensureMember(userId, projectId);
+    await projectAccessService.ensurePermission(
+      userId,
+      projectId,
+      'board.create',
+    );
 
     const slug = await this.generateUniqueSlug(projectId, input.name);
 
@@ -118,7 +122,11 @@ export class BoardService {
       throw new ApiError(404, 'Board not found');
     }
 
-    await projectAccessService.ensureMember(userId, projectId);
+    const permission =
+      input.position !== undefined && input.name === undefined
+        ? 'board.reorder'
+        : 'board.edit';
+    await projectAccessService.ensurePermission(userId, projectId, permission);
 
     const updateData: Prisma.BoardUpdateInput = {};
 
@@ -144,7 +152,11 @@ export class BoardService {
       throw new ApiError(404, 'Board not found');
     }
 
-    await projectAccessService.ensureAdmin(userId, projectId);
+    await projectAccessService.ensurePermission(
+      userId,
+      projectId,
+      'board.delete',
+    );
     await boardRepository.delete(boardId);
   }
 
@@ -171,7 +183,11 @@ export class BoardService {
       throw new ApiError(404, 'Board not found');
     }
 
-    await projectAccessService.ensureAdmin(userId, existing.projectId);
+    await projectAccessService.ensurePermission(
+      userId,
+      existing.projectId,
+      'board.change_background',
+    );
 
     if (!file) {
       throw new ApiError(400, 'Image file is required');
@@ -202,7 +218,11 @@ export class BoardService {
       throw new ApiError(404, 'Board not found');
     }
 
-    await projectAccessService.ensureAdmin(userId, existing.projectId);
+    await projectAccessService.ensurePermission(
+      userId,
+      existing.projectId,
+      'board.change_background',
+    );
 
     await this.removeBoardBackgroundFiles(existing);
 

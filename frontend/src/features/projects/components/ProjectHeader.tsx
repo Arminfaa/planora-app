@@ -11,7 +11,9 @@ interface ProjectHeaderProps {
   searchQuery: string;
   onSearchChange: (value: string) => void;
   onNewBoard: () => void;
-  canManageProject: boolean;
+  canEditProject: boolean;
+  canDeleteProject: boolean;
+  canCreateBoard: boolean;
   onEditProject: () => void;
   onDeleteProject: () => void;
   isConnected: boolean;
@@ -26,7 +28,9 @@ export function ProjectHeader({
   searchQuery,
   onSearchChange,
   onNewBoard,
-  canManageProject,
+  canEditProject,
+  canDeleteProject,
+  canCreateBoard,
   onEditProject,
   onDeleteProject,
   isConnected,
@@ -109,23 +113,23 @@ export function ProjectHeader({
             )}
           </div>
 
-          {canManageProject && (
-            <>
-              <button
-                type="button"
-                onClick={onEditProject}
-                className="inline-flex items-center rounded-xl border border-gray-200 bg-white/80 px-3.5 py-2.5 text-sm font-medium text-gray-700 shadow-sm backdrop-blur-sm transition hover:bg-white"
-              >
-                Edit
-              </button>
-              <button
-                type="button"
-                onClick={onDeleteProject}
-                className="inline-flex items-center rounded-xl border border-red-200 bg-white/80 px-3.5 py-2.5 text-sm font-medium text-red-600 shadow-sm backdrop-blur-sm transition hover:bg-red-50"
-              >
-                Delete
-              </button>
-            </>
+          {canEditProject && (
+            <button
+              type="button"
+              onClick={onEditProject}
+              className="inline-flex items-center rounded-xl border border-gray-200 bg-white/80 px-3.5 py-2.5 text-sm font-medium text-gray-700 shadow-sm backdrop-blur-sm transition hover:bg-white"
+            >
+              Edit
+            </button>
+          )}
+          {canDeleteProject && (
+            <button
+              type="button"
+              onClick={onDeleteProject}
+              className="inline-flex items-center rounded-xl border border-red-200 bg-white/80 px-3.5 py-2.5 text-sm font-medium text-red-600 shadow-sm backdrop-blur-sm transition hover:bg-red-50"
+            >
+              Delete
+            </button>
           )}
 
           <div className="relative min-w-[200px] flex-1 sm:min-w-[220px] sm:flex-none">
@@ -164,26 +168,28 @@ export function ProjectHeader({
             )}
           </div>
 
-          <button
-            type="button"
-            onClick={onNewBoard}
-            className="inline-flex items-center gap-2 rounded-xl bg-primary-600 px-4 py-2.5 text-sm font-medium text-white shadow-sm transition hover:bg-primary-700 focus:outline-none focus:ring-2 focus:ring-primary-500 focus:ring-offset-2"
-          >
-            <svg
-              className="h-4 w-4"
-              fill="none"
-              viewBox="0 0 24 24"
-              stroke="currentColor"
+          {canCreateBoard && (
+            <button
+              type="button"
+              onClick={onNewBoard}
+              className="inline-flex items-center gap-2 rounded-xl bg-primary-600 px-4 py-2.5 text-sm font-medium text-white shadow-sm transition hover:bg-primary-700 focus:outline-none focus:ring-2 focus:ring-primary-500 focus:ring-offset-2"
             >
-              <path
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                strokeWidth={2}
-                d="M12 4v16m8-8H4"
-              />
-            </svg>
-            New Board
-          </button>
+              <svg
+                className="h-4 w-4"
+                fill="none"
+                viewBox="0 0 24 24"
+                stroke="currentColor"
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth={2}
+                  d="M12 4v16m8-8H4"
+                />
+              </svg>
+              New Board
+            </button>
+          )}
         </div>
       </div>
     </header>

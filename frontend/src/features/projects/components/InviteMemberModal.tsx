@@ -4,19 +4,27 @@ import { useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
-import type { AddProjectMemberInput, ProjectRole } from '../types';
+import type {
+  AddProjectMemberInput,
+  PermissionMode,
+  ProjectRole,
+  ProjectRoleDefinition,
+} from '../types';
 import { Button } from '@/shared/components/ui/Button';
 import { Input } from '@/shared/components/ui/Input';
 import { getApiErrorMessage } from '@/lib/api';
 
 const schema = z.object({
   email: z.string().email('Invalid email address'),
-  role: z.enum(['ADMIN', 'MEMBER']),
+  role: z.enum(['ADMIN', 'MEMBER']).optional(),
+  roleDefinitionId: z.string().optional(),
 });
 
 type FormData = z.infer<typeof schema>;
 
 interface InviteMemberModalProps {
+  permissionMode: PermissionMode;
+  customRoles: ProjectRoleDefinition[];
   onClose: () => void;
   onSubmit: (
     input: AddProjectMemberInput,
@@ -28,6 +36,8 @@ interface InviteMemberModalProps {
 }
 
 export function InviteMemberModal({
+  permissionMode,
+  customRoles,
   onClose,
   onSubmit,
 }: InviteMemberModalProps) {
@@ -41,17 +51,31 @@ export function InviteMemberModal({
     formState: { errors, isSubmitting },
   } = useForm<FormData>({
     resolver: zodResolver(schema),
-    defaultValues: { role: 'MEMBER' },
+    defaultValues: {
+      role: 'MEMBER',
+      roleDefinitionId: customRoles[0]?.id,
+    },
   });
 
   const handleFormSubmit = async (data: FormData) => {
     setError('');
     setCopied(false);
     try {
-      const result = await onSubmit({
+      const input: AddProjectMemberInput = {
         email: data.email.trim().toLowerCase(),
-        role: data.role as Exclude<ProjectRole, 'OWNER'>,
-      });
+      };
+
+      if (permissionMode === 'CUSTOM') {
+        if (!data.roleDefinitionId) {
+          setError('Select a role for the invited member.');
+          return;
+        }
+        input.roleDefinitionId = data.roleDefinitionId;
+      } else {
+        input.role = (data.role ?? 'MEMBER') as Exclude<ProjectRole, 'OWNER'>;
+      }
+
+      const result = await onSubmit(input);
 
       if (!result) return;
 
@@ -126,10 +150,23 @@ export function InviteMemberModal({
               <label className="block text-sm font-medium text-gray-700">
                 Role
               </label>
-              <select className={selectClassName} {...register('role')}>
-                <option value="MEMBER">Member</option>
-                <option value="ADMIN">Admin</option>
-              </select>
+              {permissionMode === 'CUSTOM' ? (
+                <select
+                  className={selectClassName}
+                  {...register('roleDefinitionId')}
+                >
+                  {customRoles.map((role) => (
+                    <option key={role.id} value={role.id}>
+                      {role.name}
+                    </option>
+                  ))}
+                </select>
+              ) : (
+                <select className={selectClassName} {...register('role')}>
+                  <option value="MEMBER">Member</option>
+                  <option value="ADMIN">Admin</option>
+                </select>
+              )}
             </div>
             <div className="flex justify-end gap-2">
               <Button type="button" variant="secondary" onClick={onClose}>

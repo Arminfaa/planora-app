@@ -4,6 +4,7 @@ import { useEffect, useState } from 'react';
 import { useParams } from 'next/navigation';
 import { KanbanBoard } from '@/features/board/components/KanbanBoard';
 import { useBoard } from '@/features/board/hooks/useBoard';
+import { useProjectPermissions } from '@/features/permissions/hooks/useProjectPermissions';
 import { projectService } from '@/features/projects/services/project.service';
 import type { Project } from '@/features/projects/types';
 import { LoadingSpinner } from '@/shared/components/feedback/LoadingSpinner';
@@ -28,6 +29,8 @@ export default function BoardPage() {
     void fetchProject();
   }, [params.slug]);
 
+  const { can } = useProjectPermissions(project);
+
   if (isLoading) return <LoadingSpinner />;
 
   if (error || !board) {
@@ -38,10 +41,6 @@ export default function BoardPage() {
     );
   }
 
-  const canManageColumns =
-    project?.currentUserRole === 'OWNER' ||
-    project?.currentUserRole === 'ADMIN';
-
   return (
     <KanbanBoard
       board={board}
@@ -49,9 +48,10 @@ export default function BoardPage() {
       projectSlug={params.slug}
       revision={revision}
       onRefresh={refetch}
-      canDeleteColumns={canManageColumns}
-      canReorderColumns={canManageColumns}
-      canManageBackground={canManageColumns}
+      canDeleteColumns={can('column.delete')}
+      canReorderColumns={can('column.reorder')}
+      canManageBackground={can('board.change_background')}
+      canCreateColumns={can('column.create')}
     />
   );
 }

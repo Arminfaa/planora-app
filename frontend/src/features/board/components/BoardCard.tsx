@@ -23,6 +23,7 @@ function getAccentColor(id: string): string {
 interface BoardCardProps {
   board: Board;
   projectSlug: string;
+  canEdit?: boolean;
   canDelete?: boolean;
   onEdit: (board: Board) => void;
   onDelete: (board: Board) => void;
@@ -31,6 +32,7 @@ interface BoardCardProps {
 export function BoardCard({
   board,
   projectSlug,
+  canEdit = true,
   canDelete = false,
   onEdit,
   onDelete,
@@ -55,14 +57,16 @@ export function BoardCard({
         </Link>
 
         <div className="flex shrink-0 gap-1 opacity-100 sm:opacity-0 sm:transition sm:group-hover:opacity-100">
-          <button
-            type="button"
-            onClick={() => onEdit(board)}
-            className="rounded-lg px-2 py-1 text-xs font-medium text-gray-500 transition hover:bg-gray-100 hover:text-gray-900"
-            aria-label={`Edit ${board.name}`}
-          >
-            Edit
-          </button>
+          {canEdit && (
+            <button
+              type="button"
+              onClick={() => onEdit(board)}
+              className="rounded-lg px-2 py-1 text-xs font-medium text-gray-500 transition hover:bg-gray-100 hover:text-gray-900"
+              aria-label={`Edit ${board.name}`}
+            >
+              Edit
+            </button>
+          )}
           {canDelete && (
             <button
               type="button"

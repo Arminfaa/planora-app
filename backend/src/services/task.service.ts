@@ -117,7 +117,11 @@ export class TaskService {
     }
 
     const projectId = await this.resolveProjectIdFromColumn(columnId);
-    await projectAccessService.ensureMember(userId, projectId);
+    await projectAccessService.ensurePermission(
+      userId,
+      projectId,
+      'task.create',
+    );
 
     if (input.assigneeId) {
       await this.ensureAssigneeIsMember(projectId, input.assigneeId);
@@ -141,7 +145,6 @@ export class TaskService {
 
   async update(userId: string, taskId: string, input: UpdateTaskInput) {
     const projectId = await this.resolveProjectIdFromTask(taskId);
-    await projectAccessService.ensureMember(userId, projectId);
 
     const existing = await taskRepository.findById(taskId);
     if (!existing) {
@@ -153,6 +156,11 @@ export class TaskService {
     }
 
     const isMove = input.columnId !== undefined || input.position !== undefined;
+    await projectAccessService.ensurePermission(
+      userId,
+      projectId,
+      isMove ? 'task.move' : 'task.edit',
+    );
 
     if (isMove) {
       const targetColumnId = input.columnId ?? existing.columnId;
@@ -198,7 +206,11 @@ export class TaskService {
 
   async delete(userId: string, taskId: string) {
     const projectId = await this.resolveProjectIdFromTask(taskId);
-    await projectAccessService.ensureMember(userId, projectId);
+    await projectAccessService.ensurePermission(
+      userId,
+      projectId,
+      'task.delete',
+    );
     await taskRepository.delete(taskId);
   }
 }

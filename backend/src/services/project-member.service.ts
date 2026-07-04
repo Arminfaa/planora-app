@@ -1,7 +1,8 @@
-import { ProjectRole } from '@prisma/client';
+import { PermissionMode, ProjectRole } from '@prisma/client';
 import { ApiError } from '../utils/ApiError';
 import { projectMemberRepository } from '../repositories/project-member.repository';
 import { projectRepository } from '../repositories/project.repository';
+import { roleDefinitionRepository } from '../repositories/role-definition.repository';
 import { taskRepository } from '../repositories/task.repository';
 import { userRepository } from '../repositories/user.repository';
 import { projectAccessService } from './project-access.service';
@@ -15,6 +16,7 @@ const OBJECT_ID_PATTERN = /^[0-9a-fA-F]{24}$/;
 function serializeMember(member: {
   id: string;
   role: ProjectRole;
+  roleDefinitionId: string | null;
   joinedAt: Date;
   user: {
     id: string;
@@ -22,6 +24,7 @@ function serializeMember(member: {
     email: string;
     avatar: string | null;
   };
+  roleDefinition?: { id: string; name: string } | null;
 }) {
   return {
     id: member.user.id,
@@ -29,7 +32,13 @@ function serializeMember(member: {
     name: member.user.name,
     email: member.user.email,
     avatar: member.user.avatar,
-    role: member.role,
+    role: member.roleDefinition ? undefined : member.role,
+    roleDefinitionId: member.roleDefinitionId ?? undefined,
+    roleName:
+      member.roleDefinition?.name ??
+      (member.role === ProjectRole.OWNER
+        ? 'Owner'
+        : member.role.charAt(0) + member.role.slice(1).toLowerCase()),
     joinedAt: member.joinedAt.toISOString(),
   };
 }
@@ -48,9 +57,49 @@ export class ProjectMemberService {
     return project.id;
   }
 
+  private async resolveRoleAssignment(
+    projectId: string,
+    input: { role?: ProjectRole; roleDefinitionId?: string },
+  ) {
+    const project = await projectRepository.findById(projectId);
+    if (!project) {
+      throw new ApiError(404, 'Project not found');
+    }
+
+    if (project.permissionMode === PermissionMode.CUSTOM) {
+      if (!input.roleDefinitionId) {
+        throw new ApiError(
+          400,
+          'roleDefinitionId is required for custom projects',
+        );
+      }
+
+      const roleDefinition = await roleDefinitionRepository.findById(
+        input.roleDefinitionId,
+      );
+      if (!roleDefinition || roleDefinition.projectId !== projectId) {
+        throw new ApiError(404, 'Role not found');
+      }
+
+      return {
+        role: ProjectRole.MEMBER,
+        roleDefinitionId: input.roleDefinitionId,
+      };
+    }
+
+    if (!input.role) {
+      throw new ApiError(400, 'role is required for default role projects');
+    }
+
+    return {
+      role: input.role,
+      roleDefinitionId: null as string | null,
+    };
+  }
+
   async list(userId: string, projectIdOrSlug: string) {
     const projectId = await this.resolveProjectId(projectIdOrSlug);
-    await projectAccessService.ensureMember(userId, projectId);
+    await projectAccessService.ensurePermission(userId, projectId, 'team.view');
 
     const members =
       await projectMemberRepository.findMembersByProject(projectId);
@@ -63,19 +112,25 @@ export class ProjectMemberService {
     input: AddProjectMemberInput,
   ) {
     const projectId = await this.resolveProjectId(projectIdOrSlug);
-    const project = await projectAccessService.ensureAdmin(actorId, projectId);
+    await projectAccessService.ensurePermission(
+      actorId,
+      projectId,
+      'team.invite',
+    );
 
     const user = await userRepository.findByEmail(input.email);
     if (!user) {
       throw new ApiError(404, 'User not found. Send an invite instead.');
     }
 
+    const assignment = await this.resolveRoleAssignment(projectId, input);
+
     return this.addExistingUser(
       actorId,
       projectId,
       user.id,
-      input.role,
-      project,
+      assignment.role,
+      assignment.roleDefinitionId,
     );
   }
 
@@ -84,10 +139,16 @@ export class ProjectMemberService {
     projectId: string,
     userId: string,
     role: ProjectRole,
+    roleDefinitionId?: string | null,
     project?: { ownerId: string; id: string; name: string; slug: string },
   ) {
     const resolvedProject =
-      project ?? (await projectAccessService.ensureAdmin(actorId, projectId));
+      project ??
+      (await projectAccessService.ensurePermission(
+        actorId,
+        projectId,
+        'team.invite',
+      ));
 
     if (resolvedProject.ownerId === userId) {
       throw new ApiError(400, 'Project owner is already a member');
@@ -105,6 +166,7 @@ export class ProjectMemberService {
       projectId,
       userId,
       role,
+      roleDefinitionId: roleDefinitionId ?? null,
     });
 
     return {
@@ -120,7 +182,11 @@ export class ProjectMemberService {
     input: UpdateProjectMemberInput,
   ) {
     const projectId = await this.resolveProjectId(projectIdOrSlug);
-    const project = await projectAccessService.ensureAdmin(actorId, projectId);
+    const project = await projectAccessService.ensurePermission(
+      actorId,
+      projectId,
+      'team.change_role',
+    );
 
     if (project.ownerId === targetUserId) {
       throw new ApiError(400, 'Cannot change the project owner role');
@@ -138,10 +204,13 @@ export class ProjectMemberService {
       throw new ApiError(400, 'Cannot change the project owner role');
     }
 
+    const assignment = await this.resolveRoleAssignment(projectId, input);
+
     const member = await projectMemberRepository.updateRole(
       projectId,
       targetUserId,
-      input.role,
+      assignment.role,
+      assignment.roleDefinitionId,
     );
 
     return serializeMember(member);
@@ -149,7 +218,11 @@ export class ProjectMemberService {
 
   async remove(actorId: string, projectIdOrSlug: string, targetUserId: string) {
     const projectId = await this.resolveProjectId(projectIdOrSlug);
-    const project = await projectAccessService.ensureAdmin(actorId, projectId);
+    const project = await projectAccessService.ensurePermission(
+      actorId,
+      projectId,
+      'team.remove',
+    );
 
     if (project.ownerId === targetUserId) {
       throw new ApiError(400, 'Cannot remove the project owner');

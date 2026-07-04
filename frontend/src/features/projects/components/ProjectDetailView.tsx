@@ -13,7 +13,12 @@ import { ProjectHeader } from '@/features/projects/components/ProjectHeader';
 import { ProjectTeamPanel } from '@/features/projects/components/ProjectTeamPanel';
 import { useProjectTeam } from '@/features/projects/hooks/useProjectTeam';
 import { projectService } from '@/features/projects/services/project.service';
-import type { AddProjectMemberInput, Project } from '@/features/projects/types';
+import { useProjectPermissions } from '@/features/permissions/hooks/useProjectPermissions';
+import type {
+  AddProjectMemberInput,
+  Project,
+  ProjectRoleDefinition,
+} from '@/features/projects/types';
 import { useAuth } from '@/features/auth/hooks/useAuth';
 import { LoadingSpinner } from '@/shared/components/feedback/LoadingSpinner';
 import { Button } from '@/shared/components/ui/Button';
@@ -37,7 +42,15 @@ export function ProjectDetailView() {
   const [editingBoard, setEditingBoard] = useState<Board | null>(null);
   const [actionError, setActionError] = useState('');
   const [searchQuery, setSearchQuery] = useState('');
+  const [customRoles, setCustomRoles] = useState<ProjectRoleDefinition[]>([]);
   const { user } = useAuth();
+  const { can } = useProjectPermissions(project);
+
+  const canManageTeam =
+    can('team.invite') ||
+    can('team.change_role') ||
+    can('team.remove') ||
+    can('team.manage_invites');
 
   const {
     boards,
@@ -51,10 +64,6 @@ export function ProjectDetailView() {
     lastRemoteUpdate,
   } = useBoards(project?.id ?? null);
 
-  const canManageProject =
-    project?.currentUserRole === 'OWNER' ||
-    project?.currentUserRole === 'ADMIN';
-
   const {
     members,
     invites,
@@ -64,7 +73,25 @@ export function ProjectDetailView() {
     updateMemberRole,
     removeMember,
     revokeInvite,
-  } = useProjectTeam(project?.id ?? null, canManageProject);
+  } = useProjectTeam(project?.id ?? null, canManageTeam);
+
+  useEffect(() => {
+    if (!project?.id || project.permissionMode !== 'CUSTOM') {
+      setCustomRoles([]);
+      return;
+    }
+
+    const loadRoles = async () => {
+      try {
+        const roles = await projectService.listRoles(project.id);
+        setCustomRoles(roles);
+      } catch {
+        setCustomRoles([]);
+      }
+    };
+
+    void loadRoles();
+  }, [project?.id, project?.permissionMode]);
 
   useEffect(() => {
     const fetchProject = async () => {
@@ -102,6 +129,9 @@ export function ProjectDetailView() {
             ...prev,
             ...updated,
             currentUserRole: prev.currentUserRole,
+            currentUserRoleName: prev.currentUserRoleName,
+            currentUserPermissions: prev.currentUserPermissions,
+            permissionMode: prev.permissionMode,
             owner: prev.owner,
             _count: prev._count,
           }
@@ -211,11 +241,12 @@ export function ProjectDetailView() {
   }
 
   const roleLabel =
-    project.currentUserRole === 'OWNER'
+    project.currentUserRoleName ??
+    (project.currentUserRole === 'OWNER'
       ? 'Owner'
       : project.currentUserRole === 'ADMIN'
         ? 'Admin'
-        : 'Member';
+        : 'Member');
 
   return (
     <div className="min-h-[calc(100vh-4rem)]">
@@ -231,7 +262,9 @@ export function ProjectDetailView() {
             searchQuery={searchQuery}
             onSearchChange={setSearchQuery}
             onNewBoard={() => setShowCreateModal(true)}
-            canManageProject={canManageProject}
+            canEditProject={can('project.edit')}
+            canDeleteProject={can('project.delete')}
+            canCreateBoard={can('board.create')}
             onEditProject={() => setShowEditProject(true)}
             onDeleteProject={() => void handleDeleteProject()}
             isConnected={isConnected}
@@ -313,7 +346,12 @@ export function ProjectDetailView() {
           invites={invites}
           isLoading={loadingTeam}
           error={teamError}
-          canManage={canManageProject}
+          canInvite={can('team.invite')}
+          canChangeRole={can('team.change_role')}
+          canRemove={can('team.remove')}
+          canManageInvites={can('team.manage_invites')}
+          permissionMode={project.permissionMode ?? 'DEFAULT'}
+          customRoles={customRoles}
           currentUserId={user?.id}
           onInvite={handleInviteMember}
           onUpdateRole={updateMemberRole}
@@ -342,9 +380,14 @@ export function ProjectDetailView() {
           ) : boards.length === 0 ? (
             <div className="rounded-xl border border-dashed border-gray-200 bg-white py-16 text-center">
               <p className="text-gray-600">No boards yet</p>
-              <Button className="mt-4" onClick={() => setShowCreateModal(true)}>
-                Create your first board
-              </Button>
+              {can('board.create') && (
+                <Button
+                  className="mt-4"
+                  onClick={() => setShowCreateModal(true)}
+                >
+                  Create your first board
+                </Button>
+              )}
             </div>
           ) : filteredBoards.length === 0 ? (
             <div className="rounded-xl border border-dashed border-gray-200 bg-white py-16 text-center">
@@ -364,7 +407,8 @@ export function ProjectDetailView() {
                   key={board.id}
                   board={board}
                   projectSlug={project.slug}
-                  canDelete={canManageProject}
+                  canDelete={can('board.delete')}
+                  canEdit={can('board.edit')}
                   onEdit={setEditingBoard}
                   onDelete={handleDeleteBoard}
                 />

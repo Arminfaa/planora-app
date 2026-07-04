@@ -18,6 +18,9 @@ export class ProjectMemberRepository extends BaseRepository {
         user: {
           select: { id: true, name: true, email: true, avatar: true },
         },
+        roleDefinition: {
+          select: { id: true, name: true },
+        },
       },
       orderBy: { joinedAt: 'asc' },
     });
@@ -27,12 +30,16 @@ export class ProjectMemberRepository extends BaseRepository {
     projectId: string;
     userId: string;
     role: import('@prisma/client').ProjectRole;
+    roleDefinitionId?: string | null;
   }) {
     return this.db.projectMember.create({
       data,
       include: {
         user: {
           select: { id: true, name: true, email: true, avatar: true },
+        },
+        roleDefinition: {
+          select: { id: true, name: true },
         },
       },
     });
@@ -42,13 +49,20 @@ export class ProjectMemberRepository extends BaseRepository {
     projectId: string,
     userId: string,
     role: import('@prisma/client').ProjectRole,
+    roleDefinitionId?: string | null,
   ) {
     return this.db.projectMember.update({
       where: { projectId_userId: { projectId, userId } },
-      data: { role },
+      data: {
+        role,
+        roleDefinitionId: roleDefinitionId ?? null,
+      },
       include: {
         user: {
           select: { id: true, name: true, email: true, avatar: true },
+        },
+        roleDefinition: {
+          select: { id: true, name: true },
         },
       },
     });

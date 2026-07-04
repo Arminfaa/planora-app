@@ -1,10 +1,12 @@
-import { ProjectRole, type Prisma } from '@prisma/client';
+import { PermissionMode, type Prisma } from '@prisma/client';
 import { ApiError } from '../utils/ApiError';
 import { buildPagination } from '../utils/pagination';
 import { toSlug } from '../utils/slug';
+import { PERMISSION_GROUPS } from '../permissions/registry';
 import { projectRepository } from '../repositories/project.repository';
 import { projectMemberRepository } from '../repositories/project-member.repository';
-import { projectAccessService } from './project-access.service';
+import { roleDefinitionRepository } from '../repositories/role-definition.repository';
+import { permissionService } from './permission.service';
 import type {
   CreateProjectInput,
   UpdateProjectInput,
@@ -54,25 +56,26 @@ export class ProjectService {
 
   async getById(userId: string, idOrSlug: string) {
     const projectId = await this.resolveProjectId(idOrSlug);
-    await projectAccessService.ensureMember(userId, projectId);
+    await permissionService.ensureMember(userId, projectId);
 
     const project = await projectRepository.findByIdWithDetails(projectId);
     if (!project) {
       throw new ApiError(404, 'Project not found');
     }
 
-    let currentUserRole: ProjectRole;
-    if (project.ownerId === userId) {
-      currentUserRole = ProjectRole.OWNER;
-    } else {
-      const membership = await projectMemberRepository.findByProjectAndUser(
-        projectId,
-        userId,
-      );
-      currentUserRole = membership!.role;
-    }
+    const roleInfo = await permissionService.getUserRoleInfo(userId, projectId);
 
-    return { ...project, currentUserRole };
+    return {
+      ...project,
+      currentUserRole: roleInfo.role ?? undefined,
+      currentUserRoleName: roleInfo.roleName,
+      currentUserRoleDefinitionId: roleInfo.roleDefinitionId,
+      currentUserPermissions: roleInfo.permissions,
+    };
+  }
+
+  async getPermissionCatalog() {
+    return PERMISSION_GROUPS;
   }
 
   async create(userId: string, input: CreateProjectInput) {
@@ -83,16 +86,24 @@ export class ProjectService {
       slug,
       description: input.description,
       ownerId: userId,
+      permissionMode: input.permissionMode ?? PermissionMode.DEFAULT,
     });
 
     await projectRepository.addOwnerAsMember(project.id, userId);
+
+    if (
+      input.permissionMode === PermissionMode.CUSTOM &&
+      input.customRoles?.length
+    ) {
+      await roleDefinitionRepository.createMany(project.id, input.customRoles);
+    }
 
     return project;
   }
 
   async update(userId: string, idOrSlug: string, input: UpdateProjectInput) {
     const projectId = await this.resolveProjectId(idOrSlug);
-    await projectAccessService.ensureAdmin(userId, projectId);
+    await permissionService.ensurePermission(userId, projectId, 'project.edit');
 
     const updateData: Prisma.ProjectUpdateInput = {};
 
@@ -110,7 +121,11 @@ export class ProjectService {
 
   async delete(userId: string, idOrSlug: string) {
     const projectId = await this.resolveProjectId(idOrSlug);
-    await projectAccessService.ensureAdmin(userId, projectId);
+    await permissionService.ensurePermission(
+      userId,
+      projectId,
+      'project.delete',
+    );
     await projectRepository.delete(projectId);
   }
 }

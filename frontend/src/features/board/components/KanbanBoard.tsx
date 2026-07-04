@@ -54,6 +54,7 @@ interface KanbanBoardProps {
   canDeleteColumns?: boolean;
   canReorderColumns?: boolean;
   canManageBackground?: boolean;
+  canCreateColumns?: boolean;
 }
 
 export function KanbanBoard({
@@ -65,6 +66,7 @@ export function KanbanBoard({
   canDeleteColumns = false,
   canReorderColumns = false,
   canManageBackground = false,
+  canCreateColumns = true,
 }: KanbanBoardProps) {
   const router = useRouter();
   const pathname = usePathname();
@@ -435,24 +437,25 @@ export function KanbanBoard({
                 ))}
               </SortableContext>
 
-              {showCreateColumn ? (
-                <CreateColumnForm
-                  onSubmit={handleCreateColumn}
-                  onCancel={() => setShowCreateColumn(false)}
-                  variant="glass"
-                />
-              ) : (
-                <div className="flex w-72 shrink-0 items-start pt-1">
-                  <Button
-                    type="button"
-                    variant="secondary"
-                    onClick={() => setShowCreateColumn(true)}
-                    className="w-full border border-dashed border-white/30 bg-white/10 text-white backdrop-blur-md hover:bg-white/20"
-                  >
-                    + Add Column
-                  </Button>
-                </div>
-              )}
+              {canCreateColumns &&
+                (showCreateColumn ? (
+                  <CreateColumnForm
+                    onSubmit={handleCreateColumn}
+                    onCancel={() => setShowCreateColumn(false)}
+                    variant="glass"
+                  />
+                ) : (
+                  <div className="flex w-72 shrink-0 items-start pt-1">
+                    <Button
+                      type="button"
+                      variant="secondary"
+                      onClick={() => setShowCreateColumn(true)}
+                      className="w-full border border-dashed border-white/30 bg-white/10 text-white backdrop-blur-md hover:bg-white/20"
+                    >
+                      + Add Column
+                    </Button>
+                  </div>
+                ))}
             </div>
 
             <DragOverlay>

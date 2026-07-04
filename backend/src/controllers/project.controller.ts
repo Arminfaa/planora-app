@@ -10,6 +10,13 @@ import type {
 } from '../validators/project.validator';
 import type { PaginationQuery } from '../utils/pagination';
 
+export const getPermissionCatalog = asyncHandler(
+  async (_req: AuthenticatedRequest, res: Response) => {
+    const catalog = await projectService.getPermissionCatalog();
+    ApiResponse.success(res, catalog, 'Permission catalog retrieved');
+  },
+);
+
 export const listProjects = asyncHandler(
   async (req: AuthenticatedRequest, res: Response) => {
     const { page, limit } = req.query as unknown as PaginationQuery;

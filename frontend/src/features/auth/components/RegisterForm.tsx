@@ -59,7 +59,10 @@ export function RegisterForm({ inviteToken = null }: RegisterFormProps) {
       {inviteToken && preview?.valid && (
         <div className="rounded-lg bg-primary-50 px-4 py-3 text-sm text-primary-900">
           You are joining <strong>{preview.projectName}</strong> as{' '}
-          <strong>{preview.role.toLowerCase()}</strong>.
+          <strong>
+            {(preview.roleName ?? preview.role ?? 'member').toLowerCase()}
+          </strong>
+          .
         </div>
       )}
 

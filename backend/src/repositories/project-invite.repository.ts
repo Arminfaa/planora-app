@@ -37,6 +37,7 @@ export class ProjectInviteRepository extends BaseRepository {
     projectId: string;
     email: string;
     role: ProjectRole;
+    roleDefinitionId?: string | null;
     token: string;
     invitedBy: string;
     expiresAt: Date;

@@ -6,6 +6,7 @@ import authRoutes from './auth.routes';
 import { boardRouter, projectBoardRoutes } from './board.routes';
 import { boardColumnRouter, columnRouter } from './column.routes';
 import projectRoutes from './project.routes';
+import roleDefinitionRoutes from './role-definition.routes';
 import inviteRoutes, {
   projectInviteRoutes,
   projectMemberRoutes,
@@ -21,6 +22,7 @@ const router = Router();
 router.use('/auth', authRoutes);
 router.use('/invites', inviteRoutes);
 router.use('/projects', projectRoutes);
+router.use('/projects/:id/roles', roleDefinitionRoutes);
 router.use('/projects/:id/members', projectMemberRoutes);
 router.use('/projects/:id/invites', projectInviteRoutes);
 router.use('/projects/:id/labels', projectLabelRoutes);

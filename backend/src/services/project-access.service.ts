@@ -1,55 +1,27 @@
-import { ProjectRole, type Project } from '@prisma/client';
-import { ApiError } from '../utils/ApiError';
-import { projectMemberRepository } from '../repositories/project-member.repository';
-import { projectRepository } from '../repositories/project.repository';
-
-const ADMIN_ROLES: ProjectRole[] = [ProjectRole.OWNER, ProjectRole.ADMIN];
+import type { Project } from '@prisma/client';
+import { permissionService } from './permission.service';
+import type { Permission } from '../permissions/registry';
 
 export class ProjectAccessService {
   async getProjectOrThrow(projectId: string): Promise<Project> {
-    const project = await projectRepository.findById(projectId);
-    if (!project) {
-      throw new ApiError(404, 'Project not found');
-    }
-    return project;
+    return permissionService.getProjectOrThrow(projectId);
   }
 
   async ensureMember(userId: string, projectId: string): Promise<Project> {
-    const project = await this.getProjectOrThrow(projectId);
-
-    if (project.ownerId === userId) {
-      return project;
-    }
-
-    const membership = await projectMemberRepository.findByProjectAndUser(
-      projectId,
-      userId,
-    );
-
-    if (!membership) {
-      throw new ApiError(403, 'You do not have access to this project');
-    }
-
-    return project;
+    return permissionService.ensureMember(userId, projectId);
   }
 
+  async ensurePermission(
+    userId: string,
+    projectId: string,
+    permission: Permission,
+  ): Promise<Project> {
+    return permissionService.ensurePermission(userId, projectId, permission);
+  }
+
+  /** @deprecated Use ensurePermission with a specific permission instead */
   async ensureAdmin(userId: string, projectId: string): Promise<Project> {
-    const project = await this.getProjectOrThrow(projectId);
-
-    if (project.ownerId === userId) {
-      return project;
-    }
-
-    const membership = await projectMemberRepository.findByProjectAndUser(
-      projectId,
-      userId,
-    );
-
-    if (!membership || !ADMIN_ROLES.includes(membership.role)) {
-      throw new ApiError(403, 'Admin access required');
-    }
-
-    return project;
+    return permissionService.ensurePermission(userId, projectId, 'team.invite');
   }
 }
 

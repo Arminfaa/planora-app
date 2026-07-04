@@ -18,7 +18,11 @@ export class ColumnService {
 
   async create(userId: string, boardId: string, input: CreateColumnInput) {
     const projectId = await this.resolveProjectId(boardId);
-    await projectAccessService.ensureMember(userId, projectId);
+    await projectAccessService.ensurePermission(
+      userId,
+      projectId,
+      'column.create',
+    );
 
     return columnRepository.create({
       name: input.name,
@@ -37,9 +41,17 @@ export class ColumnService {
     const projectId = await this.resolveProjectId(boardId);
 
     if (input.position !== undefined) {
-      await projectAccessService.ensureAdmin(userId, projectId);
+      await projectAccessService.ensurePermission(
+        userId,
+        projectId,
+        'column.reorder',
+      );
     } else {
-      await projectAccessService.ensureMember(userId, projectId);
+      await projectAccessService.ensurePermission(
+        userId,
+        projectId,
+        'column.edit',
+      );
     }
 
     return columnRepository.update(columnId, input);
@@ -47,7 +59,11 @@ export class ColumnService {
 
   async reorder(userId: string, boardId: string, columnIds: string[]) {
     const projectId = await this.resolveProjectId(boardId);
-    await projectAccessService.ensureAdmin(userId, projectId);
+    await projectAccessService.ensurePermission(
+      userId,
+      projectId,
+      'column.reorder',
+    );
 
     const existing = await columnRepository.findByBoardId(boardId);
     if (existing.length !== columnIds.length) {
@@ -69,7 +85,11 @@ export class ColumnService {
     }
 
     const projectId = await this.resolveProjectId(boardId);
-    await projectAccessService.ensureAdmin(userId, projectId);
+    await projectAccessService.ensurePermission(
+      userId,
+      projectId,
+      'column.delete',
+    );
     await columnRepository.delete(columnId);
   }
 }

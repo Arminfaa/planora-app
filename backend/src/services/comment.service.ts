@@ -2,9 +2,9 @@ import { ApiError } from '../utils/ApiError';
 import { boardRepository } from '../repositories/board.repository';
 import { columnRepository } from '../repositories/column.repository';
 import { commentRepository } from '../repositories/comment.repository';
-import { projectMemberRepository } from '../repositories/project-member.repository';
 import { taskRepository } from '../repositories/task.repository';
 import { projectAccessService } from './project-access.service';
+import { permissionService } from './permission.service';
 import type {
   CreateCommentInput,
   UpdateCommentInput,
@@ -57,22 +57,17 @@ export class CommentService {
     userId: string,
     projectId: string,
     authorId: string,
+    action: 'edit' | 'delete',
   ): Promise<boolean> {
     if (authorId === userId) {
       return true;
     }
 
-    const project = await projectAccessService.ensureMember(userId, projectId);
-    if (project.ownerId === userId) {
-      return true;
-    }
+    await projectAccessService.ensureMember(userId, projectId);
 
-    const membership = await projectMemberRepository.findByProjectAndUser(
-      projectId,
-      userId,
-    );
-
-    return membership?.role === 'ADMIN';
+    const permission =
+      action === 'edit' ? 'comment.edit_any' : 'comment.delete_any';
+    return permissionService.can(userId, projectId, permission);
   }
 
   async list(userId: string, taskId: string) {
@@ -85,7 +80,11 @@ export class CommentService {
 
   async create(userId: string, taskId: string, input: CreateCommentInput) {
     const projectId = await this.resolveProjectIdFromTask(taskId);
-    await projectAccessService.ensureMember(userId, projectId);
+    await projectAccessService.ensurePermission(
+      userId,
+      projectId,
+      'comment.create',
+    );
 
     const comment = await commentRepository.create({
       content: input.content,
@@ -114,6 +113,7 @@ export class CommentService {
       userId,
       projectId,
       comment.authorId,
+      'edit',
     );
     if (!canManage) {
       throw new ApiError(403, 'You cannot edit this comment');
@@ -136,6 +136,7 @@ export class CommentService {
       userId,
       projectId,
       comment.authorId,
+      'delete',
     );
     if (!canManage) {
       throw new ApiError(403, 'You cannot delete this comment');

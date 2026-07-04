@@ -62,7 +62,11 @@ export class AttachmentService {
 
   async upload(userId: string, taskId: string, file: Express.Multer.File) {
     const projectId = await this.resolveProjectIdFromTask(taskId);
-    await projectAccessService.ensureMember(userId, projectId);
+    await projectAccessService.ensurePermission(
+      userId,
+      projectId,
+      'attachment.upload',
+    );
 
     if (!file) {
       throw new ApiError(400, 'File is required');
@@ -86,7 +90,11 @@ export class AttachmentService {
 
   async delete(userId: string, taskId: string, attachmentId: string) {
     const projectId = await this.resolveProjectIdFromTask(taskId);
-    await projectAccessService.ensureMember(userId, projectId);
+    await projectAccessService.ensurePermission(
+      userId,
+      projectId,
+      'attachment.delete',
+    );
 
     const attachment = await attachmentRepository.findById(attachmentId);
     if (!attachment || attachment.taskId !== taskId) {

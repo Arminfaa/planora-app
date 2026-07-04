@@ -7,7 +7,7 @@ import type {
   InvitePreview,
   ProjectInvite,
   ProjectMember,
-  ProjectRole,
+  UpdateProjectMemberInput,
 } from '../types';
 
 export const projectMemberService = {
@@ -31,11 +31,11 @@ export const projectMemberService = {
   async updateRole(
     projectId: string,
     userId: string,
-    role: Exclude<ProjectRole, 'OWNER'>,
+    input: UpdateProjectMemberInput,
   ): Promise<ProjectMember> {
     const { data } = await api.patch<ApiSuccessResponse<ProjectMember>>(
       `/projects/${projectId}/members/${userId}`,
-      { role },
+      input,
     );
     return data.data;
   },

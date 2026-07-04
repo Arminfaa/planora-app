@@ -32,9 +32,9 @@ export function CreateProjectModal({
         role="dialog"
         aria-modal="true"
         aria-labelledby="create-project-title"
-        className="relative z-10 w-full max-w-md overflow-hidden rounded-2xl bg-white shadow-2xl"
+        className="relative z-10 flex max-h-[90vh] w-full max-w-2xl flex-col overflow-hidden rounded-2xl bg-white shadow-2xl"
       >
-        <div className="flex items-center justify-between border-b border-gray-100 px-6 py-4">
+        <div className="flex shrink-0 items-center justify-between border-b border-gray-100 px-6 py-4">
           <h2
             id="create-project-title"
             className="text-lg font-semibold text-gray-900"
@@ -62,16 +62,15 @@ export function CreateProjectModal({
             </svg>
           </button>
         </div>
-        <div className="p-6">
-          <CreateProjectForm
-            onSubmit={async (data) => {
-              await onSubmit(data);
-              onClose();
-            }}
-            onCancel={onClose}
-            variant="modal"
-          />
-        </div>
+
+        <CreateProjectForm
+          onSubmit={async (data) => {
+            await onSubmit(data);
+            onClose();
+          }}
+          onCancel={onClose}
+          variant="modal"
+        />
       </div>
     </div>
   );

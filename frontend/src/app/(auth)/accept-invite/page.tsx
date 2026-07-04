@@ -73,7 +73,10 @@ export default function AcceptInvitePage() {
         <h2 className="text-xl font-semibold text-gray-900">Project invite</h2>
         <div className="rounded-lg bg-primary-50 px-4 py-3 text-sm text-primary-900">
           You are invited to join <strong>{preview.projectName}</strong> as{' '}
-          <strong>{preview.role.toLowerCase()}</strong>.
+          <strong>
+            {(preview.roleName ?? preview.role ?? 'member').toLowerCase()}
+          </strong>
+          .
         </div>
         <p className="text-sm text-gray-600">
           Sign in with <strong>{preview.email}</strong> or create an account.

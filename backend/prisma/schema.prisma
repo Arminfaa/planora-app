@@ -15,6 +15,11 @@ enum ProjectRole {
   MEMBER
 }
 
+enum PermissionMode {
+  DEFAULT
+  CUSTOM
+}
+
 enum TaskPriority {
   LOW
   MEDIUM
@@ -51,50 +56,73 @@ model User {
 // ─── Project ─────────────────────────────────────────────
 
 model Project {
-  id          String   @id @default(auto()) @map("_id") @db.ObjectId
-  name        String
-  slug        String   @unique
-  description String?
-  ownerId     String   @db.ObjectId
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
+  id             String         @id @default(auto()) @map("_id") @db.ObjectId
+  name           String
+  slug           String         @unique
+  description    String?
+  ownerId        String         @db.ObjectId
+  permissionMode PermissionMode @default(DEFAULT)
+  createdAt      DateTime       @default(now())
+  updatedAt      DateTime       @updatedAt
 
-  owner   User            @relation("ProjectOwner", fields: [ownerId], references: [id])
-  members ProjectMember[]
-  invites ProjectInvite[]
-  boards  Board[]
-  labels  Label[]
+  owner           User                    @relation("ProjectOwner", fields: [ownerId], references: [id])
+  members         ProjectMember[]
+  invites         ProjectInvite[]
+  boards          Board[]
+  labels          Label[]
+  roleDefinitions ProjectRoleDefinition[]
 
   @@map("projects")
 }
 
-model ProjectMember {
-  id        String      @id @default(auto()) @map("_id") @db.ObjectId
-  projectId String      @db.ObjectId
-  userId    String      @db.ObjectId
-  role      ProjectRole @default(MEMBER)
-  joinedAt  DateTime    @default(now())
+model ProjectRoleDefinition {
+  id          String   @id @default(auto()) @map("_id") @db.ObjectId
+  projectId   String   @db.ObjectId
+  name        String
+  permissions String[]
+  position    Int      @default(0)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
 
-  project Project @relation(fields: [projectId], references: [id])
-  user    User    @relation(fields: [userId], references: [id])
+  project Project         @relation(fields: [projectId], references: [id])
+  members ProjectMember[]
+  invites ProjectInvite[]
+
+  @@unique([projectId, name])
+  @@map("project_role_definitions")
+}
+
+model ProjectMember {
+  id               String      @id @default(auto()) @map("_id") @db.ObjectId
+  projectId        String      @db.ObjectId
+  userId           String      @db.ObjectId
+  role             ProjectRole @default(MEMBER)
+  roleDefinitionId String?     @db.ObjectId
+  joinedAt         DateTime    @default(now())
+
+  project        Project                @relation(fields: [projectId], references: [id])
+  user           User                   @relation(fields: [userId], references: [id])
+  roleDefinition ProjectRoleDefinition? @relation(fields: [roleDefinitionId], references: [id])
 
   @@unique([projectId, userId])
   @@map("project_members")
 }
 
 model ProjectInvite {
-  id         String      @id @default(auto()) @map("_id") @db.ObjectId
-  projectId  String      @db.ObjectId
-  email      String
-  role       ProjectRole @default(MEMBER)
-  token      String      @unique
-  invitedBy  String      @db.ObjectId
-  expiresAt  DateTime
-  acceptedAt DateTime?
-  createdAt  DateTime    @default(now())
+  id               String      @id @default(auto()) @map("_id") @db.ObjectId
+  projectId        String      @db.ObjectId
+  email            String
+  role             ProjectRole @default(MEMBER)
+  roleDefinitionId String?     @db.ObjectId
+  token            String      @unique
+  invitedBy        String      @db.ObjectId
+  expiresAt        DateTime
+  acceptedAt       DateTime?
+  createdAt        DateTime    @default(now())
 
-  project Project @relation(fields: [projectId], references: [id])
-  inviter User    @relation("InviteSender", fields: [invitedBy], references: [id])
+  project        Project                @relation(fields: [projectId], references: [id])
+  inviter        User                   @relation("InviteSender", fields: [invitedBy], references: [id])
+  roleDefinition ProjectRoleDefinition? @relation(fields: [roleDefinitionId], references: [id])
 
   @@index([projectId, email])
   @@map("project_invites")

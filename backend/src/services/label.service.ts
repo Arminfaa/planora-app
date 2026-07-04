@@ -73,7 +73,11 @@ export class LabelService {
     input: CreateLabelInput,
   ) {
     const projectId = await this.resolveProjectId(projectIdOrSlug);
-    await projectAccessService.ensureMember(userId, projectId);
+    await projectAccessService.ensurePermission(
+      userId,
+      projectId,
+      'label.create',
+    );
 
     const existing = await labelRepository.findByProjectAndName(
       projectId,
@@ -99,7 +103,11 @@ export class LabelService {
     input: UpdateLabelInput,
   ) {
     const projectId = await this.resolveProjectId(projectIdOrSlug);
-    await projectAccessService.ensureAdmin(userId, projectId);
+    await projectAccessService.ensurePermission(
+      userId,
+      projectId,
+      'label.edit',
+    );
 
     const label = await labelRepository.findById(labelId);
     if (!label || label.projectId !== projectId) {
@@ -122,7 +130,11 @@ export class LabelService {
 
   async delete(userId: string, projectIdOrSlug: string, labelId: string) {
     const projectId = await this.resolveProjectId(projectIdOrSlug);
-    await projectAccessService.ensureAdmin(userId, projectId);
+    await projectAccessService.ensurePermission(
+      userId,
+      projectId,
+      'label.delete',
+    );
 
     const label = await labelRepository.findById(labelId);
     if (!label || label.projectId !== projectId) {
@@ -134,7 +146,11 @@ export class LabelService {
 
   async assignToTask(userId: string, taskId: string, labelId: string) {
     const projectId = await this.resolveProjectIdFromTask(taskId);
-    await projectAccessService.ensureMember(userId, projectId);
+    await projectAccessService.ensurePermission(
+      userId,
+      projectId,
+      'label.assign',
+    );
 
     const label = await labelRepository.findById(labelId);
     if (!label || label.projectId !== projectId) {
@@ -156,7 +172,11 @@ export class LabelService {
 
   async removeFromTask(userId: string, taskId: string, labelId: string) {
     const projectId = await this.resolveProjectIdFromTask(taskId);
-    await projectAccessService.ensureMember(userId, projectId);
+    await projectAccessService.ensurePermission(
+      userId,
+      projectId,
+      'label.assign',
+    );
 
     const label = await labelRepository.findById(labelId);
     if (!label || label.projectId !== projectId) {

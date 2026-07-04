@@ -1,9 +1,11 @@
 import { api } from '@/lib/api';
 import type { ApiSuccessResponse, PaginatedData } from '@/shared/types/api';
+import type { PermissionGroup } from '@/features/permissions/registry';
 import type {
   CreateProjectInput,
   Project,
   ProjectMember,
+  ProjectRoleDefinition,
   UpdateProjectInput,
 } from '../types';
 
@@ -12,6 +14,13 @@ export const projectService = {
     const { data } = await api.get<ApiSuccessResponse<PaginatedData<Project>>>(
       '/projects',
       { params: { page, limit } },
+    );
+    return data.data;
+  },
+
+  async getPermissionCatalog(): Promise<PermissionGroup[]> {
+    const { data } = await api.get<ApiSuccessResponse<PermissionGroup[]>>(
+      '/projects/permissions',
     );
     return data.data;
   },
@@ -33,6 +42,13 @@ export const projectService = {
   async listMembers(projectId: string): Promise<ProjectMember[]> {
     const { data } = await api.get<ApiSuccessResponse<ProjectMember[]>>(
       `/projects/${projectId}/members`,
+    );
+    return data.data;
+  },
+
+  async listRoles(projectId: string): Promise<ProjectRoleDefinition[]> {
+    const { data } = await api.get<ApiSuccessResponse<ProjectRoleDefinition[]>>(
+      `/projects/${projectId}/roles`,
     );
     return data.data;
   },
