@@ -1,8 +1,13 @@
 import type { Response } from 'express';
 import { labelService } from '../services/label.service';
+import { projectGroupActivityService } from '../services/project-group-activity.service';
 import type { AuthenticatedRequest } from '../types';
 import { ApiResponse } from '../utils/ApiResponse';
 import { asyncHandler } from '../utils/asyncHandler';
+import {
+  buildLabelAssignedChange,
+  buildLabelRemovedChange,
+} from '../utils/project-group-activity';
 import { getParam } from '../utils/params';
 import type {
   CreateLabelInput,
@@ -59,22 +64,39 @@ export const deleteProjectLabel = asyncHandler(
 
 export const assignTaskLabel = asyncHandler(
   async (req: AuthenticatedRequest, res: Response) => {
+    const taskId = getParam(req.params, 'id');
     const label = await labelService.assignToTask(
       req.user!.userId,
-      getParam(req.params, 'id'),
+      taskId,
       (req.body as AssignTaskLabelInput).labelId,
     );
+
+    void projectGroupActivityService.logTaskActivityByTaskId(
+      req.user!.userId,
+      taskId,
+      [buildLabelAssignedChange(label.name)],
+    );
+
     ApiResponse.success(res, label, 'Label assigned', 201);
   },
 );
 
 export const removeTaskLabel = asyncHandler(
   async (req: AuthenticatedRequest, res: Response) => {
-    await labelService.removeFromTask(
+    const taskId = getParam(req.params, 'id');
+    const labelId = getParam(req.params, 'labelId');
+    const labelName = await labelService.removeFromTask(
       req.user!.userId,
-      getParam(req.params, 'id'),
-      getParam(req.params, 'labelId'),
+      taskId,
+      labelId,
     );
+
+    void projectGroupActivityService.logTaskActivityByTaskId(
+      req.user!.userId,
+      taskId,
+      [buildLabelRemovedChange(labelName)],
+    );
+
     ApiResponse.success(res, null, 'Label removed');
   },
 );

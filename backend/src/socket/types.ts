@@ -11,7 +11,12 @@ export type BoardEventType =
   | 'board:deleted';
 
 export type ProjectEventType =
-  'board:created' | 'board:updated' | 'board:deleted';
+  | 'board:created'
+  | 'board:updated'
+  | 'board:deleted'
+  | 'group:message:created'
+  | 'group:message:updated'
+  | 'group:message:deleted';
 
 export interface BoardSocketEvent {
   boardId: string;

@@ -80,6 +80,16 @@ export const PERMISSION_GROUPS = [
     ],
   },
   {
+    key: 'group',
+    label: 'Project group',
+    permissions: [
+      { key: 'group.view', label: 'View project group' },
+      { key: 'group.send', label: 'Send messages' },
+      { key: 'group.upload', label: 'Upload files in group' },
+      { key: 'group.delete_any', label: 'Delete any group message' },
+    ],
+  },
+  {
     key: 'role',
     label: 'Roles',
     permissions: [{ key: 'role.manage', label: 'Manage custom roles' }],

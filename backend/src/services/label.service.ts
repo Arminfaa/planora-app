@@ -184,6 +184,7 @@ export class LabelService {
     }
 
     await labelRepository.removeFromTask(taskId, labelId);
+    return label.name;
   }
 }
 

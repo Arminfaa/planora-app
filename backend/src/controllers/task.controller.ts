@@ -1,6 +1,9 @@
 import type { Response } from 'express';
+import { boardRepository } from '../repositories/board.repository';
+import { columnRepository } from '../repositories/column.repository';
 import { taskRepository } from '../repositories/task.repository';
 import type { AuthenticatedRequest } from '../types';
+import { projectGroupActivityService } from '../services/project-group-activity.service';
 import { taskService } from '../services/task.service';
 import { ApiResponse } from '../utils/ApiResponse';
 import { asyncHandler } from '../utils/asyncHandler';
@@ -8,6 +11,7 @@ import {
   notifyBoardColumnEvent,
   notifyBoardTaskEvent,
 } from '../utils/board-events';
+import { buildTaskActivityChanges } from '../utils/project-group-activity';
 import type { PaginationQuery } from '../utils/pagination';
 import { getParam } from '../utils/params';
 import type {
@@ -48,6 +52,20 @@ export const createBoardTask = asyncHandler(
       columnId,
       payload: { task },
     });
+
+    const projectId = await boardRepository.getProjectId(boardId);
+    if (projectId) {
+      const board = await boardRepository.findById(boardId);
+      void projectGroupActivityService.logTaskCreated(
+        req.user!.userId,
+        projectId,
+        {
+          taskId: task.id,
+          taskTitle: task.title,
+          boardName: board?.name,
+        },
+      );
+    }
 
     ApiResponse.success(res, task, 'Task created', 201);
   },
@@ -90,6 +108,23 @@ export const createTask = asyncHandler(
       payload: { task },
     });
 
+    const boardId = await columnRepository.getBoardId(columnId);
+    if (boardId) {
+      const projectId = await boardRepository.getProjectId(boardId);
+      if (projectId) {
+        const board = await boardRepository.findById(boardId);
+        void projectGroupActivityService.logTaskCreated(
+          req.user!.userId,
+          projectId,
+          {
+            taskId: task.id,
+            taskTitle: task.title,
+            boardName: board?.name,
+          },
+        );
+      }
+    }
+
     ApiResponse.success(res, task, 'Task created', 201);
   },
 );
@@ -98,6 +133,7 @@ export const updateTask = asyncHandler(
   async (req: AuthenticatedRequest, res: Response) => {
     const taskId = getParam(req.params, 'id');
     const input = req.body as UpdateTaskInput;
+    const existing = await taskRepository.findById(taskId);
     const task = await taskService.update(req.user!.userId, taskId, input);
 
     const isMove = input.columnId !== undefined || input.position !== undefined;
@@ -109,6 +145,54 @@ export const updateTask = asyncHandler(
       payload: { task },
     });
 
+    if (existing) {
+      const boardId = await columnRepository.getBoardId(existing.columnId);
+      const projectId = boardId
+        ? await boardRepository.getProjectId(boardId)
+        : null;
+
+      if (projectId) {
+        if (isMove && input.columnId && input.columnId !== existing.columnId) {
+          const fromColumn = await columnRepository.findById(existing.columnId);
+          const toColumn = await columnRepository.findById(input.columnId);
+          void projectGroupActivityService.logTaskMoved(
+            req.user!.userId,
+            projectId,
+            {
+              taskId: task.id,
+              taskTitle: task.title,
+              fromColumn: fromColumn?.name,
+              toColumn: toColumn?.name,
+            },
+          );
+        } else if (!isMove) {
+          const changes = buildTaskActivityChanges(existing, input, task);
+          void projectGroupActivityService.logTaskUpdated(
+            req.user!.userId,
+            projectId,
+            {
+              taskId: task.id,
+              taskTitle: task.title,
+              changes,
+            },
+          );
+        } else if (isMove) {
+          const changes = buildTaskActivityChanges(existing, input, task);
+          if (changes.length > 0) {
+            void projectGroupActivityService.logTaskUpdated(
+              req.user!.userId,
+              projectId,
+              {
+                taskId: task.id,
+                taskTitle: task.title,
+                changes,
+              },
+            );
+          }
+        }
+      }
+    }
+
     ApiResponse.success(res, task, 'Task updated');
   },
 );
@@ -116,6 +200,7 @@ export const updateTask = asyncHandler(
 export const deleteTask = asyncHandler(
   async (req: AuthenticatedRequest, res: Response) => {
     const taskId = getParam(req.params, 'id');
+    const existing = await taskRepository.findById(taskId);
     const columnId = await taskRepository.getColumnId(taskId);
 
     await taskService.delete(req.user!.userId, taskId);
@@ -125,6 +210,20 @@ export const deleteTask = asyncHandler(
       taskId,
       payload: { taskId, columnId },
     });
+
+    if (existing && columnId) {
+      const boardId = await columnRepository.getBoardId(columnId);
+      const projectId = boardId
+        ? await boardRepository.getProjectId(boardId)
+        : null;
+      if (projectId) {
+        void projectGroupActivityService.logTaskDeleted(
+          req.user!.userId,
+          projectId,
+          { taskId, taskTitle: existing.title },
+        );
+      }
+    }
 
     ApiResponse.success(res, null, 'Task deleted');
   },

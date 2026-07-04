@@ -1,8 +1,13 @@
 import type { NextFunction, Response } from 'express';
 import { attachmentService } from '../services/attachment.service';
+import { projectGroupActivityService } from '../services/project-group-activity.service';
 import type { AuthenticatedRequest } from '../types';
 import { ApiResponse } from '../utils/ApiResponse';
 import { asyncHandler } from '../utils/asyncHandler';
+import {
+  buildAttachmentDeletedChange,
+  buildAttachmentUploadedChange,
+} from '../utils/project-group-activity';
 import { getParam } from '../utils/params';
 import { uploadMiddleware } from '../middlewares/upload.middleware';
 
@@ -27,22 +32,38 @@ export const uploadTaskAttachment = [
     });
   },
   asyncHandler(async (req: AuthenticatedRequest, res: Response) => {
+    const taskId = getParam(req.params, 'id');
     const attachment = await attachmentService.upload(
       req.user!.userId,
-      getParam(req.params, 'id'),
+      taskId,
       req.file as Express.Multer.File,
     );
+
+    void projectGroupActivityService.logTaskActivityByTaskId(
+      req.user!.userId,
+      taskId,
+      [buildAttachmentUploadedChange(attachment.filename)],
+    );
+
     ApiResponse.success(res, attachment, 'Attachment uploaded', 201);
   }),
 ];
 
 export const deleteTaskAttachment = asyncHandler(
   async (req: AuthenticatedRequest, res: Response) => {
-    await attachmentService.delete(
+    const taskId = getParam(req.params, 'id');
+    const filename = await attachmentService.delete(
       req.user!.userId,
-      getParam(req.params, 'id'),
+      taskId,
       getParam(req.params, 'attachmentId'),
     );
+
+    void projectGroupActivityService.logTaskActivityByTaskId(
+      req.user!.userId,
+      taskId,
+      [buildAttachmentDeletedChange(filename)],
+    );
+
     ApiResponse.success(res, null, 'Attachment deleted');
   },
 );

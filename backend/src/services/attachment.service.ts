@@ -110,6 +110,7 @@ export class AttachmentService {
     }
 
     await attachmentRepository.delete(attachmentId);
+    return attachment.filename;
   }
 }
 

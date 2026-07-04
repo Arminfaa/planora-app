@@ -31,6 +31,10 @@ export const PERMISSIONS = [
   'comment.delete_any',
   'attachment.upload',
   'attachment.delete',
+  'group.view',
+  'group.send',
+  'group.upload',
+  'group.delete_any',
   'role.manage',
 ] as const;
 
@@ -125,6 +129,16 @@ export const PERMISSION_GROUPS: {
     permissions: [
       { key: 'attachment.upload', label: 'Upload attachments' },
       { key: 'attachment.delete', label: 'Delete attachments' },
+    ],
+  },
+  {
+    key: 'group',
+    label: 'Project group',
+    permissions: [
+      { key: 'group.view', label: 'View project group' },
+      { key: 'group.send', label: 'Send messages' },
+      { key: 'group.upload', label: 'Upload files in group' },
+      { key: 'group.delete_any', label: 'Delete any group message' },
     ],
   },
   {

@@ -228,6 +228,7 @@ export class InviteService {
         projectId: project.id,
         projectSlug: project.slug,
         alreadyMember: true,
+        memberName: user.name,
       };
     }
 
@@ -250,6 +251,7 @@ export class InviteService {
       projectId: project.id,
       projectSlug: project.slug,
       alreadyMember: Boolean(existing),
+      memberName: user.name,
     };
   }
 

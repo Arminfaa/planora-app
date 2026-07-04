@@ -32,6 +32,11 @@ enum AttachmentType {
   FILE
 }
 
+enum ProjectGroupMessageType {
+  USER
+  ACTIVITY
+}
+
 // ─── User ────────────────────────────────────────────────
 
 model User {
@@ -47,7 +52,8 @@ model User {
   memberships   ProjectMember[]
   sentInvites   ProjectInvite[] @relation("InviteSender")
   createdTasks  Task[]          @relation("TaskCreator")
-  comments      Comment[]
+  comments            Comment[]
+  projectGroupMessages ProjectGroupMessage[]
 
   @@map("users")
 }
@@ -69,7 +75,8 @@ model Project {
   invites         ProjectInvite[]
   boards          Board[]
   labels          Label[]
-  roleDefinitions ProjectRoleDefinition[]
+  roleDefinitions     ProjectRoleDefinition[]
+  groupMessages       ProjectGroupMessage[]
 
   @@map("projects")
 }
@@ -265,4 +272,43 @@ model Attachment {
   task Task @relation(fields: [taskId], references: [id])
 
   @@map("attachments")
+}
+
+// ─── Project Group (chat + activity feed) ─────────────────
+
+model ProjectGroupMessage {
+  id           String                  @id @default(auto()) @map("_id") @db.ObjectId
+  projectId    String                  @db.ObjectId
+  type         ProjectGroupMessageType @default(USER)
+  content      String?
+  authorId     String?                 @db.ObjectId
+  activityType String?
+  activityData Json?
+  createdAt    DateTime                @default(now())
+  updatedAt    DateTime                @updatedAt
+  editedAt     DateTime?
+
+  project     Project                  @relation(fields: [projectId], references: [id])
+  author      User?                    @relation(fields: [authorId], references: [id])
+  attachments ProjectGroupAttachment[]
+
+  @@index([projectId, createdAt])
+  @@map("project_group_messages")
+}
+
+model ProjectGroupAttachment {
+  id              String         @id @default(auto()) @map("_id") @db.ObjectId
+  messageId       String         @db.ObjectId
+  filename        String
+  url             String
+  mimeType        String
+  size            Int
+  type            AttachmentType
+  storageKey      String?
+  storageProvider String?        @default("local")
+  createdAt       DateTime       @default(now())
+
+  message ProjectGroupMessage @relation(fields: [messageId], references: [id], onDelete: Cascade)
+
+  @@map("project_group_attachments")
 }

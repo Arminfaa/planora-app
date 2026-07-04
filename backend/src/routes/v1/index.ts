@@ -17,6 +17,7 @@ import { checklistRouter } from './checklist.routes';
 import { projectLabelRoutes, taskLabelRoutes } from './label.routes';
 import { taskCommentRoutes } from './comment.routes';
 import { taskAttachmentRoutes } from './attachment.routes';
+import projectGroupRoutes from './project-group.routes';
 
 const router = Router();
 
@@ -37,6 +38,7 @@ router.use('/tasks', taskRouter);
 router.use('/tasks/:id/checklist', checklistRouter);
 router.use('/tasks/:id/labels', taskLabelRoutes);
 router.use('/tasks/:id/comments', taskCommentRoutes);
+router.use('/projects/:id/group/messages', projectGroupRoutes);
 router.use('/tasks/:id/attachments', taskAttachmentRoutes);
 
 router.get(

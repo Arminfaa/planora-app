@@ -12,6 +12,7 @@ import { EditProjectModal } from '@/features/projects/components/EditProjectModa
 import { ProjectHeader } from '@/features/projects/components/ProjectHeader';
 import { ProjectRolesPanel } from '@/features/projects/components/ProjectRolesPanel';
 import { ProjectTeamPanel } from '@/features/projects/components/ProjectTeamPanel';
+import { ProjectGroupPanel } from '@/features/project-group/components/ProjectGroupPanel';
 import { useProjectTeam } from '@/features/projects/hooks/useProjectTeam';
 import { projectService } from '@/features/projects/services/project.service';
 import { useProjectPermissions } from '@/features/permissions/hooks/useProjectPermissions';
@@ -50,6 +51,7 @@ export function ProjectDetailView() {
 
   const canViewTeam = can('team.view');
   const canViewBoards = can('board.view');
+  const canViewGroup = can('group.view');
   const canManageInvites = can('team.manage_invites');
   const canManageRoles = can('role.manage');
   const isCustomProject = project?.permissionMode === 'CUSTOM';
@@ -337,6 +339,16 @@ export function ProjectDetailView() {
       </div>
 
       <div className="mx-auto max-w-7xl space-y-8 px-4 py-8 sm:px-6">
+        {canViewGroup && (
+          <ProjectGroupPanel
+            projectId={project.id}
+            canView={canViewGroup}
+            canSend={can('group.send')}
+            canUpload={can('group.upload')}
+            canDeleteAny={can('group.delete_any')}
+          />
+        )}
+
         {canViewTeam && (
           <ProjectTeamPanel
             members={members}

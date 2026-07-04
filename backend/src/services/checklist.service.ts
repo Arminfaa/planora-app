@@ -87,7 +87,11 @@ export class ChecklistService {
     }
 
     const updated = await checklistRepository.update(itemId, input);
-    return { item: updated, task: await taskRepository.findById(taskId) };
+    return {
+      item: updated,
+      task: await taskRepository.findById(taskId),
+      previousItem: item,
+    };
   }
 
   async delete(userId: string, taskId: string, itemId: string) {
@@ -100,7 +104,10 @@ export class ChecklistService {
     }
 
     await checklistRepository.delete(itemId);
-    return taskRepository.findById(taskId);
+    return {
+      task: await taskRepository.findById(taskId),
+      deletedItem: item,
+    };
   }
 }
 

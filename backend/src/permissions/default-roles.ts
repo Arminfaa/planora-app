@@ -22,6 +22,9 @@ const MEMBER_PERMISSIONS: Permission[] = [
   'comment.create',
   'attachment.upload',
   'attachment.delete',
+  'group.view',
+  'group.send',
+  'group.upload',
 ];
 
 export const DEFAULT_ROLE_PERMISSIONS: Record<ProjectRole, Permission[]> = {

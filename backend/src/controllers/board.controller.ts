@@ -2,6 +2,7 @@ import type { NextFunction, Response } from 'express';
 import type { AuthenticatedRequest } from '../types';
 import { boardRepository } from '../repositories/board.repository';
 import { boardService } from '../services/board.service';
+import { projectGroupActivityService } from '../services/project-group-activity.service';
 import { ApiResponse } from '../utils/ApiResponse';
 import { asyncHandler } from '../utils/asyncHandler';
 import {
@@ -65,17 +66,25 @@ export const createBoard = asyncHandler(
       payload: { board: boardPayload },
     });
 
+    void projectGroupActivityService.logBoardCreated(
+      req.user!.userId,
+      projectId,
+      {
+        boardId: board.id,
+        boardName: board.name,
+      },
+    );
+
     ApiResponse.success(res, board, 'Board created', 201);
   },
 );
 
 export const updateBoard = asyncHandler(
   async (req: AuthenticatedRequest, res: Response) => {
-    const board = await boardService.update(
-      req.user!.userId,
-      getParam(req.params, 'id'),
-      req.body as UpdateBoardInput,
-    );
+    const boardId = getParam(req.params, 'id');
+    const input = req.body as UpdateBoardInput;
+    const existing = await boardRepository.findById(boardId);
+    const board = await boardService.update(req.user!.userId, boardId, input);
 
     notifyProjectBoardEvent(req.user!.userId, 'board:updated', {
       projectId: board.projectId,
@@ -84,6 +93,18 @@ export const updateBoard = asyncHandler(
     });
     notifyBoardMetaEvent(req.user!.userId, board.id, board);
 
+    if (existing && input.name && input.name !== existing.name) {
+      void projectGroupActivityService.logBoardUpdated(
+        req.user!.userId,
+        board.projectId,
+        {
+          boardId: board.id,
+          boardName: board.name,
+          changes: [`renamed to "${board.name}"`],
+        },
+      );
+    }
+
     ApiResponse.success(res, board, 'Board updated');
   },
 );
@@ -91,6 +112,7 @@ export const updateBoard = asyncHandler(
 export const deleteBoard = asyncHandler(
   async (req: AuthenticatedRequest, res: Response) => {
     const boardId = getParam(req.params, 'id');
+    const existing = await boardRepository.findById(boardId);
     const projectId = await boardRepository.getProjectId(boardId);
 
     await boardService.delete(req.user!.userId, boardId);
@@ -107,6 +129,14 @@ export const deleteBoard = asyncHandler(
         { id: boardId },
         'board:deleted',
       );
+
+      if (existing) {
+        void projectGroupActivityService.logBoardDeleted(
+          req.user!.userId,
+          projectId,
+          { boardId, boardName: existing.name },
+        );
+      }
     }
 
     ApiResponse.success(res, null, 'Board deleted');
