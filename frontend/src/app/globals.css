@@ -12,6 +12,20 @@
     @apply bg-white text-gray-900 antialiased;
   }
 }
+
+@keyframes landing-float {
+  0%,
+  100% {
+    transform: translate(-50%, 0);
+  }
+  50% {
+    transform: translate(-50%, -12px);
+  }
+}
+
+.landing-float {
+  animation: landing-float 8s ease-in-out infinite;
+}
 .ant-modal-container {
   padding: 20px 0px !important;
 }
