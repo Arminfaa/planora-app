@@ -13,11 +13,17 @@ import { TaskAttachments } from '@/features/attachments/components/TaskAttachmen
 import { useProjectLabels } from '@/features/labels/hooks/useProjectLabels';
 import { normalizeTaskLabels } from '@/features/labels/types';
 import { taskService } from '@/features/tasks/services/task.service';
-import { PRIORITY_OPTIONS, priorityStyles } from '@/features/tasks/types';
+import {
+  getTaskAssignees,
+  PRIORITY_OPTIONS,
+  priorityStyles,
+} from '@/features/tasks/types';
 import { toDateInputValue } from '@/features/tasks/utils/dates';
 import { Button } from '@/shared/components/ui/Button';
 import { Input } from '@/shared/components/ui/Input';
 import { getApiErrorMessage } from '@/lib/api';
+import { MemberMultiSelect } from './MemberMultiSelect';
+import { TaskChecklistEditor } from './TaskChecklistEditor';
 
 const schema = z.object({
   title: z.string().min(1, 'Title is required').max(200),
@@ -25,12 +31,18 @@ const schema = z.object({
   priority: z.enum(['LOW', 'MEDIUM', 'HIGH', 'URGENT']),
   columnId: z.string().min(1),
   dueDate: z.string().optional(),
-  assigneeId: z.string().optional(),
 });
 
 type FormData = z.infer<typeof schema>;
 
 const FORM_ID = 'task-edit-form';
+
+function arraysEqual(a: string[], b: string[]): boolean {
+  if (a.length !== b.length) return false;
+  const sortedA = [...a].sort();
+  const sortedB = [...b].sort();
+  return sortedA.every((value, index) => value === sortedB[index]);
+}
 
 interface TaskModalProps {
   task: BoardTask;
@@ -55,8 +67,12 @@ export function TaskModal({
 }: TaskModalProps) {
   const [error, setError] = useState('');
   const [isDeleting, setIsDeleting] = useState(false);
+  const [assigneeIds, setAssigneeIds] = useState(() =>
+    getTaskAssignees(task).map((assignee) => assignee.id),
+  );
   const { labels: projectLabels, createLabel } = useProjectLabels(projectId);
   const taskLabels = normalizeTaskLabels(task.labels);
+  const checklistItems = task.checklistItems ?? [];
 
   const {
     register,
@@ -70,7 +86,6 @@ export function TaskModal({
       priority: task.priority,
       columnId: task.columnId,
       dueDate: toDateInputValue(task.dueDate),
-      assigneeId: task.assignee?.id ?? '',
     },
   });
 
@@ -81,8 +96,9 @@ export function TaskModal({
       const currentDueDate = task.dueDate
         ? toDateInputValue(task.dueDate)
         : null;
-      const nextAssigneeId = data.assigneeId?.trim() ? data.assigneeId : null;
-      const currentAssigneeId = task.assignee?.id ?? null;
+      const currentAssigneeIds = getTaskAssignees(task).map(
+        (assignee) => assignee.id,
+      );
 
       await taskService.update(task.id, {
         title: data.title,
@@ -90,8 +106,9 @@ export function TaskModal({
         priority: data.priority,
         columnId: data.columnId !== task.columnId ? data.columnId : undefined,
         dueDate: nextDueDate !== currentDueDate ? nextDueDate : undefined,
-        assigneeId:
-          nextAssigneeId !== currentAssigneeId ? nextAssigneeId : undefined,
+        assigneeIds: !arraysEqual(assigneeIds, currentAssigneeIds)
+          ? assigneeIds
+          : undefined,
       });
       await onSave();
     } catch (err) {
@@ -180,16 +197,13 @@ export function TaskModal({
 
             <div className="space-y-1">
               <label className="block text-sm font-medium text-gray-700">
-                Assignee
+                Assignees
               </label>
-              <select className={selectClassName} {...register('assigneeId')}>
-                <option value="">Unassigned</option>
-                {members.map((member) => (
-                  <option key={member.id} value={member.id}>
-                    {member.name}
-                  </option>
-                ))}
-              </select>
+              <MemberMultiSelect
+                members={members}
+                value={assigneeIds}
+                onChange={setAssigneeIds}
+              />
             </div>
 
             <div className="space-y-1">
@@ -207,6 +221,12 @@ export function TaskModal({
           </form>
 
           <div className="mt-6 space-y-6 border-t border-gray-100 pt-6">
+            <TaskChecklistEditor
+              taskId={task.id}
+              items={checklistItems}
+              onChange={onRefresh}
+            />
+
             <div className="space-y-2">
               <h3 className="text-sm font-semibold text-gray-900">Labels</h3>
               <LabelBadges labels={taskLabels} />

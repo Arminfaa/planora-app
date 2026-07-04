@@ -2,10 +2,28 @@ import type { Prisma } from '@prisma/client';
 import { BaseRepository } from './base.repository';
 import type { TaskFilterQuery } from '../validators/filter.validator';
 import { buildTaskFilterWhere } from '../utils/task-filters';
+import { enrichTasksWithAssignees } from '../utils/task-enrichment';
 
 const projectAccessFilter = (userId: string): Prisma.ProjectWhereInput => ({
   OR: [{ ownerId: userId }, { members: { some: { userId } } }],
 });
+
+const taskInclude = {
+  column: {
+    select: {
+      id: true,
+      name: true,
+      board: {
+        select: {
+          id: true,
+          name: true,
+          slug: true,
+          project: { select: { id: true, name: true, slug: true } },
+        },
+      },
+    },
+  },
+} satisfies Prisma.TaskInclude;
 
 export class SearchRepository extends BaseRepository {
   async searchTasks(
@@ -56,30 +74,14 @@ export class SearchRepository extends BaseRepository {
         orderBy: { updatedAt: 'desc' },
         skip: (page - 1) * limit,
         take: limit,
-        include: {
-          assignee: {
-            select: { id: true, name: true, email: true, avatar: true },
-          },
-          column: {
-            select: {
-              id: true,
-              name: true,
-              board: {
-                select: {
-                  id: true,
-                  name: true,
-                  slug: true,
-                  project: { select: { id: true, name: true, slug: true } },
-                },
-              },
-            },
-          },
-        },
+        include: taskInclude,
       }),
       this.db.task.count({ where }),
     ]);
 
-    return { items, total };
+    const enriched = await enrichTasksWithAssignees(this.db, items);
+
+    return { items: enriched, total };
   }
 
   async searchProjects(
@@ -119,28 +121,27 @@ export class SearchRepository extends BaseRepository {
   async getAssigneeOptions(userId: string) {
     const tasks = await this.db.task.findMany({
       where: {
-        assigneeId: { not: null },
+        NOT: { assigneeIds: { isEmpty: true } },
         column: {
           board: {
             project: projectAccessFilter(userId),
           },
         },
       },
-      distinct: ['assigneeId'],
-      select: {
-        assignee: {
-          select: { id: true, name: true, email: true, avatar: true },
-        },
-      },
-      orderBy: { assignee: { name: 'asc' } },
+      select: { assigneeIds: true },
     });
 
-    return tasks
-      .map((task) => task.assignee)
-      .filter(
-        (assignee): assignee is NonNullable<typeof assignee> =>
-          assignee !== null,
-      );
+    const assigneeIds = [...new Set(tasks.flatMap((task) => task.assigneeIds))];
+
+    if (assigneeIds.length === 0) {
+      return [];
+    }
+
+    return this.db.user.findMany({
+      where: { id: { in: assigneeIds } },
+      select: { id: true, name: true, email: true, avatar: true },
+      orderBy: { name: 'asc' },
+    });
   }
 }
 

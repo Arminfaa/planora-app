@@ -1,4 +1,5 @@
 import type { Board, Prisma } from '@prisma/client';
+import { enrichTasksWithAssignees } from '../utils/task-enrichment';
 import { BaseRepository } from './base.repository';
 
 export class BoardRepository extends BaseRepository {
@@ -12,7 +13,7 @@ export class BoardRepository extends BaseRepository {
   }
 
   async findById(id: string) {
-    return this.db.board.findUnique({
+    const board = await this.db.board.findUnique({
       where: { id },
       include: {
         columns: {
@@ -21,11 +22,11 @@ export class BoardRepository extends BaseRepository {
             tasks: {
               orderBy: { position: 'asc' },
               include: {
-                assignee: {
-                  select: { id: true, name: true, email: true, avatar: true },
-                },
                 labels: {
                   include: { label: true },
+                },
+                checklistItems: {
+                  orderBy: { position: 'asc' },
                 },
                 _count: {
                   select: { attachments: true },
@@ -36,6 +37,20 @@ export class BoardRepository extends BaseRepository {
         },
       },
     });
+
+    if (!board) return null;
+
+    const allTasks = board.columns.flatMap((column) => column.tasks);
+    const enriched = await enrichTasksWithAssignees(this.db, allTasks);
+    const enrichedById = new Map(enriched.map((task) => [task.id, task]));
+
+    return {
+      ...board,
+      columns: board.columns.map((column) => ({
+        ...column,
+        tasks: column.tasks.map((task) => enrichedById.get(task.id) ?? task),
+      })),
+    };
   }
 
   async findByProject(projectId: string): Promise<Board[]> {
@@ -104,6 +119,9 @@ export class BoardRepository extends BaseRepository {
           await tx.taskLabel.deleteMany({ where: { taskId: { in: taskIds } } });
           await tx.comment.deleteMany({ where: { taskId: { in: taskIds } } });
           await tx.attachment.deleteMany({
+            where: { taskId: { in: taskIds } },
+          });
+          await tx.taskChecklistItem.deleteMany({
             where: { taskId: { in: taskIds } },
           });
           await tx.task.deleteMany({ where: { id: { in: taskIds } } });

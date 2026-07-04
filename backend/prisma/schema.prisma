@@ -46,7 +46,6 @@ model User {
   ownedProjects Project[]       @relation("ProjectOwner")
   memberships   ProjectMember[]
   sentInvites   ProjectInvite[] @relation("InviteSender")
-  assignedTasks Task[]          @relation("TaskAssignee")
   createdTasks  Task[]          @relation("TaskCreator")
   comments      Comment[]
 
@@ -176,20 +175,34 @@ model Task {
   position    Int          @default(0)
   priority    TaskPriority @default(MEDIUM)
   dueDate     DateTime?
-  assigneeId  String?      @db.ObjectId
+  assigneeIds String[]     @db.ObjectId
   createdById String       @db.ObjectId
   createdAt   DateTime     @default(now())
   updatedAt   DateTime     @updatedAt
 
-  column      Column       @relation(fields: [columnId], references: [id])
-  assignee    User?        @relation("TaskAssignee", fields: [assigneeId], references: [id])
-  createdBy   User         @relation("TaskCreator", fields: [createdById], references: [id])
-  labels      TaskLabel[]
-  comments    Comment[]
-  attachments Attachment[]
+  column         Column              @relation(fields: [columnId], references: [id])
+  createdBy      User                @relation("TaskCreator", fields: [createdById], references: [id])
+  labels         TaskLabel[]
+  comments       Comment[]
+  attachments    Attachment[]
+  checklistItems TaskChecklistItem[]
 
   @@unique([boardId, slug])
   @@map("tasks")
+}
+
+model TaskChecklistItem {
+  id        String   @id @default(auto()) @map("_id") @db.ObjectId
+  taskId    String   @db.ObjectId
+  title     String
+  isDone    Boolean  @default(false)
+  position  Int      @default(0)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  task Task @relation(fields: [taskId], references: [id], onDelete: Cascade)
+
+  @@map("task_checklist_items")
 }
 
 // ─── Label ───────────────────────────────────────────────

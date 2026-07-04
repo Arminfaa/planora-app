@@ -1,5 +1,19 @@
 export type TaskPriority = 'LOW' | 'MEDIUM' | 'HIGH' | 'URGENT';
 
+export interface TaskAssignee {
+  id: string;
+  name: string;
+  email: string;
+  avatar: string | null;
+}
+
+export interface TaskChecklistItem {
+  id: string;
+  title: string;
+  isDone: boolean;
+  position: number;
+}
+
 export interface Task {
   id: string;
   slug: string;
@@ -9,16 +23,12 @@ export interface Task {
   position: number;
   priority: TaskPriority;
   dueDate: string | null;
-  assigneeId: string | null;
+  assigneeIds: string[];
   createdById: string;
   createdAt: string;
   updatedAt: string;
-  assignee?: {
-    id: string;
-    name: string;
-    email: string;
-    avatar: string | null;
-  } | null;
+  assignees?: TaskAssignee[];
+  checklistItems?: TaskChecklistItem[];
   createdBy?: {
     id: string;
     name: string;
@@ -32,7 +42,7 @@ export interface CreateTaskInput {
   description?: string;
   priority?: TaskPriority;
   dueDate?: string;
-  assigneeId?: string;
+  assigneeIds?: string[];
   columnId?: string;
 }
 
@@ -43,7 +53,7 @@ export interface UpdateTaskInput {
   columnId?: string;
   position?: number;
   dueDate?: string | null;
-  assigneeId?: string | null;
+  assigneeIds?: string[];
 }
 
 export const PRIORITY_OPTIONS: TaskPriority[] = [
@@ -62,3 +72,17 @@ export const priorityStyles: Record<
   HIGH: { badge: 'bg-orange-100 text-orange-700', label: 'High' },
   URGENT: { badge: 'bg-red-100 text-red-700', label: 'Urgent' },
 };
+
+export function getTaskAssignees(task: {
+  assignees?: TaskAssignee[];
+}): TaskAssignee[] {
+  return task.assignees ?? [];
+}
+
+export function formatAssigneeNames(task: {
+  assignees?: TaskAssignee[];
+}): string {
+  return getTaskAssignees(task)
+    .map((assignee) => assignee.name)
+    .join(', ');
+}

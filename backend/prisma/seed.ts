@@ -149,7 +149,7 @@ async function main() {
           position: 0,
           priority: TaskPriority.HIGH,
           createdById: admin.id,
-          assigneeId: admin.id,
+          assigneeIds: [admin.id],
         },
         {
           title: 'Design database schema',
@@ -160,7 +160,7 @@ async function main() {
           position: 1,
           priority: TaskPriority.HIGH,
           createdById: admin.id,
-          assigneeId: admin.id,
+          assigneeIds: [admin.id],
         },
         {
           title: 'Implement authentication',
@@ -171,7 +171,7 @@ async function main() {
           position: 0,
           priority: TaskPriority.MEDIUM,
           createdById: admin.id,
-          assigneeId: member.id,
+          assigneeIds: [member.id],
         },
         {
           title: 'Build Kanban board UI',

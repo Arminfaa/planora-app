@@ -10,6 +10,8 @@ import { normalizeTaskLabels } from '@/features/labels/types';
 import { formatDueDate, isDueDateOverdue } from '@/features/tasks/utils/dates';
 import { getTaskAttachmentCount } from '../utils/taskMeta';
 import { PaperclipIcon } from './PaperclipIcon';
+import { TaskChecklistPreview } from './TaskChecklistPreview';
+import { AssigneeDisplay } from './AssigneeDisplay';
 
 interface TaskCardProps {
   task: BoardTask;
@@ -82,6 +84,7 @@ export const TaskCard = memo(function TaskCard({
           </p>
         )}
         <LabelBadges labels={labels} className="mt-2" />
+        <TaskChecklistPreview items={task.checklistItems} />
         <div className="mt-3 flex items-center justify-between gap-2">
           <span
             className={`rounded px-2 py-0.5 text-xs font-medium ${style.badge}`}
@@ -100,11 +103,13 @@ export const TaskCard = memo(function TaskCard({
                 {formatDueDate(task.dueDate)}
               </span>
             )}
-            {task.assignee && (
-              <span className="truncate text-xs text-gray-500">
-                {task.assignee.name}
-              </span>
-            )}
+            <span
+              className="inline-flex max-w-full justify-end"
+              onPointerDown={(event) => event.stopPropagation()}
+              onClick={(event) => event.stopPropagation()}
+            >
+              <AssigneeDisplay task={task} className="text-xs text-gray-500" />
+            </span>
           </div>
         </div>
       </button>

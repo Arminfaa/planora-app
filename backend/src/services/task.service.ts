@@ -81,6 +81,15 @@ export class TaskService {
     }
   }
 
+  private async ensureAssigneesAreMembers(
+    projectId: string,
+    assigneeIds: string[],
+  ): Promise<void> {
+    for (const assigneeId of assigneeIds) {
+      await this.ensureAssigneeIsMember(projectId, assigneeId);
+    }
+  }
+
   async listByColumn(
     userId: string,
     columnId: string,
@@ -164,8 +173,8 @@ export class TaskService {
     const { columnId, createdUnspecified, unspecifiedColumn } =
       await this.resolveColumnForBoard(boardId, input.columnId);
 
-    if (input.assigneeId) {
-      await this.ensureAssigneeIsMember(projectId, input.assigneeId);
+    if (input.assigneeIds?.length) {
+      await this.ensureAssigneesAreMembers(projectId, input.assigneeIds);
     }
 
     const slug = await this.generateUniqueSlug(boardId, input.title);
@@ -179,7 +188,7 @@ export class TaskService {
       position: input.position,
       priority: input.priority,
       dueDate: input.dueDate,
-      assigneeId: input.assigneeId,
+      assigneeIds: input.assigneeIds,
       createdById: userId,
     });
 
@@ -199,8 +208,8 @@ export class TaskService {
       'task.create',
     );
 
-    if (input.assigneeId) {
-      await this.ensureAssigneeIsMember(projectId, input.assigneeId);
+    if (input.assigneeIds?.length) {
+      await this.ensureAssigneesAreMembers(projectId, input.assigneeIds);
     }
 
     const slug = await this.generateUniqueSlug(boardId, input.title);
@@ -214,7 +223,7 @@ export class TaskService {
       position: input.position,
       priority: input.priority,
       dueDate: input.dueDate,
-      assigneeId: input.assigneeId,
+      assigneeIds: input.assigneeIds,
       createdById: userId,
     });
   }
@@ -227,8 +236,8 @@ export class TaskService {
       throw new ApiError(404, 'Task not found');
     }
 
-    if (input.assigneeId) {
-      await this.ensureAssigneeIsMember(projectId, input.assigneeId);
+    if (input.assigneeIds !== undefined) {
+      await this.ensureAssigneesAreMembers(projectId, input.assigneeIds);
     }
 
     const isMove = input.columnId !== undefined || input.position !== undefined;

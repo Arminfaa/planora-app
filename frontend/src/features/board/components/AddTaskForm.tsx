@@ -5,6 +5,7 @@ import type { ProjectMember } from '@/features/projects/types';
 import type { CreateTaskInput } from '@/features/tasks/types';
 import { Button } from '@/shared/components/ui/Button';
 import { Input } from '@/shared/components/ui/Input';
+import { MemberMultiSelect } from './MemberMultiSelect';
 
 interface AddTaskFormProps {
   members: ProjectMember[];
@@ -15,13 +16,13 @@ export function AddTaskForm({ members, onSubmit }: AddTaskFormProps) {
   const [isOpen, setIsOpen] = useState(false);
   const [title, setTitle] = useState('');
   const [dueDate, setDueDate] = useState('');
-  const [assigneeId, setAssigneeId] = useState('');
+  const [assigneeIds, setAssigneeIds] = useState<string[]>([]);
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   const resetForm = () => {
     setTitle('');
     setDueDate('');
-    setAssigneeId('');
+    setAssigneeIds([]);
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -33,7 +34,7 @@ export function AddTaskForm({ members, onSubmit }: AddTaskFormProps) {
       await onSubmit({
         title: title.trim(),
         dueDate: dueDate || undefined,
-        assigneeId: assigneeId || undefined,
+        assigneeIds: assigneeIds.length ? assigneeIds : undefined,
       });
       resetForm();
       setIsOpen(false);
@@ -41,9 +42,6 @@ export function AddTaskForm({ members, onSubmit }: AddTaskFormProps) {
       setIsSubmitting(false);
     }
   };
-
-  const selectClassName =
-    'block w-full rounded-lg border border-gray-300 px-3 py-2 text-sm shadow-sm focus:border-primary-500 focus:outline-none focus:ring-1 focus:ring-primary-500';
 
   if (!isOpen) {
     return (
@@ -70,18 +68,14 @@ export function AddTaskForm({ members, onSubmit }: AddTaskFormProps) {
         value={dueDate}
         onChange={(e) => setDueDate(e.target.value)}
       />
-      <select
-        className={selectClassName}
-        value={assigneeId}
-        onChange={(e) => setAssigneeId(e.target.value)}
-      >
-        <option value="">Unassigned</option>
-        {members.map((member) => (
-          <option key={member.id} value={member.id}>
-            {member.name}
-          </option>
-        ))}
-      </select>
+      <div className="space-y-1">
+        <span className="text-xs font-medium text-gray-600">Assignees</span>
+        <MemberMultiSelect
+          members={members}
+          value={assigneeIds}
+          onChange={setAssigneeIds}
+        />
+      </div>
       <div className="flex gap-2">
         <Button type="submit" isLoading={isSubmitting} className="flex-1">
           Add

@@ -26,12 +26,12 @@ export interface SearchTaskResult {
   projectId: string;
   projectSlug: string;
   projectName: string;
-  assignee?: {
+  assignees?: Array<{
     id: string;
     name: string;
     email: string;
     avatar: string | null;
-  } | null;
+  }>;
 }
 
 export interface SearchProjectResult {

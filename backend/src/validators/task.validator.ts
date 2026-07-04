@@ -25,7 +25,7 @@ export const createTaskSchema = z.object({
   position: z.coerce.number().int().min(0).optional(),
   priority: z.nativeEnum(TaskPriority).optional(),
   dueDate: z.coerce.date().optional(),
-  assigneeId: objectIdSchema.optional(),
+  assigneeIds: z.array(objectIdSchema).optional(),
 });
 
 export const createBoardTaskSchema = createTaskSchema.extend({
@@ -34,7 +34,7 @@ export const createBoardTaskSchema = createTaskSchema.extend({
 
 export const updateTaskSchema = createTaskSchema.partial().extend({
   columnId: objectIdSchema.optional(),
-  assigneeId: objectIdSchema.nullable().optional(),
+  assigneeIds: z.array(objectIdSchema).optional(),
   dueDate: z.coerce.date().nullable().optional(),
 });
 

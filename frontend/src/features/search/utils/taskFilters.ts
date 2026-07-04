@@ -1,5 +1,6 @@
 import type { BoardColumn, BoardTask } from '@/features/board/types';
 import type { TaskPriority } from '@/features/tasks/types';
+import { getTaskAssignees } from '@/features/tasks/types';
 import {
   type BoardAssigneeOption,
   type TaskFilters,
@@ -50,8 +51,13 @@ export function taskMatchesFilters(
   }
 
   if (filters.assigneeId === UNASSIGNED_ASSIGNEE) {
-    if (task.assignee) return false;
-  } else if (filters.assigneeId && task.assignee?.id !== filters.assigneeId) {
+    if (getTaskAssignees(task).length > 0) return false;
+  } else if (
+    filters.assigneeId &&
+    !getTaskAssignees(task).some(
+      (assignee) => assignee.id === filters.assigneeId,
+    )
+  ) {
     return false;
   }
 
@@ -89,12 +95,14 @@ export function taskMatchesQuery(task: BoardTask, query: string): boolean {
 
   const title = task.title.toLowerCase();
   const description = (task.description ?? '').toLowerCase();
-  const assignee = task.assignee?.name.toLowerCase() ?? '';
+  const assigneeNames = getTaskAssignees(task)
+    .map((assignee) => assignee.name.toLowerCase())
+    .join(' ');
 
   return (
     title.includes(normalized) ||
     description.includes(normalized) ||
-    assignee.includes(normalized)
+    assigneeNames.includes(normalized)
   );
 }
 
@@ -113,11 +121,13 @@ export function extractBoardAssignees(
 
   for (const column of columns) {
     for (const task of column.tasks ?? []) {
-      if (task.assignee && !map.has(task.assignee.id)) {
-        map.set(task.assignee.id, {
-          id: task.assignee.id,
-          name: task.assignee.name,
-        });
+      for (const assignee of getTaskAssignees(task)) {
+        if (!map.has(assignee.id)) {
+          map.set(assignee.id, {
+            id: assignee.id,
+            name: assignee.name,
+          });
+        }
       }
     }
   }

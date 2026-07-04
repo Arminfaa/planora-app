@@ -9,6 +9,7 @@ import { taskService } from '@/features/tasks/services/task.service';
 import { Button } from '@/shared/components/ui/Button';
 import { Input } from '@/shared/components/ui/Input';
 import { getApiErrorMessage } from '@/lib/api';
+import { MemberMultiSelect } from './MemberMultiSelect';
 
 interface AllTasksCreateModalProps {
   boardId: string;
@@ -30,7 +31,7 @@ export function AllTasksCreateModal({
   const [priority, setPriority] =
     useState<CreateTaskInput['priority']>('MEDIUM');
   const [dueDate, setDueDate] = useState('');
-  const [assigneeId, setAssigneeId] = useState('');
+  const [assigneeIds, setAssigneeIds] = useState<string[]>([]);
   const [columnId, setColumnId] = useState('');
   const [error, setError] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -50,7 +51,7 @@ export function AllTasksCreateModal({
         description: description.trim() || undefined,
         priority,
         dueDate: dueDate || undefined,
-        assigneeId: assigneeId || undefined,
+        assigneeIds: assigneeIds.length ? assigneeIds : undefined,
       };
 
       if (columnId) {
@@ -164,20 +165,13 @@ export function AllTasksCreateModal({
 
             <label className="block space-y-1.5">
               <span className="text-sm font-medium text-gray-700">
-                Assignee (optional)
+                Assignees (optional)
               </span>
-              <select
-                value={assigneeId}
-                onChange={(event) => setAssigneeId(event.target.value)}
-                className={selectClassName}
-              >
-                <option value="">Unassigned</option>
-                {members.map((member) => (
-                  <option key={member.id} value={member.id}>
-                    {member.name}
-                  </option>
-                ))}
-              </select>
+              <MemberMultiSelect
+                members={members}
+                value={assigneeIds}
+                onChange={setAssigneeIds}
+              />
             </label>
           </div>
 

@@ -33,9 +33,9 @@ export function buildTaskFilterWhere(
   }
 
   if (filters.assigneeId === 'unassigned') {
-    conditions.push({ assigneeId: null });
+    conditions.push({ assigneeIds: { isEmpty: true } });
   } else if (filters.assigneeId) {
-    conditions.push({ assigneeId: filters.assigneeId });
+    conditions.push({ assigneeIds: { has: filters.assigneeId } });
   }
 
   if (filters.due === 'none') {

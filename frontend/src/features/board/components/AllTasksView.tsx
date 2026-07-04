@@ -3,7 +3,7 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import dynamic from 'next/dynamic';
 import Link from 'next/link';
-import type { Board, BoardColumn, BoardTask } from '../types';
+import type { Board, BoardTask } from '../types';
 import type { Project } from '@/features/projects/types';
 import { useProjectMembers } from '@/features/projects/hooks/useProjectMembers';
 import { useProjectPermissions } from '@/features/permissions/hooks/useProjectPermissions';
@@ -21,12 +21,20 @@ import { LabelBadges } from '@/features/labels/components/LabelBadges';
 import { normalizeTaskLabels } from '@/features/labels/types';
 import { formatDueDate, isDueDateOverdue } from '@/features/tasks/utils/dates';
 import { AllTasksCreateModal } from './AllTasksCreateModal';
+import { TaskChecklistPreview } from './TaskChecklistPreview';
+import { AssigneeDisplay } from './AssigneeDisplay';
 import { LoadingSpinner } from '@/shared/components/feedback/LoadingSpinner';
 import { Button } from '@/shared/components/ui/Button';
 import { getApiErrorMessage, isForbiddenError } from '@/lib/api';
 
 const TaskModal = dynamic(
   () => import('./TaskModal').then((mod) => ({ default: mod.TaskModal })),
+  { loading: () => <LoadingSpinner /> },
+);
+
+const TaskViewModal = dynamic(
+  () =>
+    import('./TaskViewModal').then((mod) => ({ default: mod.TaskViewModal })),
   { loading: () => <LoadingSpinner /> },
 );
 
@@ -50,7 +58,8 @@ export function AllTasksView({
   const [filters, setFilters] = useState<TaskFilters>(defaultTaskFilters);
   const [showFilterModal, setShowFilterModal] = useState(false);
   const [showCreateModal, setShowCreateModal] = useState(false);
-  const [selectedTask, setSelectedTask] = useState<BoardTask | null>(null);
+  const [viewTask, setViewTask] = useState<BoardTask | null>(null);
+  const [editTask, setEditTask] = useState<BoardTask | null>(null);
 
   const { can } = useProjectPermissions(project);
   const members = useProjectMembers(project.id);
@@ -75,6 +84,12 @@ export function AllTasksView({
       setBoard(boardData);
       const taskData = await taskService.listByBoard(boardData.id);
       setTasks(taskData);
+      setViewTask((prev) =>
+        prev ? (taskData.find((task) => task.id === prev.id) ?? prev) : null,
+      );
+      setEditTask((prev) =>
+        prev ? (taskData.find((task) => task.id === prev.id) ?? prev) : null,
+      );
     } catch (err) {
       setError(getApiErrorMessage(err));
       setBoard(null);
@@ -103,12 +118,13 @@ export function AllTasksView({
 
   const handleTaskSave = async () => {
     await loadData();
-    setSelectedTask(null);
+    setEditTask(null);
   };
 
   const handleTaskDelete = async () => {
     await loadData();
-    setSelectedTask(null);
+    setEditTask(null);
+    setViewTask(null);
   };
 
   const handleDeleteTask = async (task: BoardTask) => {
@@ -118,8 +134,11 @@ export function AllTasksView({
     setActionError('');
     try {
       await taskService.delete(task.id);
-      if (selectedTask?.id === task.id) {
-        setSelectedTask(null);
+      if (editTask?.id === task.id) {
+        setEditTask(null);
+      }
+      if (viewTask?.id === task.id) {
+        setViewTask(null);
       }
       await loadData();
     } catch (err) {
@@ -296,19 +315,13 @@ export function AllTasksView({
                       </span>
                     </div>
 
-                    {canEditTasks ? (
-                      <button
-                        type="button"
-                        onClick={() => setSelectedTask(task)}
-                        className="mt-2 block text-left text-base font-semibold text-gray-900 hover:text-primary-700"
-                      >
-                        {task.title}
-                      </button>
-                    ) : (
-                      <p className="mt-2 text-base font-semibold text-gray-900">
-                        {task.title}
-                      </p>
-                    )}
+                    <button
+                      type="button"
+                      onClick={() => setViewTask(task)}
+                      className="mt-2 block text-left text-base font-semibold text-gray-900 hover:text-primary-700"
+                    >
+                      {task.title}
+                    </button>
 
                     {task.description && (
                       <p className="mt-1 line-clamp-2 text-sm text-gray-500">
@@ -317,9 +330,10 @@ export function AllTasksView({
                     )}
 
                     <LabelBadges labels={labels} className="mt-2" />
+                    <TaskChecklistPreview items={task.checklistItems} />
 
                     <div className="mt-3 flex flex-wrap items-center gap-3 text-xs text-gray-500">
-                      {task.assignee && <span>{task.assignee.name}</span>}
+                      <AssigneeDisplay task={task} />
                       {task.dueDate && (
                         <span
                           className={
@@ -335,11 +349,18 @@ export function AllTasksView({
                   </div>
 
                   <div className="flex shrink-0 gap-2">
+                    <Button
+                      type="button"
+                      variant="secondary"
+                      onClick={() => setViewTask(task)}
+                    >
+                      View
+                    </Button>
                     {canEditTasks && (
                       <Button
                         type="button"
                         variant="secondary"
-                        onClick={() => setSelectedTask(task)}
+                        onClick={() => setEditTask(task)}
                       >
                         Edit
                       </Button>
@@ -381,13 +402,33 @@ export function AllTasksView({
         />
       )}
 
-      {selectedTask && canEditTasks && (
+      {viewTask && (
+        <TaskViewModal
+          task={viewTask}
+          columns={columns}
+          members={members}
+          onClose={() => setViewTask(null)}
+          onEdit={
+            canEditTasks
+              ? () => {
+                  setEditTask(viewTask);
+                  setViewTask(null);
+                }
+              : undefined
+          }
+          onRefresh={loadData}
+          canToggleChecklist={canViewTasks}
+          canEditChecklist={canEditTasks}
+        />
+      )}
+
+      {editTask && canEditTasks && (
         <TaskModal
-          task={selectedTask}
+          task={editTask}
           columns={columns}
           members={members}
           projectId={project.id}
-          onClose={() => setSelectedTask(null)}
+          onClose={() => setEditTask(null)}
           onRefresh={loadData}
           onSave={handleTaskSave}
           onDelete={handleTaskDelete}

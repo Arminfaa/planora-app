@@ -1,4 +1,5 @@
 import type { TaskPriority } from '@/features/tasks/types';
+import type { TaskAssignee, TaskChecklistItem } from '@/features/tasks/types';
 import type { TaskLabel } from '@/features/labels/types';
 
 export interface BoardColumn {
@@ -24,12 +25,8 @@ export interface BoardTask {
     name: string;
     color: string | null;
   };
-  assignee?: {
-    id: string;
-    name: string;
-    email: string;
-    avatar: string | null;
-  } | null;
+  assignees?: TaskAssignee[];
+  checklistItems?: TaskChecklistItem[];
   labels?: Array<{ label: TaskLabel }> | TaskLabel[];
   _count?: {
     attachments: number;

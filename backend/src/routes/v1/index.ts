@@ -13,6 +13,7 @@ import inviteRoutes, {
 } from './invite.routes';
 import searchRoutes from './search.routes';
 import { columnTaskRouter, taskRouter } from './task.routes';
+import { checklistRouter } from './checklist.routes';
 import { projectLabelRoutes, taskLabelRoutes } from './label.routes';
 import { taskCommentRoutes } from './comment.routes';
 import { taskAttachmentRoutes } from './attachment.routes';
@@ -33,6 +34,7 @@ router.use('/boards/:boardId/columns', boardColumnRouter);
 router.use('/columns', columnRouter);
 router.use('/columns/:columnId/tasks', columnTaskRouter);
 router.use('/tasks', taskRouter);
+router.use('/tasks/:id/checklist', checklistRouter);
 router.use('/tasks/:id/labels', taskLabelRoutes);
 router.use('/tasks/:id/comments', taskCommentRoutes);
 router.use('/tasks/:id/attachments', taskAttachmentRoutes);

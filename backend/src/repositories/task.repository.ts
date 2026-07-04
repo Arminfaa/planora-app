@@ -1,38 +1,57 @@
-import type { Prisma, Task } from '@prisma/client';
+import type { Prisma } from '@prisma/client';
+import {
+  enrichTaskWithAssignees,
+  enrichTasksWithAssignees,
+} from '../utils/task-enrichment';
 import { BaseRepository } from './base.repository';
 
 const taskInclude = {
-  assignee: {
-    select: { id: true, name: true, email: true, avatar: true },
-  },
   createdBy: {
     select: { id: true, name: true, email: true },
   },
   labels: {
     include: { label: true },
   },
+  checklistItems: {
+    orderBy: { position: 'asc' as const },
+  },
 } satisfies Prisma.TaskInclude;
 
+type TaskRecord = Prisma.TaskGetPayload<{ include: typeof taskInclude }>;
+type EnrichedTask = Awaited<
+  ReturnType<typeof enrichTaskWithAssignees<TaskRecord>>
+>;
+
 export class TaskRepository extends BaseRepository {
+  private async enrichOne(task: TaskRecord): Promise<EnrichedTask> {
+    return enrichTaskWithAssignees(this.db, task);
+  }
+
+  private async enrichMany(tasks: TaskRecord[]): Promise<EnrichedTask[]> {
+    return enrichTasksWithAssignees(this.db, tasks);
+  }
+
   async findByBoardAndSlug(boardId: string, slug: string) {
-    return this.db.task.findUnique({
+    const task = await this.db.task.findUnique({
       where: { boardId_slug: { boardId, slug } },
       include: taskInclude,
     });
+    return task ? this.enrichOne(task) : null;
   }
 
   async findById(id: string) {
-    return this.db.task.findUnique({
+    const task = await this.db.task.findUnique({
       where: { id },
       include: taskInclude,
     });
+    return task ? this.enrichOne(task) : null;
   }
 
   async findByColumn(
     columnId: string,
     page: number,
     limit: number,
-  ): Promise<{ items: Task[]; total: number }> {
+  ): Promise<{ items: EnrichedTask[]; total: number }> {
     const where = { columnId };
 
     const [items, total] = await Promise.all([
@@ -46,11 +65,11 @@ export class TaskRepository extends BaseRepository {
       this.db.task.count({ where }),
     ]);
 
-    return { items, total };
+    return { items: await this.enrichMany(items), total };
   }
 
   async findByBoard(boardId: string) {
-    return this.db.task.findMany({
+    const tasks = await this.db.task.findMany({
       where: { boardId },
       orderBy: [{ column: { position: 'asc' } }, { position: 'asc' }],
       include: {
@@ -60,6 +79,7 @@ export class TaskRepository extends BaseRepository {
         },
       },
     });
+    return this.enrichMany(tasks);
   }
 
   async create(data: {
@@ -71,21 +91,26 @@ export class TaskRepository extends BaseRepository {
     position?: number;
     priority?: Prisma.TaskCreateInput['priority'];
     dueDate?: Date;
-    assigneeId?: string;
+    assigneeIds?: string[];
     createdById: string;
   }) {
-    return this.db.task.create({
-      data,
+    const task = await this.db.task.create({
+      data: {
+        ...data,
+        assigneeIds: data.assigneeIds ?? [],
+      },
       include: taskInclude,
     });
+    return this.enrichOne(task);
   }
 
   async update(id: string, data: Prisma.TaskUpdateInput) {
-    return this.db.task.update({
+    const task = await this.db.task.update({
       where: { id },
       data,
       include: taskInclude,
     });
+    return this.enrichOne(task);
   }
 
   async moveTask(
@@ -167,6 +192,7 @@ export class TaskRepository extends BaseRepository {
       await tx.taskLabel.deleteMany({ where: { taskId: id } });
       await tx.comment.deleteMany({ where: { taskId: id } });
       await tx.attachment.deleteMany({ where: { taskId: id } });
+      await tx.taskChecklistItem.deleteMany({ where: { taskId: id } });
       await tx.task.delete({ where: { id } });
 
       const remaining = await tx.task.findMany({
@@ -196,13 +222,24 @@ export class TaskRepository extends BaseRepository {
     userId: string,
     projectId: string,
   ): Promise<void> {
-    await this.db.task.updateMany({
+    const tasks = await this.db.task.findMany({
       where: {
-        assigneeId: userId,
+        assigneeIds: { has: userId },
         column: { board: { projectId } },
       },
-      data: { assigneeId: null },
+      select: { id: true, assigneeIds: true },
     });
+
+    await Promise.all(
+      tasks.map((task) =>
+        this.db.task.update({
+          where: { id: task.id },
+          data: {
+            assigneeIds: task.assigneeIds.filter((id) => id !== userId),
+          },
+        }),
+      ),
+    );
   }
 }
 
