@@ -9,8 +9,8 @@ export default function RegisterPage() {
 
   return (
     <div>
-      <h2 className="mb-6 text-xl font-semibold text-gray-900">
-        Create Account
+      <h2 className="mb-6 text-center text-2xl font-bold text-gray-900">
+        Create your account
       </h2>
       <RegisterForm inviteToken={inviteToken} />
     </div>

@@ -26,6 +26,181 @@
 .landing-float {
   animation: landing-float 8s ease-in-out infinite;
 }
+
+/* Auth page animated background */
+@keyframes auth-orb-drift {
+  0%,
+  100% {
+    transform: translate(0, 0) scale(1);
+  }
+  33% {
+    transform: translate(30px, -40px) scale(1.05);
+  }
+  66% {
+    transform: translate(-20px, 20px) scale(0.95);
+  }
+}
+
+@keyframes auth-float-card-1 {
+  0%,
+  100% {
+    transform: translateY(0);
+  }
+  50% {
+    transform: translateY(-10px);
+  }
+}
+
+@keyframes auth-float-card-2 {
+  0%,
+  100% {
+    transform: translateY(0);
+  }
+  50% {
+    transform: translateY(-8px);
+  }
+}
+
+@keyframes auth-float-card-3 {
+  0%,
+  100% {
+    transform: translateY(0);
+  }
+  50% {
+    transform: translateY(-12px);
+  }
+}
+
+.auth-page-bg {
+  background: linear-gradient(135deg, #f0f4f8 0%, #e8edf3 50%, #f5f7fa 100%);
+}
+
+.auth-bg-orb {
+  position: absolute;
+  border-radius: 50%;
+  filter: blur(80px);
+  opacity: 0.5;
+  animation: auth-orb-drift 18s ease-in-out infinite;
+}
+
+.auth-bg-orb-1 {
+  top: -10%;
+  left: -5%;
+  width: 420px;
+  height: 420px;
+  background: rgba(38, 194, 163, 0.25);
+}
+
+.auth-bg-orb-2 {
+  bottom: -15%;
+  right: -8%;
+  width: 380px;
+  height: 380px;
+  background: rgba(59, 130, 246, 0.2);
+  animation-delay: -6s;
+}
+
+.auth-bg-orb-3 {
+  top: 40%;
+  left: 50%;
+  width: 300px;
+  height: 300px;
+  background: rgba(139, 92, 246, 0.15);
+  animation-delay: -12s;
+}
+
+.auth-bg-grid {
+  background-image:
+    linear-gradient(rgba(0, 0, 0, 0.03) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(0, 0, 0, 0.03) 1px, transparent 1px);
+  background-size: 48px 48px;
+  mask-image: radial-gradient(ellipse at center, black 20%, transparent 75%);
+}
+
+.auth-float-1 .auth-float-inner {
+  animation: auth-float-card-1 6s ease-in-out infinite;
+}
+
+.auth-float-2 .auth-float-inner {
+  animation: auth-float-card-2 7.5s ease-in-out infinite;
+  animation-delay: -1.5s;
+}
+
+.auth-float-3 .auth-float-inner {
+  animation: auth-float-card-3 5.5s ease-in-out infinite;
+  animation-delay: -3s;
+}
+
+/* Auth showcase — fixed card stage layout */
+.auth-mockup-card {
+  overflow: hidden;
+  border-radius: 0.875rem;
+  border: 1px solid rgba(255, 255, 255, 0.45);
+  background: #fff;
+  box-shadow:
+    0 24px 48px rgba(0, 0, 0, 0.16),
+    0 8px 16px rgba(0, 0, 0, 0.08),
+    0 0 0 1px rgba(0, 0, 0, 0.04);
+}
+
+.auth-mockup-header {
+  border-bottom: 1px solid #f3f4f6;
+  background: #f9fafb;
+  padding: 0.5rem 0.75rem;
+}
+
+.auth-mockup-label {
+  font-size: 9px;
+  font-weight: 500;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  color: #9ca3af;
+}
+
+.auth-mockup-title {
+  font-size: 12px;
+  font-weight: 600;
+  color: #111827;
+}
+
+.auth-card-stage {
+  position: relative;
+  width: 100%;
+  max-width: 380px;
+  height: 360px;
+  margin: 0 auto;
+}
+
+.auth-card-slot {
+  position: absolute;
+  will-change: transform;
+}
+
+/* بالا وسط — کارت اصلی */
+.auth-card-slot-hero {
+  top: 0;
+  left: 50%;
+  z-index: 20;
+  transform: translateX(-52%) rotate(-2deg);
+}
+
+/* پایین چپ — کارت کوچک */
+.auth-card-slot-bottom-left {
+  bottom: 0;
+  left: -20px;
+  z-index: 30;
+  transform: scale(0.9) rotate(3deg);
+  transform-origin: bottom left;
+}
+
+/* راست — کارت میانی */
+.auth-card-slot-top-right {
+  top: 96px;
+  right: -24px;
+  z-index: 25;
+  transform: scale(0.94) rotate(-3.5deg);
+  transform-origin: top right;
+}
 .ant-modal-container {
   padding: 20px 0px !important;
 }

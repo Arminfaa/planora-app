@@ -82,6 +82,7 @@ export function RegisterForm({ inviteToken = null }: RegisterFormProps) {
         label="Name"
         type="text"
         autoComplete="name"
+        size="large"
         error={errors.name?.message}
         {...register('name')}
       />
@@ -90,6 +91,7 @@ export function RegisterForm({ inviteToken = null }: RegisterFormProps) {
         label="Email"
         type="email"
         autoComplete="email"
+        size="large"
         readOnly={Boolean(preview?.valid)}
         error={errors.email?.message}
         {...register('email')}
@@ -99,6 +101,7 @@ export function RegisterForm({ inviteToken = null }: RegisterFormProps) {
         label="Password"
         type="password"
         autoComplete="new-password"
+        size="large"
         error={errors.password?.message}
         {...register('password')}
       />
@@ -107,24 +110,25 @@ export function RegisterForm({ inviteToken = null }: RegisterFormProps) {
         label="Confirm password"
         type="password"
         autoComplete="new-password"
+        size="large"
         error={errors.confirmPassword?.message}
         {...register('confirmPassword')}
       />
 
       <Button
         type="submit"
-        className="w-full"
+        className="mt-2 w-full !rounded-lg !bg-gray-900 !py-3 text-base font-semibold hover:!bg-gray-800 focus:ring-gray-700"
         isLoading={isSubmitting}
         disabled={Boolean(inviteToken && !preview?.valid)}
       >
         Create Account
       </Button>
 
-      <p className="text-center text-sm text-gray-600">
+      <p className="text-center text-sm text-gray-500">
         Already have an account?{' '}
         <Link
           href={inviteToken ? `/accept-invite?token=${inviteToken}` : '/login'}
-          className="font-medium text-primary-600 hover:text-primary-700"
+          className="font-medium text-gray-900 underline underline-offset-2 hover:text-primary-600"
         >
           Sign In
         </Link>

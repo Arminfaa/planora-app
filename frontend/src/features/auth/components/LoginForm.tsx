@@ -36,7 +36,7 @@ export function LoginForm({ inviteToken = null }: LoginFormProps) {
   };
 
   return (
-    <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
+    <form onSubmit={handleSubmit(onSubmit)} className="space-y-5">
       {inviteToken && (
         <div className="rounded-lg bg-primary-50 px-4 py-3 text-sm text-primary-900">
           Sign in to accept your project invite.
@@ -53,6 +53,7 @@ export function LoginForm({ inviteToken = null }: LoginFormProps) {
         label="Email"
         type="email"
         autoComplete="email"
+        size="large"
         error={errors.email?.message}
         {...register('email')}
       />
@@ -61,19 +62,24 @@ export function LoginForm({ inviteToken = null }: LoginFormProps) {
         label="Password"
         type="password"
         autoComplete="current-password"
+        size="large"
         error={errors.password?.message}
         {...register('password')}
       />
 
-      <Button type="submit" className="w-full" isLoading={isSubmitting}>
+      <Button
+        type="submit"
+        className="w-full !rounded-lg !bg-gray-900 !py-3 text-base font-semibold hover:!bg-gray-800 focus:ring-gray-700"
+        isLoading={isSubmitting}
+      >
         Sign In
       </Button>
 
-      <p className="text-center text-sm text-gray-600">
+      <p className="text-center text-sm text-gray-500">
         Don&apos;t have an account?{' '}
         <Link
           href={inviteToken ? `/register?invite=${inviteToken}` : '/register'}
-          className="font-medium text-primary-600 hover:text-primary-700"
+          className="font-medium text-gray-900 underline underline-offset-2 hover:text-primary-600"
         >
           Register
         </Link>
