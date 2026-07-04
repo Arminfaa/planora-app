@@ -1,9 +1,23 @@
 import { Router } from 'express';
-import { getMe, login, register } from '../../controllers/auth.controller';
+import {
+  changePassword,
+  getMe,
+  login,
+  register,
+  removeAvatar,
+  updateProfile,
+  uploadAvatar,
+} from '../../controllers/auth.controller';
 import { authenticate } from '../../middlewares/auth.middleware';
 import { authRateLimiter } from '../../middlewares/rateLimit.middleware';
+import { uploadMiddleware } from '../../middlewares/upload.middleware';
 import { validateBody } from '../../middlewares/validate.middleware';
-import { loginSchema, registerSchema } from '../../validators/auth.validator';
+import {
+  changePasswordSchema,
+  loginSchema,
+  registerSchema,
+  updateProfileSchema,
+} from '../../validators/auth.validator';
 
 const router = Router();
 
@@ -15,5 +29,19 @@ router.post(
 );
 router.post('/login', authRateLimiter, validateBody(loginSchema), login);
 router.get('/me', authenticate, getMe);
+router.patch(
+  '/me',
+  authenticate,
+  validateBody(updateProfileSchema),
+  updateProfile,
+);
+router.patch(
+  '/me/password',
+  authenticate,
+  validateBody(changePasswordSchema),
+  changePassword,
+);
+router.post('/me/avatar', authenticate, uploadMiddleware, uploadAvatar);
+router.delete('/me/avatar', authenticate, removeAvatar);
 
 export default router;

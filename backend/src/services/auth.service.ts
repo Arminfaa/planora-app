@@ -3,7 +3,18 @@ import { signToken } from '../utils/jwt';
 import { comparePassword, hashPassword } from '../utils/password';
 import { userRepository } from '../repositories/user.repository';
 import { inviteService } from './invite.service';
-import type { RegisterInput, LoginInput } from '../validators/auth.validator';
+import {
+  removeStoredFile,
+  serializeAttachmentUrl,
+  storeUploadedFile,
+} from './storage/storage.service';
+import { isImageMimeType } from './storage/storage.config';
+import type {
+  ChangePasswordInput,
+  LoginInput,
+  RegisterInput,
+  UpdateProfileInput,
+} from '../validators/auth.validator';
 
 const sanitizeUser = (user: {
   id: string;
@@ -15,7 +26,7 @@ const sanitizeUser = (user: {
   id: user.id,
   email: user.email,
   name: user.name,
-  avatar: user.avatar,
+  avatar: user.avatar ? serializeAttachmentUrl(user.avatar) : null,
   createdAt: user.createdAt,
 });
 
@@ -90,6 +101,74 @@ export class AuthService {
     }
 
     return sanitizeUser(user);
+  }
+
+  async updateProfile(userId: string, input: UpdateProfileInput) {
+    const user = await userRepository.findById(userId);
+    if (!user) {
+      throw new ApiError(404, 'User not found');
+    }
+
+    const updated = await userRepository.update(userId, { name: input.name });
+    return sanitizeUser(updated);
+  }
+
+  async changePassword(userId: string, input: ChangePasswordInput) {
+    const user = await userRepository.findById(userId);
+    if (!user) {
+      throw new ApiError(404, 'User not found');
+    }
+
+    const isValid = await comparePassword(input.currentPassword, user.password);
+    if (!isValid) {
+      throw new ApiError(400, 'Current password is incorrect');
+    }
+
+    const hashedPassword = await hashPassword(input.newPassword);
+    await userRepository.update(userId, { password: hashedPassword });
+  }
+
+  async uploadAvatar(userId: string, file: Express.Multer.File) {
+    const user = await userRepository.findById(userId);
+    if (!user) {
+      throw new ApiError(404, 'User not found');
+    }
+
+    if (!file) {
+      throw new ApiError(400, 'Image file is required');
+    }
+
+    if (!isImageMimeType(file.mimetype)) {
+      throw new ApiError(400, 'Only image files are allowed');
+    }
+
+    const stored = await storeUploadedFile(file);
+    if (stored.type !== 'IMAGE') {
+      throw new ApiError(400, 'Only image files are allowed');
+    }
+
+    const updated = await userRepository.update(userId, {
+      avatar: stored.url,
+    });
+
+    return sanitizeUser(updated);
+  }
+
+  async removeAvatar(userId: string) {
+    const user = await userRepository.findById(userId);
+    if (!user) {
+      throw new ApiError(404, 'User not found');
+    }
+
+    if (user.avatar?.startsWith('/uploads/')) {
+      const storageKey = user.avatar.replace(/^\/uploads\//, '');
+      await removeStoredFile(storageKey, 'local', 'IMAGE').catch(
+        () => undefined,
+      );
+    }
+
+    const updated = await userRepository.update(userId, { avatar: null });
+    return sanitizeUser(updated);
   }
 }
 

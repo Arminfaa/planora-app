@@ -1,13 +1,53 @@
-import { cn } from '@/lib/utils';
-import type { InputHTMLAttributes } from 'react';
+'use client';
 
-interface InputProps extends InputHTMLAttributes<HTMLInputElement> {
+import { Input as AntInput } from 'antd';
+import type { InputProps as AntInputProps, InputRef } from 'antd/es/input';
+import { cn } from '@/lib/utils';
+import { forwardRef, useCallback } from 'react';
+
+interface InputProps extends Omit<AntInputProps, 'status'> {
   label?: string;
   error?: string;
 }
 
-export function Input({ className, label, error, id, ...props }: InputProps) {
-  const inputId = id ?? props.name;
+export const Input = forwardRef<HTMLInputElement, InputProps>(function Input(
+  { className, label, error, id, type, ...props },
+  ref,
+) {
+  const inputId = id ?? props.name?.toString();
+  const status = error ? 'error' : undefined;
+
+  const setRefs = useCallback(
+    (node: InputRef | null) => {
+      const nativeInput = node?.input ?? null;
+      if (typeof ref === 'function') {
+        ref(nativeInput);
+      } else if (ref) {
+        ref.current = nativeInput;
+      }
+    },
+    [ref],
+  );
+
+  const inputElement =
+    type === 'password' ? (
+      <AntInput.Password
+        id={inputId}
+        status={status}
+        className={cn('w-full', className)}
+        {...props}
+        ref={setRefs}
+      />
+    ) : (
+      <AntInput
+        id={inputId}
+        type={type}
+        status={status}
+        className={cn('w-full', className)}
+        {...props}
+        ref={setRefs}
+      />
+    );
 
   return (
     <div className="space-y-1">
@@ -19,16 +59,8 @@ export function Input({ className, label, error, id, ...props }: InputProps) {
           {label}
         </label>
       )}
-      <input
-        id={inputId}
-        className={cn(
-          'block w-full rounded-lg border border-gray-300 px-3 py-2.5 text-sm shadow-sm transition focus:border-primary-500 focus:outline-none focus:ring-1 focus:ring-primary-500',
-          error && 'border-red-500 focus:border-red-500 focus:ring-red-500',
-          className,
-        )}
-        {...props}
-      />
+      {inputElement}
       {error && <p className="text-xs text-red-600">{error}</p>}
     </div>
   );
-}
+});

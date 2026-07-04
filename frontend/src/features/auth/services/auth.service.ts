@@ -27,4 +27,41 @@ export const authService = {
     const { data } = await api.get<ApiSuccessResponse<User>>('/auth/me');
     return data.data;
   },
+
+  async updateProfile(name: string): Promise<User> {
+    const { data } = await api.patch<ApiSuccessResponse<User>>('/auth/me', {
+      name,
+    });
+    return data.data;
+  },
+
+  async changePassword(
+    currentPassword: string,
+    newPassword: string,
+    confirmPassword: string,
+  ): Promise<void> {
+    await api.patch('/auth/me/password', {
+      currentPassword,
+      newPassword,
+      confirmPassword,
+    });
+  },
+
+  async uploadAvatar(file: File): Promise<User> {
+    const formData = new FormData();
+    formData.append('file', file);
+
+    const { data } = await api.post<ApiSuccessResponse<User>>(
+      '/auth/me/avatar',
+      formData,
+      { headers: { 'Content-Type': 'multipart/form-data' } },
+    );
+    return data.data;
+  },
+
+  async removeAvatar(): Promise<User> {
+    const { data } =
+      await api.delete<ApiSuccessResponse<User>>('/auth/me/avatar');
+    return data.data;
+  },
 };

@@ -2,6 +2,7 @@
 
 import Link from 'next/link';
 import { useAuth } from '@/features/auth/hooks/useAuth';
+import { UserMenuDropdown } from '@/shared/components/layout/UserMenuDropdown';
 
 const appName = process.env.NEXT_PUBLIC_APP_NAME ?? 'Project Management';
 
@@ -11,7 +12,7 @@ const navLinks = [
 ];
 
 export function LandingNavbar() {
-  const { isAuthenticated, isLoading, user } = useAuth();
+  const { isAuthenticated, isLoading } = useAuth();
 
   return (
     <header className="sticky top-0 z-50 border-b border-white/30 bg-white/75 backdrop-blur-xl">
@@ -36,11 +37,7 @@ export function LandingNavbar() {
 
           {!isLoading && isAuthenticated ? (
             <>
-              {user?.name && (
-                <span className="hidden text-sm text-gray-500 md:inline">
-                  Hi, {user.name.split(' ')[0]}
-                </span>
-              )}
+              <UserMenuDropdown />
               <Link
                 href="/dashboard"
                 className="rounded-xl bg-primary-600 px-4 py-2 text-sm font-medium text-white shadow-sm shadow-primary-600/20 transition hover:bg-primary-700"

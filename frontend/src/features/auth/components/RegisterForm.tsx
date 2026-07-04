@@ -103,6 +103,14 @@ export function RegisterForm({ inviteToken = null }: RegisterFormProps) {
         {...register('password')}
       />
 
+      <Input
+        label="Confirm password"
+        type="password"
+        autoComplete="new-password"
+        error={errors.confirmPassword?.message}
+        {...register('confirmPassword')}
+      />
+
       <Button
         type="submit"
         className="w-full"
