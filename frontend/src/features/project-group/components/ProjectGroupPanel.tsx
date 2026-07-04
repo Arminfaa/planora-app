@@ -15,6 +15,7 @@ interface ProjectGroupPanelProps {
   canSend: boolean;
   canUpload: boolean;
   canDeleteAny: boolean;
+  fullHeight?: boolean;
 }
 
 function GroupMessageItem({
@@ -204,6 +205,7 @@ export function ProjectGroupPanel({
   canSend,
   canUpload,
   canDeleteAny,
+  fullHeight = false,
 }: ProjectGroupPanelProps) {
   const { user } = useAuth();
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -286,16 +288,24 @@ export function ProjectGroupPanel({
   };
 
   return (
-    <section className="rounded-xl border border-gray-200 bg-white shadow-sm">
-      <div className="border-b border-gray-100 px-5 py-4">
+    <section
+      className={`flex flex-col rounded-xl border border-gray-200 bg-white shadow-sm ${
+        fullHeight ? 'min-h-0 flex-1' : ''
+      }`}
+    >
+      <div className="shrink-0 border-b border-gray-100 px-5 py-4">
         <h2 className="text-lg font-semibold text-gray-900">Project group</h2>
         <p className="mt-0.5 text-sm text-gray-500">
           Team chat, file sharing, and project activity log
         </p>
       </div>
 
-      <div className="flex h-[28rem] flex-col">
-        <div className="flex-1 overflow-y-auto px-5 py-4">
+      <div
+        className={`flex min-h-0 flex-col ${
+          fullHeight ? 'flex-1' : 'h-[28rem]'
+        }`}
+      >
+        <div className="flex-1 overflow-y-auto px-5 py-4 max-h-[calc(100dvh-260px)]">
           {hasMore && (
             <div className="mb-4 text-center">
               <button
@@ -341,7 +351,7 @@ export function ProjectGroupPanel({
         </div>
 
         {(canSend || canUpload) && (
-          <div className="border-t border-gray-100 px-5 py-4">
+          <div className="shrink-0 border-t border-gray-100 px-5 py-4">
             <div className="flex gap-2">
               <textarea
                 value={content}
