@@ -26,3 +26,10 @@
   border-top: 1px solid #f0f0f0 !important;
   padding: 10px 24px 0 24px !important;
 }
+.ant-segmented-group {
+  padding: 0.35rem;
+  border-radius: 6px;
+}
+.ant-segmented-item {
+  padding: 0.15rem;
+}
