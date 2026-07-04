@@ -261,6 +261,56 @@
 .ant-segmented-item {
   padding: 0.15rem;
 }
+
+/* Project sub-nav — horizontal scroll below sm */
+@media (max-width: 639px) {
+  .project-sub-nav {
+    -webkit-overflow-scrolling: touch;
+    margin-inline: -1rem;
+    overflow-x: auto;
+    padding-inline: 1rem;
+    scrollbar-width: none;
+  }
+
+  .project-sub-nav::-webkit-scrollbar {
+    display: none;
+  }
+
+  .project-sub-nav .ant-segmented {
+    width: max-content;
+    min-width: 100%;
+  }
+
+  .project-sub-nav .ant-segmented-group {
+    flex-wrap: nowrap;
+    width: max-content;
+    min-width: 100%;
+  }
+
+  .project-sub-nav .ant-segmented-item {
+    flex: 0 0 auto;
+  }
+
+  .project-sub-nav .ant-segmented-item-label {
+    padding-inline: 1rem;
+    white-space: nowrap;
+  }
+}
+
+@media (min-width: 640px) {
+  .project-sub-nav .ant-segmented {
+    width: 100%;
+  }
+
+  .project-sub-nav .ant-segmented-group {
+    width: 100%;
+  }
+
+  .project-sub-nav .ant-segmented-item {
+    flex: 1 1 0;
+  }
+}
+
 .ant-dropdown-menu {
   border-radius: 8px !important;
 }

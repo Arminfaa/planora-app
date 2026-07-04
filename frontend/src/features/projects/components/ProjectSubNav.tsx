@@ -51,9 +51,8 @@ export function ProjectSubNav() {
   ].filter((item) => item.visible);
 
   return (
-    <nav aria-label="Project sections">
+    <nav aria-label="Project sections" className="project-sub-nav">
       <Segmented
-        block
         value={activeKey}
         onChange={(value) => {
           if (value === activeKey) return;
