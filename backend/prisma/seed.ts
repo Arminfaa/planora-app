@@ -1,226 +1,331 @@
-import { PrismaClient, ProjectRole, TaskPriority } from '@prisma/client';
+import { Prisma, PrismaClient, ProjectGroupMessageType } from '@prisma/client';
 import bcrypt from 'bcryptjs';
-import { toSlug } from '../src/utils/slug';
+import { SEED_PROJECTS, SEED_USERS } from './seed-data';
 
 const prisma = new PrismaClient();
 
-async function findOrCreateUser(
-  email: string,
-  name: string,
-  passwordHash: string,
-) {
-  const existing = await prisma.user.findUnique({ where: { email } });
-  if (existing) return existing;
+function daysAgo(days: number): Date {
+  const date = new Date();
+  date.setDate(date.getDate() - days);
+  date.setHours(9 + (days % 8), (days * 7) % 60, 0, 0);
+  return date;
+}
 
-  return prisma.user.create({
-    data: { email, name, password: passwordHash },
-  });
+function dueInDays(days: number): Date {
+  const date = new Date();
+  date.setDate(date.getDate() + days);
+  date.setHours(17, 0, 0, 0);
+  return date;
+}
+
+async function clearDatabase() {
+  console.log('Clearing existing database...');
+
+  await prisma.projectGroupAttachment.deleteMany();
+  await prisma.projectGroupMessage.deleteMany();
+  await prisma.attachment.deleteMany();
+  await prisma.comment.deleteMany();
+  await prisma.taskChecklistItem.deleteMany();
+  await prisma.taskLabel.deleteMany();
+  await prisma.task.deleteMany();
+  await prisma.column.deleteMany();
+  await prisma.board.deleteMany();
+  await prisma.label.deleteMany();
+  await prisma.projectInvite.deleteMany();
+  await prisma.projectMember.deleteMany();
+  await prisma.projectRoleDefinition.deleteMany();
+  await prisma.project.deleteMany();
+  await prisma.refreshToken.deleteMany();
+  await prisma.user.deleteMany();
 }
 
 async function main() {
-  const passwordHash = await bcrypt.hash('password123', 12);
+  await clearDatabase();
 
-  const admin = await findOrCreateUser(
-    'admin@example.com',
-    'Admin User',
-    passwordHash,
-  );
+  const userByEmail = new Map<string, { id: string; name: string }>();
 
-  const member = await findOrCreateUser(
-    'member@example.com',
-    'Team Member',
-    passwordHash,
-  );
-
-  let project = await prisma.project.findUnique({
-    where: { slug: 'demo-project' },
-  });
-
-  if (!project) {
-    project = await prisma.project.create({
+  console.log('Creating users...');
+  for (const seedUser of SEED_USERS) {
+    const passwordHash = await bcrypt.hash(seedUser.password, 12);
+    const user = await prisma.user.create({
       data: {
-        name: 'Demo Project',
-        slug: 'demo-project',
-        description: 'A sample project to explore the platform',
-        ownerId: admin.id,
+        email: seedUser.email,
+        name: seedUser.name,
+        password: passwordHash,
+      },
+    });
+    userByEmail.set(seedUser.email, { id: user.id, name: user.name });
+  }
+
+  const owner = userByEmail.get('arminfaa@gmail.com');
+  if (!owner) {
+    throw new Error('Owner user arminfaa@gmail.com was not created');
+  }
+
+  let totalTasks = 0;
+  let totalComments = 0;
+  let totalChecklistItems = 0;
+  let totalMessages = 0;
+
+  console.log('Creating projects, boards, tasks, and chat...');
+
+  for (const projectSeed of SEED_PROJECTS) {
+    const project = await prisma.project.create({
+      data: {
+        name: projectSeed.name,
+        slug: projectSeed.slug,
+        description: projectSeed.description,
+        ownerId: owner.id,
       },
     });
 
     await prisma.projectMember.createMany({
-      data: [
-        { projectId: project.id, userId: admin.id, role: ProjectRole.OWNER },
-        { projectId: project.id, userId: member.id, role: ProjectRole.MEMBER },
-      ],
-    });
-  }
-
-  const boardsMissingSlug = await prisma.board.findMany({
-    where: { slug: { isSet: false } },
-  });
-
-  for (const existingBoard of boardsMissingSlug) {
-    let slug = toSlug(existingBoard.name);
-    const duplicate = await prisma.board.findFirst({
-      where: {
-        projectId: existingBoard.projectId,
-        slug,
-        NOT: { id: existingBoard.id },
-      },
-    });
-    if (duplicate) {
-      slug = `${slug}-${Date.now()}`;
-    }
-    await prisma.board.update({
-      where: { id: existingBoard.id },
-      data: { slug },
-    });
-  }
-
-  let board = await prisma.board.findFirst({
-    where: {
-      projectId: project.id,
-      OR: [{ slug: 'main-board' }, { name: 'Main Board' }],
-    },
-    include: { columns: { orderBy: { position: 'asc' } } },
-  });
-
-  if (!board) {
-    board = await prisma.board.create({
-      data: {
-        name: 'Main Board',
-        slug: 'main-board',
-        projectId: project.id,
-        position: 0,
-        columns: {
-          create: [
-            { name: 'To Do', position: 0, color: '#6B7280' },
-            { name: 'In Progress', position: 1, color: '#3B82F6' },
-            { name: 'Done', position: 2, color: '#10B981' },
-          ],
-        },
-      },
-      include: { columns: { orderBy: { position: 'asc' } } },
-    });
-  } else if (board.slug !== 'main-board') {
-    board = await prisma.board.update({
-      where: { id: board.id },
-      data: { slug: 'main-board' },
-      include: { columns: { orderBy: { position: 'asc' } } },
-    });
-  }
-
-  const boardsStillMissingSlug = await prisma.board.findMany({
-    where: { slug: { isSet: false } },
-  });
-
-  for (const existingBoard of boardsStillMissingSlug) {
-    let slug = toSlug(existingBoard.name);
-    const duplicate = await prisma.board.findFirst({
-      where: {
-        projectId: existingBoard.projectId,
-        slug,
-        NOT: { id: existingBoard.id },
-      },
-    });
-    if (duplicate) {
-      slug = `${slug}-${Date.now()}`;
-    }
-    await prisma.board.update({
-      where: { id: existingBoard.id },
-      data: { slug },
-    });
-  }
-
-  const [todoCol, inProgressCol, doneCol] = board.columns;
-
-  const existingTasks = await prisma.task.count({
-    where: { column: { boardId: board.id } },
-  });
-
-  if (existingTasks === 0) {
-    await prisma.task.createMany({
-      data: [
-        {
-          title: 'Set up project repository',
-          slug: 'set-up-project-repository',
-          description: 'Initialize the monorepo structure',
-          columnId: doneCol.id,
-          boardId: board.id,
-          position: 0,
-          priority: TaskPriority.HIGH,
-          createdById: admin.id,
-          assigneeIds: [admin.id],
-        },
-        {
-          title: 'Design database schema',
-          slug: 'design-database-schema',
-          description: 'Create Prisma models for all entities',
-          columnId: doneCol.id,
-          boardId: board.id,
-          position: 1,
-          priority: TaskPriority.HIGH,
-          createdById: admin.id,
-          assigneeIds: [admin.id],
-        },
-        {
-          title: 'Implement authentication',
-          slug: 'implement-authentication',
-          description: 'JWT login and register endpoints',
-          columnId: inProgressCol.id,
-          boardId: board.id,
-          position: 0,
-          priority: TaskPriority.MEDIUM,
-          createdById: admin.id,
-          assigneeIds: [member.id],
-        },
-        {
-          title: 'Build Kanban board UI',
-          slug: 'build-kanban-board-ui',
-          description: 'Drag and drop task management',
-          columnId: todoCol.id,
-          boardId: board.id,
-          position: 0,
-          priority: TaskPriority.MEDIUM,
-          createdById: admin.id,
-        },
-      ],
-    });
-  }
-
-  const labels = [
-    { name: 'Bug', color: '#EF4444' },
-    { name: 'Feature', color: '#8B5CF6' },
-    { name: 'Enhancement', color: '#06B6D4' },
-  ] as const;
-
-  for (const label of labels) {
-    const exists = await prisma.label.findFirst({
-      where: { projectId: project.id, name: label.name },
+      data: projectSeed.members.map((member) => {
+        const user = userByEmail.get(member.email);
+        if (!user) {
+          throw new Error(`Unknown member email: ${member.email}`);
+        }
+        return {
+          projectId: project.id,
+          userId: user.id,
+          role: member.role,
+        };
+      }),
     });
 
-    if (!exists) {
-      await prisma.label.create({
+    const labelByName = new Map<string, string>();
+    for (const labelSeed of projectSeed.labels) {
+      const label = await prisma.label.create({
         data: {
-          name: label.name,
-          color: label.color,
+          name: labelSeed.name,
+          color: labelSeed.color,
           projectId: project.id,
         },
       });
+      labelByName.set(labelSeed.name, label.id);
+    }
+
+    const taskIdsForActivity: string[] = [];
+    const projectBoardIds: string[] = [];
+
+    for (const boardSeed of projectSeed.boards) {
+      const board = await prisma.board.create({
+        data: {
+          name: boardSeed.name,
+          slug: boardSeed.slug,
+          projectId: project.id,
+          position: boardSeed.position,
+          columns: {
+            create: boardSeed.columns.map((column, index) => ({
+              name: column.name,
+              position: index,
+              color: column.color,
+            })),
+          },
+        },
+        include: { columns: { orderBy: { position: 'asc' } } },
+      });
+
+      projectBoardIds.push(board.id);
+
+      const columnByKey = new Map(
+        boardSeed.columns.map((column, index) => [
+          column.key,
+          board.columns[index]!.id,
+        ]),
+      );
+
+      for (const [taskIndex, taskSeed] of boardSeed.tasks.entries()) {
+        const columnId = columnByKey.get(taskSeed.columnKey);
+        if (!columnId) {
+          throw new Error(
+            `Unknown column key "${taskSeed.columnKey}" on board ${boardSeed.slug}`,
+          );
+        }
+
+        const assigneeIds = (taskSeed.assigneeEmails ?? []).map((email) => {
+          const user = userByEmail.get(email);
+          if (!user) throw new Error(`Unknown assignee email: ${email}`);
+          return user.id;
+        });
+
+        const creatorEmail =
+          taskSeed.assigneeEmails?.[0] ?? 'arminfaa@gmail.com';
+        const creator = userByEmail.get(creatorEmail) ?? owner;
+
+        const isDoneColumn = ['done', 'resolved'].includes(taskSeed.columnKey);
+        const isCompleted = taskSeed.isCompleted ?? isDoneColumn;
+
+        const task = await prisma.task.create({
+          data: {
+            title: taskSeed.title,
+            slug: taskSeed.slug,
+            description: taskSeed.description,
+            columnId,
+            boardId: board.id,
+            position: taskIndex,
+            priority: taskSeed.priority,
+            isCompleted,
+            dueDate:
+              taskSeed.dueDateOffsetDays !== undefined
+                ? dueInDays(taskSeed.dueDateOffsetDays)
+                : undefined,
+            assigneeIds,
+            createdById: creator.id,
+          },
+        });
+
+        totalTasks += 1;
+        taskIdsForActivity.push(task.id);
+
+        if (taskSeed.labelNames) {
+          for (const labelName of taskSeed.labelNames) {
+            const labelId = labelByName.get(labelName);
+            if (labelId) {
+              await prisma.taskLabel.create({
+                data: { taskId: task.id, labelId },
+              });
+            }
+          }
+        }
+
+        if (taskSeed.checklist) {
+          for (const [index, item] of taskSeed.checklist.entries()) {
+            await prisma.taskChecklistItem.create({
+              data: {
+                taskId: task.id,
+                title: item.title,
+                isDone: item.isDone,
+                position: index,
+              },
+            });
+            totalChecklistItems += 1;
+          }
+        }
+
+        if (taskSeed.comments) {
+          for (const commentSeed of taskSeed.comments) {
+            const author = userByEmail.get(commentSeed.authorEmail);
+            if (!author) continue;
+
+            await prisma.comment.create({
+              data: {
+                taskId: task.id,
+                authorId: author.id,
+                content: commentSeed.content,
+                createdAt: daysAgo(Math.max(1, taskIndex + 2)),
+              },
+            });
+            totalComments += 1;
+          }
+        }
+      }
+    }
+
+    for (const chatSeed of projectSeed.chat) {
+      const author = userByEmail.get(chatSeed.authorEmail);
+      if (!author) continue;
+
+      const createdAt = daysAgo(chatSeed.daysAgo);
+
+      if (chatSeed.type === 'USER') {
+        await prisma.projectGroupMessage.create({
+          data: {
+            projectId: project.id,
+            type: ProjectGroupMessageType.USER,
+            content: chatSeed.content,
+            authorId: author.id,
+            createdAt,
+            updatedAt: createdAt,
+          },
+        });
+      } else {
+        const activityData = { ...chatSeed.activityData };
+
+        if (
+          chatSeed.activityType === 'member.joined' &&
+          typeof activityData.memberName === 'string'
+        ) {
+          const joinedUser = [...userByEmail.values()].find(
+            (user) => user.name === activityData.memberName,
+          );
+          if (joinedUser) {
+            activityData.memberId = joinedUser.id;
+          }
+        }
+
+        if (
+          chatSeed.activityType.startsWith('task.') &&
+          !activityData.taskId &&
+          typeof activityData.taskTitle === 'string'
+        ) {
+          const linkedTask = await prisma.task.findFirst({
+            where: {
+              title: activityData.taskTitle as string,
+              boardId: { in: projectBoardIds },
+            },
+          });
+          if (linkedTask) {
+            activityData.taskId = linkedTask.id;
+          }
+        }
+
+        await prisma.projectGroupMessage.create({
+          data: {
+            projectId: project.id,
+            type: ProjectGroupMessageType.ACTIVITY,
+            authorId: author.id,
+            activityType: chatSeed.activityType,
+            activityData: activityData as Prisma.InputJsonValue,
+            createdAt,
+            updatedAt: createdAt,
+          },
+        });
+      }
+
+      totalMessages += 1;
+    }
+
+    if (taskIdsForActivity.length > 0) {
+      await prisma.projectGroupMessage.create({
+        data: {
+          projectId: project.id,
+          type: ProjectGroupMessageType.ACTIVITY,
+          authorId: owner.id,
+          activityType: 'board.created',
+          activityData: { boardName: projectSeed.boards[0]!.name },
+          createdAt: daysAgo(20),
+          updatedAt: daysAgo(20),
+        },
+      });
+      totalMessages += 1;
     }
   }
 
-  const userCount = await prisma.user.count();
-  const taskCount = await prisma.task.count();
-
+  console.log('');
   console.log('Seed completed successfully');
-  console.log(`  Users: ${userCount} | Tasks: ${taskCount}`);
-  console.log('  admin@example.com / member@example.com');
-  console.log('  Password: password123');
+  console.log('────────────────────────────────────────');
+  console.log(`  Projects:         ${SEED_PROJECTS.length}`);
+  console.log(`  Users:            ${SEED_USERS.length}`);
+  console.log(`  Tasks:            ${totalTasks}`);
+  console.log(`  Checklist items:  ${totalChecklistItems}`);
+  console.log(`  Task comments:    ${totalComments}`);
+  console.log(`  Chat messages:    ${totalMessages}`);
+  console.log('');
+  console.log('Login credentials:');
+  console.log('────────────────────────────────────────');
+  for (const seedUser of SEED_USERS) {
+    const marker =
+      seedUser.email === 'arminfaa@gmail.com' ? ' (project owner)' : '';
+    console.log(`  ${seedUser.email}${marker}`);
+    console.log(`  Password: ${seedUser.password}`);
+    console.log('');
+  }
 }
 
 main()
-  .catch((e) => {
-    console.error('Seed failed:', e);
+  .catch((error) => {
+    console.error('Seed failed:', error);
     process.exit(1);
   })
   .finally(async () => {
