@@ -12,6 +12,7 @@ export function ProjectGroupView() {
     <div className="mx-auto flex min-h-0 w-full max-w-7xl flex-1 flex-col px-4 py-6 sm:px-6">
       <ProjectGroupPanel
         projectId={project.id}
+        projectSlug={project.slug}
         canView={can('group.view')}
         canSend={can('group.send')}
         canUpload={can('group.upload')}

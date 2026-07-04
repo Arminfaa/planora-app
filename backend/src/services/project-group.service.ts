@@ -9,6 +9,7 @@ import {
   storeUploadedFile,
 } from './storage/storage.service';
 import { notifyProjectGroupMessageEvent } from '../utils/project-group-events';
+import { enrichTaskActivityDataBatch } from '../utils/enrich-task-activity-data';
 import type {
   CreateGroupMessageInput,
   UpdateGroupMessageInput,
@@ -110,6 +111,26 @@ export class ProjectGroupService {
       page,
       limit,
     );
+
+    const activityEntries = items
+      .filter((message) => message.type === 'ACTIVITY')
+      .map((message) => {
+        const activityData =
+          message.activityData && typeof message.activityData === 'object'
+            ? (message.activityData as Record<string, unknown>)
+            : {};
+
+        if (message.activityData !== activityData) {
+          message.activityData = activityData as typeof message.activityData;
+        }
+
+        return {
+          activityType: message.activityType,
+          activityData,
+        };
+      });
+
+    await enrichTaskActivityDataBatch(activityEntries);
 
     const serialized = items.map(serializeMessage).reverse();
     return buildPagination(serialized, total, page, limit);

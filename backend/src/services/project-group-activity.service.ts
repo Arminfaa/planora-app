@@ -5,6 +5,7 @@ import { projectGroupRepository } from '../repositories/project-group.repository
 import { taskRepository } from '../repositories/task.repository';
 import { notifyProjectGroupMessageEvent } from '../utils/project-group-events';
 import type { ActivityChange } from '../utils/project-group-activity';
+import { enrichTaskActivityData } from '../utils/enrich-task-activity-data';
 
 function serializeActivityMessage(
   message: Awaited<ReturnType<typeof projectGroupRepository.findById>>,
@@ -67,11 +68,16 @@ export class ProjectGroupActivityService {
     activityType: string,
     activityData: Prisma.InputJsonValue,
   ): Promise<void> {
+    const enrichedData = await enrichTaskActivityData(
+      activityType,
+      activityData as Record<string, unknown>,
+    );
+
     const message = await projectGroupRepository.createActivityMessage({
       projectId,
       authorId: userId,
       activityType,
-      activityData,
+      activityData: enrichedData as Prisma.InputJsonValue,
     });
 
     const serialized = serializeActivityMessage(message);

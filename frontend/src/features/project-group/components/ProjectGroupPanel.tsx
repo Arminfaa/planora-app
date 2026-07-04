@@ -1,16 +1,24 @@
 'use client';
 
-import { useRef, useState } from 'react';
-import { formatMessageDateTime } from '../utils/formatDateTime';
+import Link from 'next/link';
+import { useMemo, useRef, useState } from 'react';
+import {
+  formatDateSeparator,
+  formatMessageTime,
+  getMessageDateKey,
+} from '../utils/formatDateTime';
 import { useAuth } from '@/features/auth/hooks/useAuth';
 import { Button } from '@/shared/components/ui/Button';
 import { getApiErrorMessage } from '@/lib/api';
+import { getAssetUrl } from '@/lib/assets';
 import { useProjectGroup } from '../hooks/useProjectGroup';
 import { formatActivityMessage } from '../utils/formatActivity';
-import type { ProjectGroupMessage } from '../types';
+import { getTaskActivityHref } from '../utils/getTaskActivityHref';
+import type { ProjectGroupAuthor, ProjectGroupMessage } from '../types';
 
 interface ProjectGroupPanelProps {
   projectId: string;
+  projectSlug: string;
   canView: boolean;
   canSend: boolean;
   canUpload: boolean;
@@ -18,14 +26,120 @@ interface ProjectGroupPanelProps {
   fullHeight?: boolean;
 }
 
+type ChatFeedItem =
+  | { kind: 'date'; date: string; key: string }
+  | { kind: 'message'; message: ProjectGroupMessage; key: string };
+
+function getInitials(name: string) {
+  return name
+    .split(' ')
+    .filter(Boolean)
+    .slice(0, 2)
+    .map((part) => part[0]?.toUpperCase() ?? '')
+    .join('');
+}
+
+function UserAvatar({
+  author,
+  size = 'md',
+}: {
+  author: ProjectGroupAuthor | null;
+  size?: 'sm' | 'md';
+}) {
+  const dimension = size === 'sm' ? 'h-7 w-7 text-[10px]' : 'h-8 w-8 text-xs';
+  const name = author?.name ?? '?';
+  const avatarUrl = author?.avatar ? getAssetUrl(author.avatar) : null;
+
+  if (avatarUrl) {
+    return (
+      // eslint-disable-next-line @next/next/no-img-element
+      <img
+        src={avatarUrl}
+        alt={name}
+        className={`${dimension} shrink-0 rounded-full object-cover`}
+      />
+    );
+  }
+
+  return (
+    <span
+      className={`${dimension} flex shrink-0 items-center justify-center rounded-full bg-gradient-to-br from-primary-500 to-violet-600 font-semibold text-white`}
+    >
+      {getInitials(name)}
+    </span>
+  );
+}
+
+function DateSeparator({ date }: { date: string }) {
+  return (
+    <div className="py-2 text-center">
+      <span className="text-xs font-medium text-gray-400">
+        {formatDateSeparator(date)}
+      </span>
+    </div>
+  );
+}
+
+function ActivityLogItem({
+  message,
+  projectSlug,
+}: {
+  message: ProjectGroupMessage;
+  projectSlug: string;
+}) {
+  const activity = formatActivityMessage(message);
+  const taskHref = getTaskActivityHref(message, projectSlug);
+
+  const pillContent = (
+    <p className="text-xs leading-relaxed text-gray-600">{activity.title}</p>
+  );
+
+  return (
+    <div className="flex flex-col items-center gap-2 py-2">
+      <div className="max-w-[90%] rounded-full bg-gray-100 px-4 py-2 text-center">
+        {taskHref ? (
+          <Link
+            href={taskHref}
+            className="block transition hover:text-primary-700"
+          >
+            {pillContent}
+          </Link>
+        ) : (
+          pillContent
+        )}
+      </div>
+      {activity.detailRows.length > 0 && (
+        <div className="flex max-w-[90%] flex-col items-center gap-1.5">
+          {activity.detailRows.map((row, index) => (
+            <div
+              key={`${message.id}-detail-${index}`}
+              className="flex flex-wrap items-center justify-center gap-1.5 text-xs text-gray-500"
+            >
+              {row.prefix && <span>{row.prefix}</span>}
+              {row.badge && (
+                <span className="inline-flex items-center rounded-md bg-amber-900 px-2 py-0.5 text-[11px] font-medium text-white">
+                  {row.badge}
+                </span>
+              )}
+              {row.text && !row.badge && <span>{row.text}</span>}
+            </div>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}
+
 function GroupMessageItem({
   message,
+  projectSlug,
   currentUserId,
   canDeleteAny,
   onEdit,
   onDelete,
 }: {
   message: ProjectGroupMessage;
+  projectSlug: string;
   currentUserId?: string;
   canDeleteAny: boolean;
   onEdit: (messageId: string, content: string) => Promise<void>;
@@ -41,24 +155,7 @@ function GroupMessageItem({
     message.type === 'USER' && isOwn && message.canEdit && !isEditing;
 
   if (message.type === 'ACTIVITY') {
-    const activity = formatActivityMessage(message);
-    return (
-      <div className="rounded-lg border border-indigo-100 bg-indigo-50/50 px-4 py-3">
-        <p className="text-sm text-gray-800">{activity.title}</p>
-        {activity.details.length > 0 && (
-          <ul className="mt-1.5 space-y-0.5">
-            {activity.details.map((detail) => (
-              <li key={detail} className="text-xs text-gray-600">
-                {detail}
-              </li>
-            ))}
-          </ul>
-        )}
-        <p className="mt-1.5 text-xs text-gray-400">
-          {formatMessageDateTime(message.createdAt)}
-        </p>
-      </div>
-    );
+    return <ActivityLogItem message={message} projectSlug={projectSlug} />;
   }
 
   const handleSaveEdit = async () => {
@@ -72,21 +169,30 @@ function GroupMessageItem({
     }
   };
 
+  const bubbleClass = isOwn
+    ? 'bg-primary-100 text-gray-900'
+    : 'bg-gray-100 text-gray-900';
+
   return (
     <div
-      className={`rounded-lg border px-4 py-3 ${
-        isOwn
-          ? 'ml-8 border-primary-200 bg-primary-50/60'
-          : 'mr-8 border-gray-200 bg-white'
-      }`}
+      className={`flex w-full py-1 ${isOwn ? 'justify-end' : 'justify-start'}`}
     >
-      <div className="flex items-start justify-between gap-2">
-        <div className="min-w-0 flex-1">
-          <p className="text-xs font-medium text-gray-700">
+      <div
+        className={`group flex max-w-[80%] gap-2.5 ${isOwn ? 'flex-row-reverse' : 'flex-row'}`}
+      >
+        <div className="flex shrink-0 items-end pb-5">
+          <UserAvatar author={message.author} />
+        </div>
+
+        <div
+          className={`flex min-w-0 flex-1 flex-col ${isOwn ? 'items-end' : 'items-start'}`}
+        >
+          <p className="mb-1 px-1 text-[11px] font-medium text-gray-400">
             {message.author?.name ?? 'Unknown'}
           </p>
+
           {isEditing ? (
-            <div className="mt-2 space-y-2">
+            <div className="w-full min-w-[16rem] space-y-2 rounded-2xl border border-gray-200 bg-white p-3 shadow-sm">
               <textarea
                 value={editContent}
                 onChange={(e) => setEditContent(e.target.value)}
@@ -114,14 +220,16 @@ function GroupMessageItem({
               </div>
             </div>
           ) : (
-            <>
+            <div
+              className={`relative rounded-2xl px-3.5 pt-2.5 pb-6 ${bubbleClass}`}
+            >
               {message.content && (
-                <p className="mt-1 whitespace-pre-wrap text-sm text-gray-800">
+                <p className="whitespace-pre-wrap pe-10 text-sm leading-relaxed">
                   {message.content}
                 </p>
               )}
               {message.attachments.length > 0 && (
-                <div className="mt-2 space-y-2">
+                <div className={`space-y-2 ${message.content ? 'mt-2' : ''}`}>
                   {message.attachments.map((attachment) =>
                     attachment.type === 'IMAGE' ? (
                       <a
@@ -131,10 +239,11 @@ function GroupMessageItem({
                         rel="noopener noreferrer"
                         className="block"
                       >
+                        {/* eslint-disable-next-line @next/next/no-img-element */}
                         <img
                           src={attachment.url}
                           alt={attachment.filename}
-                          className="max-h-48 rounded-lg border border-gray-200 object-cover"
+                          className="max-h-48 rounded-xl object-cover"
                         />
                       </a>
                     ) : (
@@ -143,7 +252,7 @@ function GroupMessageItem({
                         href={attachment.url}
                         target="_blank"
                         rel="noopener noreferrer"
-                        className="inline-flex items-center gap-2 rounded-lg border border-gray-200 bg-gray-50 px-3 py-2 text-sm text-primary-600 hover:bg-gray-100"
+                        className="inline-flex items-center gap-2 rounded-lg bg-white/70 px-3 py-2 text-sm text-primary-600 hover:bg-white"
                       >
                         <svg
                           className="h-4 w-4"
@@ -164,34 +273,36 @@ function GroupMessageItem({
                   )}
                 </div>
               )}
-            </>
+              <span className="absolute bottom-2 end-3 text-[10px] text-gray-400">
+                {formatMessageTime(message.createdAt)}
+                {message.editedAt && ' · edited'}
+              </span>
+            </div>
           )}
-        </div>
-      </div>
 
-      <div className="mt-2 flex items-center justify-between gap-2">
-        <p className="text-xs text-gray-400">
-          {formatMessageDateTime(message.createdAt)}
-          {message.editedAt && ' (edited)'}
-        </p>
-        <div className="flex gap-2">
-          {canEdit && (
-            <button
-              type="button"
-              onClick={() => setIsEditing(true)}
-              className="text-xs font-medium text-primary-600 hover:text-primary-700"
+          {(canEdit || canDelete) && !isEditing && (
+            <div
+              className={`mt-1 flex gap-2 px-1 opacity-0 transition group-hover:opacity-100 ${isOwn ? 'flex-row-reverse' : ''}`}
             >
-              Edit
-            </button>
-          )}
-          {canDelete && (
-            <button
-              type="button"
-              onClick={() => void onDelete(message.id)}
-              className="text-xs font-medium text-red-600 hover:text-red-700"
-            >
-              Delete
-            </button>
+              {canEdit && (
+                <button
+                  type="button"
+                  onClick={() => setIsEditing(true)}
+                  className="text-[11px] font-medium text-primary-600 hover:text-primary-700"
+                >
+                  Edit
+                </button>
+              )}
+              {canDelete && (
+                <button
+                  type="button"
+                  onClick={() => void onDelete(message.id)}
+                  className="text-[11px] font-medium text-red-600 hover:text-red-700"
+                >
+                  Delete
+                </button>
+              )}
+            </div>
           )}
         </div>
       </div>
@@ -199,8 +310,29 @@ function GroupMessageItem({
   );
 }
 
+function buildChatFeedItems(messages: ProjectGroupMessage[]): ChatFeedItem[] {
+  const items: ChatFeedItem[] = [];
+  let lastDateKey = '';
+
+  for (const message of messages) {
+    const dateKey = getMessageDateKey(message.createdAt);
+    if (dateKey !== lastDateKey) {
+      items.push({
+        kind: 'date',
+        date: message.createdAt,
+        key: `date-${dateKey}`,
+      });
+      lastDateKey = dateKey;
+    }
+    items.push({ kind: 'message', message, key: message.id });
+  }
+
+  return items;
+}
+
 export function ProjectGroupPanel({
   projectId,
+  projectSlug,
   canView,
   canSend,
   canUpload,
@@ -226,6 +358,8 @@ export function ProjectGroupPanel({
     deleteMessage,
     loadMore,
   } = useProjectGroup(projectId, { enabled: canView });
+
+  const chatFeedItems = useMemo(() => buildChatFeedItems(messages), [messages]);
 
   if (!canView) {
     return (
@@ -305,7 +439,7 @@ export function ProjectGroupPanel({
           fullHeight ? 'flex-1' : 'h-[28rem]'
         }`}
       >
-        <div className="flex-1 overflow-y-auto px-5 py-4 max-h-[calc(100dvh-260px)]">
+        <div className="flex-1 overflow-y-auto bg-[#fafafa] px-4 py-4 sm:px-5 max-h-[calc(100dvh-260px)]">
           {hasMore && (
             <div className="mb-4 text-center">
               <button
@@ -334,24 +468,29 @@ export function ProjectGroupPanel({
               No messages yet. Start the conversation!
             </p>
           ) : (
-            <div className="space-y-3">
-              {messages.map((message) => (
-                <GroupMessageItem
-                  key={message.id}
-                  message={message}
-                  currentUserId={user?.id}
-                  canDeleteAny={canDeleteAny}
-                  onEdit={handleEdit}
-                  onDelete={handleDelete}
-                />
-              ))}
+            <div className="space-y-1">
+              {chatFeedItems.map((item) =>
+                item.kind === 'date' ? (
+                  <DateSeparator key={item.key} date={item.date} />
+                ) : (
+                  <GroupMessageItem
+                    key={item.key}
+                    message={item.message}
+                    projectSlug={projectSlug}
+                    currentUserId={user?.id}
+                    canDeleteAny={canDeleteAny}
+                    onEdit={handleEdit}
+                    onDelete={handleDelete}
+                  />
+                ),
+              )}
               <div ref={messagesEndRef} />
             </div>
           )}
         </div>
 
         {(canSend || canUpload) && (
-          <div className="shrink-0 border-t border-gray-100 px-5 py-4">
+          <div className="shrink-0 border-t border-gray-100 bg-white px-5 py-4">
             <div className="flex gap-2">
               <textarea
                 value={content}
