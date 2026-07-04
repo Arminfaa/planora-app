@@ -44,7 +44,7 @@ function assert(condition: boolean, name: string, detail: string) {
 async function request<T>(
   path: string,
   options: RequestInit & { token?: string } = {},
-): Promise<{ status: number; body: ApiResponse<T> }> {
+): Promise<{ status: number; body: ApiResponse<T>; response: Response }> {
   const headers: Record<string, string> = {
     'Content-Type': 'application/json',
     ...(options.headers as Record<string, string>),
@@ -60,13 +60,28 @@ async function request<T>(
   });
 
   const body = (await response.json()) as ApiResponse<T>;
-  return { status: response.status, body };
+  return { status: response.status, body, response };
+}
+
+function extractAccessTokenFromCookies(response: Response): string {
+  const setCookies =
+    typeof response.headers.getSetCookie === 'function'
+      ? response.headers.getSetCookie()
+      : [];
+
+  for (const cookie of setCookies) {
+    const match = /^access_token=([^;]+)/.exec(cookie);
+    if (match?.[1]) {
+      return match[1];
+    }
+  }
+
+  throw new Error('Login response did not include access_token cookie');
 }
 
 async function login(email: string): Promise<string> {
-  const { status, body } = await request<{
+  const { status, body, response } = await request<{
     user: { id: string };
-    token: string;
   }>('/auth/login', {
     method: 'POST',
     body: JSON.stringify({ email, password: PASSWORD }),
@@ -76,7 +91,7 @@ async function login(email: string): Promise<string> {
     throw new Error(`Login failed for ${email}: ${JSON.stringify(body)}`);
   }
 
-  return body.data.token;
+  return extractAccessTokenFromCookies(response);
 }
 
 async function run() {

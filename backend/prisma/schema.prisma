@@ -54,8 +54,23 @@ model User {
   createdTasks  Task[]          @relation("TaskCreator")
   comments            Comment[]
   projectGroupMessages ProjectGroupMessage[]
+  refreshTokens        RefreshToken[]
 
   @@map("users")
+}
+
+model RefreshToken {
+  id        String    @id @default(auto()) @map("_id") @db.ObjectId
+  userId    String    @db.ObjectId
+  tokenHash String    @unique
+  expiresAt DateTime
+  createdAt DateTime  @default(now())
+  revokedAt DateTime?
+
+  user User @relation(fields: [userId], references: [id])
+
+  @@index([userId])
+  @@map("refresh_tokens")
 }
 
 // ─── Project ─────────────────────────────────────────────

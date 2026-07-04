@@ -1,6 +1,5 @@
 import axios, { type AxiosError, type InternalAxiosRequestConfig } from 'axios';
 import type { ApiErrorResponse } from '@/shared/types/api';
-import { getToken, removeToken } from '@/features/auth/utils/token';
 
 const API_URL =
   process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:5000/api/v1';
@@ -8,14 +7,10 @@ const API_URL =
 export const api = axios.create({
   baseURL: API_URL,
   headers: { 'Content-Type': 'application/json' },
+  withCredentials: true,
 });
 
 api.interceptors.request.use((config: InternalAxiosRequestConfig) => {
-  const token = getToken();
-  if (token) {
-    config.headers.Authorization = `Bearer ${token}`;
-  }
-
   if (config.method?.toLowerCase() === 'get') {
     config.headers['Cache-Control'] = 'no-cache';
     config.headers.Pragma = 'no-cache';
@@ -24,16 +19,74 @@ api.interceptors.request.use((config: InternalAxiosRequestConfig) => {
   return config;
 });
 
+let refreshPromise: Promise<void> | null = null;
+
+function redirectToLogin(): void {
+  if (
+    typeof window !== 'undefined' &&
+    !window.location.pathname.startsWith('/login') &&
+    !window.location.pathname.startsWith('/register')
+  ) {
+    window.location.href = '/login';
+  }
+}
+
+async function refreshSession(): Promise<void> {
+  if (!refreshPromise) {
+    refreshPromise = api
+      .post('/auth/refresh')
+      .then(() => undefined)
+      .catch((error) => {
+        refreshPromise = null;
+        throw error;
+      })
+      .finally(() => {
+        refreshPromise = null;
+      });
+  }
+
+  return refreshPromise;
+}
+
+function isAuthRoute(url: string): boolean {
+  return (
+    url.includes('/auth/login') ||
+    url.includes('/auth/register') ||
+    url.includes('/auth/refresh') ||
+    url.includes('/auth/logout')
+  );
+}
+
 api.interceptors.response.use(
   (response) => response,
-  (error: AxiosError<ApiErrorResponse>) => {
-    if (error.response?.status === 401 && typeof window !== 'undefined') {
-      removeToken();
-      if (!window.location.pathname.startsWith('/login')) {
-        window.location.href = '/login';
-      }
+  async (error: AxiosError<ApiErrorResponse>) => {
+    const originalRequest = error.config as
+      (InternalAxiosRequestConfig & { _retry?: boolean }) | undefined;
+
+    if (
+      error.response?.status !== 401 ||
+      !originalRequest ||
+      originalRequest._retry ||
+      typeof window === 'undefined'
+    ) {
+      return Promise.reject(error);
     }
-    return Promise.reject(error);
+
+    const requestUrl = originalRequest.url ?? '';
+
+    if (isAuthRoute(requestUrl)) {
+      return Promise.reject(error);
+    }
+
+    originalRequest._retry = true;
+
+    try {
+      await refreshSession();
+      return api(originalRequest);
+    } catch {
+      redirectToLogin();
+      return Promise.reject(error);
+    }
   },
 );
 

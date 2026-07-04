@@ -3,6 +3,8 @@ import {
   changePassword,
   getMe,
   login,
+  logout,
+  refresh,
   register,
   removeAvatar,
   updateProfile,
@@ -28,6 +30,8 @@ router.post(
   register,
 );
 router.post('/login', authRateLimiter, validateBody(loginSchema), login);
+router.post('/refresh', authRateLimiter, refresh);
+router.post('/logout', logout);
 router.get('/me', authenticate, getMe);
 router.patch(
   '/me',

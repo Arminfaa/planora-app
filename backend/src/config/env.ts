@@ -13,7 +13,8 @@ const envSchema = z.object({
     .min(1, 'DATABASE_URL is required')
     .default('mongodb://127.0.0.1:27018/project_management?replicaSet=rs0'),
   JWT_SECRET: z.string().min(1).default('dev-secret-change-in-production'),
-  JWT_EXPIRES_IN: z.string().default('7d'),
+  JWT_ACCESS_EXPIRES_IN: z.string().default('15m'),
+  JWT_REFRESH_EXPIRES_IN: z.string().default('7d'),
   CORS_ORIGIN: z.string().default('http://localhost:3000'),
   RATE_LIMIT_WINDOW_MS: z.coerce.number().default(900_000),
   RATE_LIMIT_MAX: z.coerce.number().default(100),

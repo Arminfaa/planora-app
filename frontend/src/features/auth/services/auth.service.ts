@@ -23,6 +23,14 @@ export const authService = {
     return data.data;
   },
 
+  async refresh(): Promise<void> {
+    await api.post('/auth/refresh');
+  },
+
+  async logout(): Promise<void> {
+    await api.post('/auth/logout');
+  },
+
   async getMe(): Promise<User> {
     const { data } = await api.get<ApiSuccessResponse<User>>('/auth/me');
     return data.data;

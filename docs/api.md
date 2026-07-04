@@ -1,6 +1,6 @@
 # REST API Reference
 
-All protected endpoints require `Authorization: Bearer <token>`.
+All protected endpoints require the `access_token` HttpOnly cookie (browser clients use `credentials: include`) or `Authorization: Bearer <access_token>`.
 
 ## Projects
 

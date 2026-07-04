@@ -1,5 +1,5 @@
 import { io, type Socket } from 'socket.io-client';
-import { getToken } from '@/features/auth/utils/token';
+import { authService } from '@/features/auth/services/auth.service';
 import type { BoardSocketEvent } from '@/features/board/types/socket';
 import type { ProjectSocketEvent } from '@/features/projects/types/socket';
 
@@ -17,7 +17,6 @@ type BoardEventListener = (event: BoardSocketEvent) => void;
 type ProjectEventListener = (event: ProjectSocketEvent) => void;
 
 let socket: Socket | null = null;
-let activeToken: string | null = null;
 let globalHandlerAttached = false;
 
 const boardSubscriptions = new Map<string, Set<BoardEventListener>>();
@@ -56,23 +55,26 @@ function attachGlobalHandlers(sock: Socket): void {
       void joinProjectRoom(sock, projectId);
     }
   });
+
+  sock.on('connect_error', (error) => {
+    const message = error.message.toLowerCase();
+    if (!message.includes('auth')) {
+      return;
+    }
+
+    void authService
+      .refresh()
+      .then(() => {
+        sock.connect();
+      })
+      .catch(() => undefined);
+  });
 }
 
 export function connectSocket(): Socket | null {
   if (typeof window === 'undefined') return null;
 
-  const token = getToken();
-  if (!token) {
-    disconnectSocket();
-    return null;
-  }
-
-  if (socket && activeToken !== token) {
-    disconnectSocket();
-  }
-
   if (socket) {
-    socket.auth = { token };
     if (!socket.connected) {
       socket.connect();
     }
@@ -80,9 +82,8 @@ export function connectSocket(): Socket | null {
     return socket;
   }
 
-  activeToken = token;
   socket = io(getSocketUrl(), {
-    auth: { token },
+    withCredentials: true,
     autoConnect: true,
     reconnection: true,
     reconnectionAttempts: Infinity,
@@ -97,7 +98,6 @@ export function connectSocket(): Socket | null {
 export function disconnectSocket(): void {
   socket?.disconnect();
   socket = null;
-  activeToken = null;
   globalHandlerAttached = false;
   joinedBoards.clear();
   joinedProjects.clear();

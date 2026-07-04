@@ -1,8 +1,11 @@
 import type { Response } from 'express';
+import { ApiError } from '../utils/ApiError';
 import type { AuthenticatedRequest } from '../types';
 import { authService } from '../services/auth.service';
 import { ApiResponse } from '../utils/ApiResponse';
 import { asyncHandler } from '../utils/asyncHandler';
+import { clearAuthCookies, setAuthCookies } from '../utils/cookies';
+import { REFRESH_TOKEN_COOKIE } from '../constants/auth';
 import type {
   ChangePasswordInput,
   LoginInput,
@@ -13,14 +16,51 @@ import type {
 export const register = asyncHandler(
   async (req: AuthenticatedRequest, res: Response) => {
     const result = await authService.register(req.body as RegisterInput);
-    ApiResponse.success(res, result, 'Registration successful', 201);
+    setAuthCookies(res, result.accessToken, result.refreshToken);
+    ApiResponse.success(
+      res,
+      {
+        user: result.user,
+        inviteAcceptance: result.inviteAcceptance,
+      },
+      'Registration successful',
+      201,
+    );
   },
 );
 
 export const login = asyncHandler(
   async (req: AuthenticatedRequest, res: Response) => {
     const result = await authService.login(req.body as LoginInput);
-    ApiResponse.success(res, result, 'Login successful');
+    setAuthCookies(res, result.accessToken, result.refreshToken);
+    ApiResponse.success(res, { user: result.user }, 'Login successful');
+  },
+);
+
+export const refresh = asyncHandler(
+  async (req: AuthenticatedRequest, res: Response) => {
+    const rawRefreshToken = req.cookies?.[REFRESH_TOKEN_COOKIE] as
+      string | undefined;
+
+    if (!rawRefreshToken) {
+      clearAuthCookies(res);
+      throw new ApiError(401, 'Refresh token required');
+    }
+
+    const session = await authService.refresh(rawRefreshToken);
+    setAuthCookies(res, session.accessToken, session.refreshToken);
+    ApiResponse.success(res, null, 'Token refreshed');
+  },
+);
+
+export const logout = asyncHandler(
+  async (req: AuthenticatedRequest, res: Response) => {
+    const rawRefreshToken = req.cookies?.[REFRESH_TOKEN_COOKIE] as
+      string | undefined;
+
+    await authService.logout(rawRefreshToken);
+    clearAuthCookies(res);
+    ApiResponse.success(res, null, 'Logged out');
   },
 );
 

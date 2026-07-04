@@ -11,7 +11,6 @@ import {
 } from 'react';
 import { useRouter } from 'next/navigation';
 import { authService } from '../services/auth.service';
-import { getToken, removeToken, setToken } from '../utils/token';
 import { connectSocket, disconnectSocket } from '@/lib/socket';
 import type { LoginFormData, RegisterFormData } from '../types';
 import type { User } from '@/shared/types/api';
@@ -25,7 +24,7 @@ interface AuthContextValue {
     options?: { inviteToken?: string },
   ) => Promise<void>;
   register: (data: RegisterFormData, inviteToken?: string) => Promise<void>;
-  logout: () => void;
+  logout: () => Promise<void>;
   updateUser: (user: User) => void;
 }
 
@@ -37,19 +36,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [isLoading, setIsLoading] = useState(true);
 
   const loadUser = useCallback(async () => {
-    const token = getToken();
-    if (!token) {
-      setUser(null);
-      setIsLoading(false);
-      return;
-    }
-
     try {
       const profile = await authService.getMe();
       setUser(profile);
       connectSocket();
     } catch {
-      removeToken();
       setUser(null);
       disconnectSocket();
     } finally {
@@ -64,7 +55,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const login = useCallback(
     async (data: LoginFormData, options?: { inviteToken?: string }) => {
       const result = await authService.login(data.email, data.password);
-      setToken(result.token);
       setUser(result.user);
       connectSocket();
 
@@ -86,7 +76,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         data.password,
         inviteToken,
       );
-      setToken(result.token);
       setUser(result.user);
       connectSocket();
 
@@ -102,8 +91,12 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     [router],
   );
 
-  const logout = useCallback(() => {
-    removeToken();
+  const logout = useCallback(async () => {
+    try {
+      await authService.logout();
+    } catch {
+      // Clear client state even if the server request fails.
+    }
     disconnectSocket();
     setUser(null);
     router.push('/login');

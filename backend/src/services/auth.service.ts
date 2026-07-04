@@ -1,7 +1,8 @@
 import { ApiError } from '../utils/ApiError';
-import { signToken } from '../utils/jwt';
+import { signAccessToken } from '../utils/jwt';
 import { comparePassword, hashPassword } from '../utils/password';
 import { userRepository } from '../repositories/user.repository';
+import { refreshTokenRepository } from '../repositories/refresh-token.repository';
 import { inviteService } from './invite.service';
 import {
   removeStoredFile,
@@ -15,6 +16,9 @@ import type {
   RegisterInput,
   UpdateProfileInput,
 } from '../validators/auth.validator';
+import { env } from '../config';
+import { parseDurationToMs } from '../utils/duration';
+import { generateRefreshToken, hashRefreshToken } from '../utils/refresh-token';
 
 const sanitizeUser = (user: {
   id: string;
@@ -30,7 +34,34 @@ const sanitizeUser = (user: {
   createdAt: user.createdAt,
 });
 
+type AuthSession = {
+  accessToken: string;
+  refreshToken: string;
+};
+
 export class AuthService {
+  private async issueAuthSession(user: {
+    id: string;
+    email: string;
+  }): Promise<AuthSession> {
+    const accessToken = signAccessToken({
+      userId: user.id,
+      email: user.email,
+    });
+    const refreshToken = generateRefreshToken();
+    const expiresAt = new Date(
+      Date.now() + parseDurationToMs(env.JWT_REFRESH_EXPIRES_IN),
+    );
+
+    await refreshTokenRepository.create({
+      userId: user.id,
+      tokenHash: hashRefreshToken(refreshToken),
+      expiresAt,
+    });
+
+    return { accessToken, refreshToken };
+  }
+
   async register(input: RegisterInput) {
     const existing = await userRepository.findByEmail(input.email);
     if (existing) {
@@ -66,11 +97,11 @@ export class AuthService {
       );
     }
 
-    const token = signToken({ userId: user.id, email: user.email });
+    const session = await this.issueAuthSession(user);
 
     return {
       user: sanitizeUser(user),
-      token,
+      ...session,
       inviteAcceptance,
     };
   }
@@ -86,12 +117,40 @@ export class AuthService {
       throw new ApiError(401, 'Invalid email or password');
     }
 
-    const token = signToken({ userId: user.id, email: user.email });
+    const session = await this.issueAuthSession(user);
 
     return {
       user: sanitizeUser(user),
-      token,
+      ...session,
     };
+  }
+
+  async refresh(rawRefreshToken: string) {
+    const stored = await refreshTokenRepository.findValidByHash(
+      hashRefreshToken(rawRefreshToken),
+    );
+
+    if (!stored) {
+      throw new ApiError(401, 'Invalid or expired refresh token');
+    }
+
+    const user = await userRepository.findById(stored.userId);
+    if (!user) {
+      throw new ApiError(401, 'User not found');
+    }
+
+    await refreshTokenRepository.revoke(stored.id);
+    return this.issueAuthSession(user);
+  }
+
+  async logout(rawRefreshToken: string | undefined) {
+    if (!rawRefreshToken) {
+      return;
+    }
+
+    await refreshTokenRepository.revokeByHash(
+      hashRefreshToken(rawRefreshToken),
+    );
   }
 
   async getProfile(userId: string) {
