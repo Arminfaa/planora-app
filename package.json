@@ -21,7 +21,7 @@
     "test:smoke": "npm run test:smoke -w backend",
     "format": "prettier --write .",
     "format:check": "prettier --check .",
-    "prepare": "husky",
+    "prepare": "node -e \"if(!process.env.CI&&!process.env.VERCEL&&process.env.HUSKY!=='0'){try{require('child_process').execSync('husky',{stdio:'inherit'})}catch{}}\"",
     "prisma:generate": "npm run prisma:generate -w backend",
     "prisma:migrate": "npm run prisma:migrate -w backend",
     "prisma:studio": "npm run prisma:studio -w backend",
