@@ -1,9 +1,9 @@
 import type { NextConfig } from 'next';
 import path from 'path';
 
-const apiUrl =
-  process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:5000/api/v1';
-const apiOrigin = apiUrl.replace(/\/api\/v1\/?$/, '');
+const backendApiUrl =
+  process.env.BACKEND_API_URL ?? 'http://localhost:5000/api/v1';
+const backendOrigin = backendApiUrl.replace(/\/api\/v\d+\/?$/, '');
 
 const nextConfig: NextConfig = {
   outputFileTracingRoot: path.join(__dirname, '..'),
@@ -18,12 +18,12 @@ const nextConfig: NextConfig = {
   async rewrites() {
     return [
       {
-        source: '/api/:path*',
-        destination: `${apiUrl}/:path*`,
+        source: '/api/v1/:path*',
+        destination: `${backendApiUrl}/:path*`,
       },
       {
         source: '/uploads/:path*',
-        destination: `${apiOrigin}/uploads/:path*`,
+        destination: `${backendOrigin}/uploads/:path*`,
       },
     ];
   },

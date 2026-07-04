@@ -1,4 +1,5 @@
 import { api } from '@/lib/api';
+import { refreshSession } from '@/lib/authSession';
 import type { ApiSuccessResponse, AuthData, User } from '@/shared/types/api';
 
 export const authService = {
@@ -24,7 +25,7 @@ export const authService = {
   },
 
   async refresh(): Promise<void> {
-    await api.post('/auth/refresh');
+    await refreshSession();
   },
 
   async logout(): Promise<void> {

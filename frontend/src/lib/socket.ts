@@ -1,5 +1,5 @@
 import { io, type Socket } from 'socket.io-client';
-import { authService } from '@/features/auth/services/auth.service';
+import { refreshSession } from '@/lib/authSession';
 import type { BoardSocketEvent } from '@/features/board/types/socket';
 import type { ProjectSocketEvent } from '@/features/projects/types/socket';
 
@@ -62,8 +62,7 @@ function attachGlobalHandlers(sock: Socket): void {
       return;
     }
 
-    void authService
-      .refresh()
+    void refreshSession()
       .then(() => {
         sock.connect();
       })

@@ -16,10 +16,10 @@ JWT-based authentication with HttpOnly cookies, refresh token rotation, and bcry
 
 ## Cookies
 
-| Cookie          | Path           | Lifetime | Purpose           |
-| --------------- | -------------- | -------- | ----------------- |
-| `access_token`  | `/`            | 15m      | API + socket auth |
-| `refresh_token` | `/api/v1/auth` | 7d       | Token rotation    |
+| Cookie          | Path | Lifetime | Purpose           |
+| --------------- | ---- | -------- | ----------------- |
+| `access_token`  | `/`  | 15m      | API + socket auth |
+| `refresh_token` | `/`  | 7d       | Token rotation    |
 
 Both cookies are `HttpOnly`, `SameSite=Lax`, and `Secure` in production.
 

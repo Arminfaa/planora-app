@@ -12,6 +12,7 @@ import {
 } from 'react';
 import { useRouter } from 'next/navigation';
 import { authService } from '../services/auth.service';
+import { startSessionRefresh, stopSessionRefresh } from '@/lib/authSession';
 import { connectSocket, disconnectSocket } from '@/lib/socket';
 import type { LoginFormData, RegisterFormData } from '../types';
 import type { User } from '@/shared/types/api';
@@ -50,9 +51,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
       setUser(profile);
       connectSocket();
+      startSessionRefresh();
     } catch {
       if (requestId !== loadUserRequestId.current) return;
 
+      stopSessionRefresh();
       setUser(null);
       disconnectSocket();
     } finally {
@@ -74,6 +77,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       setUser(result.user);
       setIsLoading(false);
       connectSocket();
+      startSessionRefresh();
 
       if (options?.inviteToken) {
         router.replace(`/accept-invite?token=${options.inviteToken}`);
@@ -98,6 +102,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       setUser(result.user);
       setIsLoading(false);
       connectSocket();
+      startSessionRefresh();
 
       if (result.inviteAcceptance?.projectSlug) {
         router.replace(
@@ -117,6 +122,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     } catch {
       // Clear client state even if the server request fails.
     }
+    stopSessionRefresh();
     disconnectSocket();
     setUser(null);
     router.push('/login');

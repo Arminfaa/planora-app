@@ -3,6 +3,7 @@ import { env } from '../config';
 import {
   ACCESS_TOKEN_COOKIE,
   AUTH_COOKIE_PATH,
+  LEGACY_AUTH_COOKIE_PATH,
   REFRESH_TOKEN_COOKIE,
 } from '../constants/auth';
 import { parseDurationToMs } from './duration';
@@ -13,14 +14,23 @@ const baseCookieOptions = {
   sameSite: 'lax' as const,
 };
 
+function clearLegacyRefreshCookie(res: Response): void {
+  res.clearCookie(REFRESH_TOKEN_COOKIE, {
+    ...baseCookieOptions,
+    path: LEGACY_AUTH_COOKIE_PATH,
+  });
+}
+
 export function setAuthCookies(
   res: Response,
   accessToken: string,
   refreshToken: string,
 ): void {
+  clearLegacyRefreshCookie(res);
+
   res.cookie(ACCESS_TOKEN_COOKIE, accessToken, {
     ...baseCookieOptions,
-    path: '/',
+    path: AUTH_COOKIE_PATH,
     maxAge: parseDurationToMs(env.JWT_ACCESS_EXPIRES_IN),
   });
 
@@ -34,10 +44,11 @@ export function setAuthCookies(
 export function clearAuthCookies(res: Response): void {
   res.clearCookie(ACCESS_TOKEN_COOKIE, {
     ...baseCookieOptions,
-    path: '/',
+    path: AUTH_COOKIE_PATH,
   });
   res.clearCookie(REFRESH_TOKEN_COOKIE, {
     ...baseCookieOptions,
     path: AUTH_COOKIE_PATH,
   });
+  clearLegacyRefreshCookie(res);
 }

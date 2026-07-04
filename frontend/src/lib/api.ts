@@ -1,14 +1,20 @@
 import axios, { type AxiosError, type InternalAxiosRequestConfig } from 'axios';
 import type { ApiErrorResponse } from '@/shared/types/api';
+import {
+  bindAuthApi,
+  redirectToLogin,
+  refreshSession,
+} from '@/lib/authSession';
 
-const API_URL =
-  process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:5000/api/v1';
+const API_URL = process.env.NEXT_PUBLIC_API_URL ?? '/api/v1';
 
 export const api = axios.create({
   baseURL: API_URL,
   headers: { 'Content-Type': 'application/json' },
   withCredentials: true,
 });
+
+bindAuthApi(api);
 
 api.interceptors.request.use((config: InternalAxiosRequestConfig) => {
   if (config.method?.toLowerCase() === 'get') {
@@ -18,43 +24,6 @@ api.interceptors.request.use((config: InternalAxiosRequestConfig) => {
 
   return config;
 });
-
-let refreshPromise: Promise<void> | null = null;
-
-const PUBLIC_PATH_PREFIXES = ['/', '/login', '/register', '/accept-invite'];
-
-function isPublicPath(pathname: string): boolean {
-  if (pathname === '/') return true;
-  return PUBLIC_PATH_PREFIXES.some(
-    (prefix) => prefix !== '/' && pathname.startsWith(prefix),
-  );
-}
-
-function redirectToLogin(): void {
-  if (typeof window === 'undefined') return;
-
-  const pathname = window.location.pathname;
-  if (isPublicPath(pathname)) return;
-
-  window.location.href = '/login';
-}
-
-async function refreshSession(): Promise<void> {
-  if (!refreshPromise) {
-    refreshPromise = api
-      .post('/auth/refresh')
-      .then(() => undefined)
-      .catch((error) => {
-        refreshPromise = null;
-        throw error;
-      })
-      .finally(() => {
-        refreshPromise = null;
-      });
-  }
-
-  return refreshPromise;
-}
 
 function isAuthRoute(url: string): boolean {
   return (
