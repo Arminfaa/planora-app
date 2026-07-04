@@ -1,6 +1,12 @@
 'use client';
 
-import { useCallback, useEffect, useRef, useState } from 'react';
+import {
+  useCallback,
+  useEffect,
+  useLayoutEffect,
+  useRef,
+  useState,
+} from 'react';
 import type { ProjectSocketEvent } from '@/features/projects/types/socket';
 import { useProjectSocket } from '@/features/projects/hooks/useProjectSocket';
 import { getApiErrorMessage } from '@/lib/api';
@@ -9,6 +15,31 @@ import type { ProjectGroupMessage } from '../types';
 
 interface UseProjectGroupOptions {
   enabled: boolean;
+}
+
+function sortMessagesChronologically(messages: ProjectGroupMessage[]) {
+  return [...messages].sort(
+    (a, b) => new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime(),
+  );
+}
+
+function prependUniqueMessages(
+  existing: ProjectGroupMessage[],
+  older: ProjectGroupMessage[],
+) {
+  const existingIds = new Set(existing.map((message) => message.id));
+  const uniqueOlder = older.filter((message) => !existingIds.has(message.id));
+  return sortMessagesChronologically([...uniqueOlder, ...existing]);
+}
+
+function appendUniqueMessage(
+  existing: ProjectGroupMessage[],
+  message: ProjectGroupMessage,
+) {
+  if (existing.some((item) => item.id === message.id)) {
+    return existing;
+  }
+  return [...existing, message];
 }
 
 export function useProjectGroup(
@@ -22,18 +53,51 @@ export function useProjectGroup(
   const [page, setPage] = useState(1);
   const [hasMore, setHasMore] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
+  const messagesContainerRef = useRef<HTMLDivElement>(null);
+  const shouldScrollToBottomRef = useRef(true);
+  const pendingScrollRestoreRef = useRef<{
+    scrollHeight: number;
+    scrollTop: number;
+  } | null>(null);
 
-  const scrollToBottom = useCallback(() => {
-    messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+  const scrollToBottom = useCallback((behavior: ScrollBehavior = 'smooth') => {
+    messagesEndRef.current?.scrollIntoView({ behavior });
   }, []);
+
+  const isNearBottom = useCallback(() => {
+    const container = messagesContainerRef.current;
+    if (!container) return true;
+    return (
+      container.scrollHeight - container.scrollTop - container.clientHeight <
+      120
+    );
+  }, []);
+
+  const preserveScrollPosition = useCallback(
+    (previousScrollHeight: number, previousScrollTop: number) => {
+      const container = messagesContainerRef.current;
+      if (!container) return;
+
+      container.scrollTop =
+        container.scrollHeight - previousScrollHeight + previousScrollTop;
+    },
+    [],
+  );
 
   const loadMessages = useCallback(
     async (pageNum = 1, append = false) => {
       if (!projectId || !enabled) return;
 
+      const container = messagesContainerRef.current;
+      const previousScrollHeight =
+        append && container ? container.scrollHeight : 0;
+      const previousScrollTop = append && container ? container.scrollTop : 0;
+
       if (append) {
+        shouldScrollToBottomRef.current = false;
         setIsLoadingMore(true);
       } else {
+        shouldScrollToBottomRef.current = true;
         setIsLoading(true);
       }
       setError('');
@@ -41,10 +105,19 @@ export function useProjectGroup(
       try {
         const result = await projectGroupService.list(projectId, pageNum, 30);
         setMessages((prev) =>
-          append ? [...result.items, ...prev] : result.items,
+          append
+            ? prependUniqueMessages(prev, result.items)
+            : sortMessagesChronologically(result.items),
         );
         setPage(result.pagination.page);
         setHasMore(result.pagination.page < result.pagination.totalPages);
+
+        if (append) {
+          pendingScrollRestoreRef.current = {
+            scrollHeight: previousScrollHeight,
+            scrollTop: previousScrollTop,
+          };
+        }
       } catch (err) {
         setError(getApiErrorMessage(err));
       } finally {
@@ -52,56 +125,72 @@ export function useProjectGroup(
         setIsLoadingMore(false);
       }
     },
-    [projectId, enabled],
+    [projectId, enabled, preserveScrollPosition],
   );
 
   useEffect(() => {
     if (!enabled) {
       setMessages([]);
+      shouldScrollToBottomRef.current = true;
       return;
     }
     void loadMessages(1, false);
   }, [enabled, loadMessages]);
 
   useEffect(() => {
-    if (!isLoading && messages.length > 0) {
-      scrollToBottom();
-    }
+    if (isLoading || messages.length === 0) return;
+    if (!shouldScrollToBottomRef.current) return;
+
+    scrollToBottom('smooth');
   }, [isLoading, messages.length, scrollToBottom]);
 
-  const handleRemoteChange = useCallback((event: ProjectSocketEvent) => {
-    if (
-      event.type !== 'group:message:created' &&
-      event.type !== 'group:message:updated' &&
-      event.type !== 'group:message:deleted'
-    ) {
-      return;
-    }
+  useLayoutEffect(() => {
+    const pending = pendingScrollRestoreRef.current;
+    if (!pending) return;
 
-    const payload = event.payload as {
-      message?: ProjectGroupMessage;
-      messageId?: string;
-    };
+    pendingScrollRestoreRef.current = null;
+    preserveScrollPosition(pending.scrollHeight, pending.scrollTop);
+  }, [messages, preserveScrollPosition]);
 
-    if (event.type === 'group:message:created' && payload.message) {
-      setMessages((prev) => {
-        if (prev.some((m) => m.id === payload.message!.id)) return prev;
-        return [...prev, payload.message!];
-      });
-      return;
-    }
+  const handleRemoteChange = useCallback(
+    (event: ProjectSocketEvent) => {
+      if (
+        event.type !== 'group:message:created' &&
+        event.type !== 'group:message:updated' &&
+        event.type !== 'group:message:deleted'
+      ) {
+        return;
+      }
 
-    if (event.type === 'group:message:updated' && payload.message) {
-      setMessages((prev) =>
-        prev.map((m) => (m.id === payload.message!.id ? payload.message! : m)),
-      );
-      return;
-    }
+      const payload = event.payload as {
+        message?: ProjectGroupMessage;
+        messageId?: string;
+      };
 
-    if (event.type === 'group:message:deleted' && payload.messageId) {
-      setMessages((prev) => prev.filter((m) => m.id !== payload.messageId));
-    }
-  }, []);
+      if (event.type === 'group:message:created' && payload.message) {
+        const shouldScroll = isNearBottom();
+        setMessages((prev) => appendUniqueMessage(prev, payload.message!));
+        if (shouldScroll) {
+          requestAnimationFrame(() => scrollToBottom());
+        }
+        return;
+      }
+
+      if (event.type === 'group:message:updated' && payload.message) {
+        setMessages((prev) =>
+          prev.map((m) =>
+            m.id === payload.message!.id ? payload.message! : m,
+          ),
+        );
+        return;
+      }
+
+      if (event.type === 'group:message:deleted' && payload.messageId) {
+        setMessages((prev) => prev.filter((m) => m.id !== payload.messageId));
+      }
+    },
+    [isNearBottom, scrollToBottom],
+  );
 
   useProjectSocket(projectId ?? '', { onRemoteChange: handleRemoteChange });
 
@@ -109,10 +198,8 @@ export function useProjectGroup(
     async (content: string) => {
       if (!projectId) return null;
       const message = await projectGroupService.send(projectId, { content });
-      setMessages((prev) => {
-        if (prev.some((m) => m.id === message.id)) return prev;
-        return [...prev, message];
-      });
+      setMessages((prev) => appendUniqueMessage(prev, message));
+      shouldScrollToBottomRef.current = true;
       scrollToBottom();
       return message;
     },
@@ -127,10 +214,8 @@ export function useProjectGroup(
         file,
         content,
       );
-      setMessages((prev) => {
-        if (prev.some((m) => m.id === message.id)) return prev;
-        return [...prev, message];
-      });
+      setMessages((prev) => appendUniqueMessage(prev, message));
+      shouldScrollToBottomRef.current = true;
       scrollToBottom();
       return message;
     },
@@ -172,6 +257,7 @@ export function useProjectGroup(
     error,
     hasMore,
     messagesEndRef,
+    messagesContainerRef,
     sendMessage,
     uploadFile,
     updateMessage,

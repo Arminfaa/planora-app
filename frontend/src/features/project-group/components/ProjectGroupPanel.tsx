@@ -312,15 +312,19 @@ function GroupMessageItem({
 
 function buildChatFeedItems(messages: ProjectGroupMessage[]): ChatFeedItem[] {
   const items: ChatFeedItem[] = [];
+  const seenMessageIds = new Set<string>();
   let lastDateKey = '';
 
   for (const message of messages) {
+    if (seenMessageIds.has(message.id)) continue;
+    seenMessageIds.add(message.id);
+
     const dateKey = getMessageDateKey(message.createdAt);
     if (dateKey !== lastDateKey) {
       items.push({
         kind: 'date',
         date: message.createdAt,
-        key: `date-${dateKey}`,
+        key: `date-${dateKey}-${message.id}`,
       });
       lastDateKey = dateKey;
     }
@@ -352,6 +356,7 @@ export function ProjectGroupPanel({
     error,
     hasMore,
     messagesEndRef,
+    messagesContainerRef,
     sendMessage,
     uploadFile,
     updateMessage,
@@ -439,7 +444,10 @@ export function ProjectGroupPanel({
           fullHeight ? 'flex-1' : 'h-[28rem]'
         }`}
       >
-        <div className="flex-1 overflow-y-auto bg-[#fafafa] px-4 py-4 sm:px-5 max-h-[calc(100dvh-260px)]">
+        <div
+          ref={messagesContainerRef}
+          className="flex-1 overflow-y-auto bg-[#fafafa] px-4 py-4 sm:px-5 max-h-[calc(100dvh-260px)]"
+        >
           {hasMore && (
             <div className="mb-4 text-center">
               <button
