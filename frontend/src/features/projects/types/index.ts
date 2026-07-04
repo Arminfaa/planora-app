@@ -41,6 +41,33 @@ export interface Project {
   };
 }
 
+export interface ProjectProgressMemberWorkload {
+  userId: string;
+  name: string;
+  avatar: string | null;
+  assignedTaskCount: number;
+}
+
+export interface BoardProgressStats {
+  boardId: string;
+  boardName: string;
+  boardSlug: string;
+  totalTasks: number;
+  completedTasks: number;
+  inProgressTasks: number;
+  completionPercent: number;
+  teamWorkload: ProjectProgressMemberWorkload[];
+}
+
+export interface ProjectProgressStats {
+  totalTasks: number;
+  completedTasks: number;
+  inProgressTasks: number;
+  completionPercent: number;
+  teamWorkload: ProjectProgressMemberWorkload[];
+  boards: BoardProgressStats[];
+}
+
 export interface CreateProjectInput {
   name: string;
   description?: string;

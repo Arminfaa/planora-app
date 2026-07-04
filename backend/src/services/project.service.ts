@@ -7,6 +7,7 @@ import { projectRepository } from '../repositories/project.repository';
 import { projectMemberRepository } from '../repositories/project-member.repository';
 import { projectInviteRepository } from '../repositories/project-invite.repository';
 import { roleDefinitionRepository } from '../repositories/role-definition.repository';
+import { taskRepository } from '../repositories/task.repository';
 import { permissionService } from './permission.service';
 import type {
   CreateProjectInput,
@@ -77,6 +78,13 @@ export class ProjectService {
 
   async getPermissionCatalog() {
     return PERMISSION_GROUPS;
+  }
+
+  async getProgressStats(userId: string, idOrSlug: string) {
+    const projectId = await this.resolveProjectId(idOrSlug);
+    await permissionService.ensurePermission(userId, projectId, 'board.view');
+
+    return taskRepository.getProgressStatsByProjectId(projectId);
   }
 
   async create(userId: string, input: CreateProjectInput) {

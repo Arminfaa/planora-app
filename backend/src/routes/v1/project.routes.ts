@@ -4,6 +4,7 @@ import {
   deleteProject,
   getPermissionCatalog,
   getProject,
+  getProjectProgress,
   listProjects,
   updateProject,
 } from '../../controllers/project.controller';
@@ -27,6 +28,11 @@ router.use(authenticate);
 router.get('/permissions', getPermissionCatalog);
 router.get('/', validateQuery(projectListQuerySchema), listProjects);
 router.post('/', validateBody(createProjectSchema), createProject);
+router.get(
+  '/:id/progress',
+  validateParams(projectParamsSchema),
+  getProjectProgress,
+);
 router.get('/:id', validateParams(projectParamsSchema), getProject);
 router.patch(
   '/:id',

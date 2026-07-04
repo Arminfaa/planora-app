@@ -9,6 +9,8 @@ import type { Board } from '@/features/board/types';
 import { StatsCard } from '@/features/dashboard/components/StatsCard';
 import { useProjectPermissions } from '@/features/permissions/hooks/useProjectPermissions';
 import { useProjectContext } from '@/features/projects/context/ProjectContext';
+import { useProjectProgress } from '@/features/projects/hooks/useProjectProgress';
+import { ProjectProgressOverview } from '@/features/projects/components/ProjectProgressOverview';
 import { LoadingSpinner } from '@/shared/components/feedback/LoadingSpinner';
 import { Button } from '@/shared/components/ui/Button';
 import { SearchInput } from '@/shared/components/ui/SearchInput';
@@ -38,6 +40,12 @@ export function ProjectOverviewView() {
     updateBoard,
     deleteBoard,
   } = useBoards(project.id, canViewBoards);
+
+  const {
+    stats: progressStats,
+    isLoading: loadingProgress,
+    error: progressError,
+  } = useProjectProgress(project.id, canViewBoards, boards.length);
 
   useEffect(() => {
     setBoardCount(boards.length);
@@ -172,6 +180,22 @@ export function ProjectOverviewView() {
               }
             />
           </div>
+
+          {canViewBoards && (
+            <div className="mt-6">
+              {loadingProgress ? (
+                <div className="flex min-h-[160px] items-center justify-center rounded-xl border border-white/60 bg-white/70 backdrop-blur-md">
+                  <LoadingSpinner />
+                </div>
+              ) : progressError ? (
+                <div className="rounded-xl bg-red-50 px-4 py-3 text-sm text-red-700">
+                  {progressError}
+                </div>
+              ) : progressStats ? (
+                <ProjectProgressOverview stats={progressStats} />
+              ) : null}
+            </div>
+          )}
 
           <div className="mt-6 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
             <div className="min-w-0 flex-1 sm:max-w-md">

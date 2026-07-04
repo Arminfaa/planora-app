@@ -35,6 +35,16 @@ export const getProject = asyncHandler(
   },
 );
 
+export const getProjectProgress = asyncHandler(
+  async (req: AuthenticatedRequest, res: Response) => {
+    const stats = await projectService.getProgressStats(
+      req.user!.userId,
+      getParam(req.params, 'id'),
+    );
+    ApiResponse.success(res, stats, 'Project progress retrieved');
+  },
+);
+
 export const createProject = asyncHandler(
   async (req: AuthenticatedRequest, res: Response) => {
     const project = await projectService.create(

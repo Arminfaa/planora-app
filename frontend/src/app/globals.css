@@ -278,6 +278,18 @@
   }
 }
 
+.progress-overview-segment .ant-segmented {
+  width: 100%;
+}
+
+.progress-overview-segment .ant-segmented-group {
+  width: 100%;
+}
+
+.progress-overview-segment .ant-segmented-item {
+  flex: 1 1 0;
+}
+
 .ant-dropdown-menu {
   border-radius: 8px !important;
 }

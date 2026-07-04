@@ -218,6 +218,115 @@ export class TaskRepository extends BaseRepository {
     return task?.columnId ?? null;
   }
 
+  async getProgressStatsByProjectId(projectId: string) {
+    const [tasks, boards] = await Promise.all([
+      this.db.task.findMany({
+        where: { column: { board: { projectId } } },
+        select: { isCompleted: true, assigneeIds: true, boardId: true },
+      }),
+      this.db.board.findMany({
+        where: { projectId },
+        select: { id: true, name: true, slug: true, position: true },
+        orderBy: { position: 'asc' },
+      }),
+    ]);
+
+    const computeStats = (items: { isCompleted: boolean }[]) => {
+      const totalTasks = items.length;
+      const completedTasks = items.filter((task) => task.isCompleted).length;
+      const inProgressTasks = totalTasks - completedTasks;
+      const completionPercent =
+        totalTasks > 0 ? Math.round((completedTasks / totalTasks) * 100) : 0;
+
+      return {
+        totalTasks,
+        completedTasks,
+        inProgressTasks,
+        completionPercent,
+      };
+    };
+
+    const buildTeamWorkload = (
+      boardTasks: { assigneeIds: string[] }[],
+      userById: Map<
+        string,
+        { id: string; name: string; avatar: string | null }
+      >,
+      limit = 8,
+    ) => {
+      const assigneeCounts = new Map<string, number>();
+      for (const task of boardTasks) {
+        for (const assigneeId of task.assigneeIds) {
+          assigneeCounts.set(
+            assigneeId,
+            (assigneeCounts.get(assigneeId) ?? 0) + 1,
+          );
+        }
+      }
+
+      return [...assigneeCounts.keys()]
+        .map((userId) => {
+          const user = userById.get(userId);
+          if (!user) return null;
+
+          return {
+            userId: user.id,
+            name: user.name,
+            avatar: user.avatar,
+            assignedTaskCount: assigneeCounts.get(userId) ?? 0,
+          };
+        })
+        .filter((entry): entry is NonNullable<typeof entry> => entry !== null)
+        .sort((a, b) => b.assignedTaskCount - a.assignedTaskCount)
+        .slice(0, limit);
+    };
+
+    const overall = computeStats(tasks);
+
+    const tasksByBoard = new Map<string, typeof tasks>();
+    for (const task of tasks) {
+      const boardTasks = tasksByBoard.get(task.boardId) ?? [];
+      boardTasks.push(task);
+      tasksByBoard.set(task.boardId, boardTasks);
+    }
+
+    const allAssigneeIds = new Set<string>();
+    for (const task of tasks) {
+      for (const assigneeId of task.assigneeIds) {
+        allAssigneeIds.add(assigneeId);
+      }
+    }
+
+    const users =
+      allAssigneeIds.size > 0
+        ? await this.db.user.findMany({
+            where: { id: { in: [...allAssigneeIds] } },
+            select: { id: true, name: true, avatar: true },
+          })
+        : [];
+
+    const userById = new Map(users.map((user) => [user.id, user]));
+    const teamWorkload = buildTeamWorkload(tasks, userById);
+
+    const boardStats = boards.map((board) => {
+      const boardTasks = tasksByBoard.get(board.id) ?? [];
+
+      return {
+        boardId: board.id,
+        boardName: board.name,
+        boardSlug: board.slug,
+        ...computeStats(boardTasks),
+        teamWorkload: buildTeamWorkload(boardTasks, userById),
+      };
+    });
+
+    return {
+      ...overall,
+      teamWorkload,
+      boards: boardStats,
+    };
+  }
+
   async unassignUserFromProject(
     userId: string,
     projectId: string,

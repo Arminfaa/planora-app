@@ -5,6 +5,7 @@ import type {
   CreateProjectInput,
   Project,
   ProjectMember,
+  ProjectProgressStats,
   ProjectRoleDefinition,
   UpdateProjectInput,
 } from '../types';
@@ -35,6 +36,13 @@ export const projectService = {
   async getBySlug(slug: string): Promise<Project> {
     const { data } = await api.get<ApiSuccessResponse<Project>>(
       `/projects/${slug}`,
+    );
+    return data.data;
+  },
+
+  async getProgressStats(projectId: string): Promise<ProjectProgressStats> {
+    const { data } = await api.get<ApiSuccessResponse<ProjectProgressStats>>(
+      `/projects/${projectId}/progress`,
     );
     return data.data;
   },
