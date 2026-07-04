@@ -12,6 +12,7 @@ import type { BoardColumn, BoardTask } from '../types';
 import type { ProjectMember } from '@/features/projects/types';
 import type { CreateTaskInput } from '@/features/tasks/types';
 import { columnSortableKey } from '../utils/applyRealtimeEvent';
+import { getColumnTaskDropId } from '../utils/kanbanDndUtils';
 import { SortableTaskCard } from './TaskCard';
 import { AddTaskForm } from './AddTaskForm';
 import { GripVerticalIcon } from './GripVerticalIcon';
@@ -65,7 +66,9 @@ export const KanbanColumn = memo(function KanbanColumn({
   highlightedTaskId = null,
   variant = 'default',
 }: KanbanColumnProps) {
-  const { setNodeRef, isOver } = useDroppable({ id: column.id });
+  const { setNodeRef, isOver } = useDroppable({
+    id: getColumnTaskDropId(column.id),
+  });
   const tasks = column.tasks ?? [];
   const taskIds = tasks.map((t) => t.id);
   const sortableKey = columnSortableKey(column);
@@ -156,7 +159,13 @@ export const KanbanColumn = memo(function KanbanColumn({
 
       <div
         ref={setNodeRef}
-        className="flex min-h-[120px] flex-1 flex-col gap-2 p-3"
+        className={`flex min-h-[160px] flex-1 flex-col gap-2 p-3 ${
+          isOver && tasks.length === 0
+            ? isGlass
+              ? 'bg-white/10'
+              : 'bg-primary-50/40'
+            : ''
+        }`}
       >
         <SortableContext
           key={sortableKey}
@@ -184,6 +193,18 @@ export const KanbanColumn = memo(function KanbanColumn({
             />
           ))}
         </SortableContext>
+
+        {tasks.length === 0 && (
+          <div
+            className={`pointer-events-none flex min-h-[96px] flex-1 items-center justify-center rounded-lg border border-dashed px-3 py-6 text-center text-xs ${
+              isGlass
+                ? 'border-white/25 text-white/45'
+                : 'border-gray-200 text-gray-400'
+            } ${isOver ? (isGlass ? 'border-white/50 text-white/70' : 'border-primary-300 text-primary-500') : ''}`}
+          >
+            Drop tasks here
+          </div>
+        )}
 
         {canCreateTask && (
           <AddTaskForm

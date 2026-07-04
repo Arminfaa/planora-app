@@ -3,7 +3,13 @@
 import { useCallback, useEffect, useState } from 'react';
 import dynamic from 'next/dynamic';
 import { usePathname, useRouter, useSearchParams } from 'next/navigation';
-import { DndContext, DragOverlay, closestCorners } from '@dnd-kit/core';
+import {
+  DndContext,
+  DragOverlay,
+  type CollisionDetection,
+  closestCorners,
+  pointerWithin,
+} from '@dnd-kit/core';
 import {
   SortableContext,
   horizontalListSortingStrategy,
@@ -39,6 +45,14 @@ const TaskModal = dynamic(
   () => import('./TaskModal').then((mod) => ({ default: mod.TaskModal })),
   { loading: () => <LoadingSpinner /> },
 );
+
+const kanbanCollisionDetection: CollisionDetection = (args) => {
+  const pointerCollisions = pointerWithin(args);
+  if (pointerCollisions.length > 0) {
+    return pointerCollisions;
+  }
+  return closestCorners(args);
+};
 
 interface KanbanBoardProps {
   board: Board;
@@ -436,7 +450,7 @@ export function KanbanBoard({
         <div className="mt-2 min-h-0 flex-1 overflow-x-auto overflow-y-hidden pb-2 [scrollbar-width:none] [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden">
           <DndContext
             sensors={sensors}
-            collisionDetection={closestCorners}
+            collisionDetection={kanbanCollisionDetection}
             onDragStart={handleDragStart}
             onDragOver={handleDragOver}
             onDragEnd={handleDragEnd}

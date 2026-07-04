@@ -14,6 +14,10 @@ import { arrayMove, sortableKeyboardCoordinates } from '@dnd-kit/sortable';
 import type { BoardColumn, BoardTask } from '../types';
 import type { BoardSocketEvent } from '../types/socket';
 import { applyRealtimeEvent } from '../utils/applyRealtimeEvent';
+import {
+  findColumnFromOver,
+  resolveColumnIdFromOver,
+} from '../utils/kanbanDndUtils';
 import { columnService } from '../services/column.service';
 import { taskService } from '@/features/tasks/services/task.service';
 import { getApiErrorMessage } from '@/lib/api';
@@ -35,8 +39,7 @@ function findColumnById(
 }
 
 function resolveColumnId(columns: BoardColumn[], id: string): string | null {
-  if (findColumnById(columns, id)) return id;
-  return findColumnByTaskId(columns, id)?.id ?? null;
+  return resolveColumnIdFromOver(columns, id);
 }
 
 function cloneColumns(columns: BoardColumn[]): BoardColumn[] {
@@ -60,8 +63,7 @@ function applyTaskDrop(
   overId: string,
 ): BoardColumn[] | null {
   const activeColumn = findColumnByTaskId(columns, activeId);
-  const overColumn =
-    findColumnByTaskId(columns, overId) ?? findColumnById(columns, overId);
+  const overColumn = findColumnFromOver(columns, overId);
 
   if (!activeColumn || !overColumn) return null;
 
@@ -224,8 +226,7 @@ export function useKanbanDnd(
 
       updateColumns((prev) => {
         const activeColumnItem = findColumnByTaskId(prev, activeId);
-        const overColumn =
-          findColumnByTaskId(prev, overId) ?? findColumnById(prev, overId);
+        const overColumn = findColumnFromOver(prev, overId);
 
         if (!activeColumnItem || !overColumn) return prev;
 
