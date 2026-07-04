@@ -386,7 +386,7 @@ export function KanbanBoard({
   const hasCustomBackground = Boolean(backgroundUrl);
 
   return (
-    <div className="relative flex min-h-[calc(100dvh-65px)] w-full flex-col overflow-hidden px-4 sm:px-6">
+    <div className="relative flex min-h-[calc(100dvh-4rem)] w-full flex-col px-4 sm:px-6">
       {/* Background layer */}
       <div className="pointer-events-none absolute inset-0">
         {hasCustomBackground ? (
@@ -415,7 +415,7 @@ export function KanbanBoard({
       </div>
 
       {/* Content */}
-      <div className="relative flex min-h-0 flex-1 flex-col">
+      <div className="relative flex flex-col">
         <div className="shrink-0 py-6">
           <BoardHeader
             boardName={boardName}
@@ -447,7 +447,7 @@ export function KanbanBoard({
           )}
         </div>
 
-        <div className="mt-2 min-h-0 flex-1 overflow-x-auto overflow-y-hidden pb-2 [scrollbar-width:none] [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden">
+        <div className="kanban-board-scroll sticky top-16 z-10 mt-2 h-[calc(100dvh-1rem)] overflow-x-auto overflow-y-hidden pb-2">
           <DndContext
             sensors={sensors}
             collisionDetection={kanbanCollisionDetection}
@@ -457,7 +457,7 @@ export function KanbanBoard({
             onDragCancel={handleDragCancel}
           >
             <div
-              className={`flex h-full min-h-[calc(100dvh-16rem)] gap-4 pb-4 ${boardDeleted ? 'pointer-events-none opacity-50' : ''}`}
+              className={`flex h-full gap-4 pb-4 ${boardDeleted ? 'pointer-events-none opacity-50' : ''}`}
             >
               <SortableContext
                 items={columns.map((column) => column.id)}

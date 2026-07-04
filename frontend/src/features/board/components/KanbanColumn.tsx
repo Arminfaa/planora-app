@@ -90,10 +90,10 @@ export const KanbanColumn = memo(function KanbanColumn({
 
   return (
     <div
-      className={`flex w-72 shrink-0 flex-col rounded-xl border transition ${bgClass} ${columnClass}`}
+      className={`flex h-full max-h-full w-72 shrink-0 flex-col rounded-xl border transition ${bgClass} ${columnClass}`}
     >
       <div
-        className="flex items-start gap-2 rounded-t-xl px-4 py-3"
+        className="flex shrink-0 items-start gap-2 rounded-t-xl px-4 py-3"
         style={{ borderTop: `3px solid ${column.color ?? '#6B7280'}` }}
       >
         {canReorder && dragHandleProps && (
@@ -157,9 +157,18 @@ export const KanbanColumn = memo(function KanbanColumn({
         )}
       </div>
 
+      {canCreateTask && (
+        <div className="shrink-0 px-3 pb-1.5">
+          <AddTaskForm
+            members={members}
+            onSubmit={(input) => onAddTask(column.id, input)}
+          />
+        </div>
+      )}
+
       <div
         ref={setNodeRef}
-        className={`flex min-h-[160px] flex-1 flex-col gap-2 p-3 ${
+        className={`kanban-column-scroll flex min-h-0 flex-1 flex-col gap-2 overflow-y-auto p-3 ${
           isOver && tasks.length === 0
             ? isGlass
               ? 'bg-white/10'
@@ -167,13 +176,6 @@ export const KanbanColumn = memo(function KanbanColumn({
             : ''
         }`}
       >
-        {canCreateTask && (
-          <AddTaskForm
-            members={members}
-            onSubmit={(input) => onAddTask(column.id, input)}
-          />
-        )}
-
         <SortableContext
           key={sortableKey}
           items={taskIds}
@@ -203,7 +205,7 @@ export const KanbanColumn = memo(function KanbanColumn({
 
         {tasks.length === 0 && (
           <div
-            className={`pointer-events-none flex min-h-[96px] flex-1 items-center justify-center rounded-lg border border-dashed px-3 py-6 text-center text-xs ${
+            className={`pointer-events-none flex min-h-[120px] items-center justify-center rounded-lg border border-dashed px-3 py-6 text-center text-xs ${
               isGlass
                 ? 'border-white/25 text-white/45'
                 : 'border-gray-200 text-gray-400'
@@ -250,7 +252,7 @@ export const SortableKanbanColumn = memo(function SortableKanbanColumn({
   };
 
   return (
-    <div ref={setNodeRef} style={style}>
+    <div ref={setNodeRef} style={style} className="h-full">
       <KanbanColumn
         column={column}
         canReorder={canReorder}
