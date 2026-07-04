@@ -13,6 +13,7 @@ import type {
 } from '../types';
 import { projectService } from '../services/project.service';
 import {
+  hasCustomRoleChanges,
   syncCustomRoles,
   toCustomRoleInputs,
   validateCustomRoles,
@@ -79,6 +80,7 @@ export function EditProjectModal({
     initialMode === 'CUSTOM' && permissionMode === 'DEFAULT';
   const isEditingCustom =
     initialMode === 'CUSTOM' && permissionMode === 'CUSTOM';
+  const rolesChanged = hasCustomRoleChanges(originalRoles, customRoles);
 
   useEffect(() => {
     reset({
@@ -132,12 +134,20 @@ export function EditProjectModal({
       }
     }
 
+    if (isEditingCustom && canManageRoles && rolesChanged) {
+      try {
+        validateCustomRoles(customRoles);
+      } catch (err) {
+        setError(getApiErrorMessage(err));
+        return;
+      }
+    }
+
     try {
       await onSubmit(project.id, payload);
 
-      if (isEditingCustom && canManageRoles) {
+      if (isEditingCustom && canManageRoles && rolesChanged) {
         try {
-          validateCustomRoles(customRoles);
           await syncCustomRoles(project.id, originalRoles, customRoles);
           const refreshed = await projectService.listRoles(project.id);
           onRolesUpdated?.(refreshed);

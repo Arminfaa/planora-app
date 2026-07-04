@@ -17,21 +17,48 @@ export function toCustomRoleInputs(
   }));
 }
 
+function isRoleComplete(role: CustomRoleInput): boolean {
+  return role.name.trim().length >= 2 && role.permissions.length > 0;
+}
+
 export function validateCustomRoles(
   roles: CustomRoleInput[],
 ): CustomRoleInput[] {
-  const valid = roles.filter(
-    (role) => role.name.trim().length >= 2 && role.permissions.length > 0,
-  );
-
-  if (valid.length === 0) {
+  if (roles.length === 0) {
     throw new Error('Add at least one role with a name and one permission.');
   }
 
-  return valid.map((role) => ({
+  const incomplete = roles.filter((role) => !isRoleComplete(role));
+  if (incomplete.length > 0) {
+    throw new Error(
+      'Each role needs a name (at least 2 characters) and at least one permission before saving.',
+    );
+  }
+
+  return roles.map((role) => ({
     ...role,
     name: role.name.trim(),
   }));
+}
+
+export function hasCustomRoleChanges(
+  original: ProjectRoleDefinition[],
+  current: CustomRoleInput[],
+): boolean {
+  const normalizedCurrent = current.map((role) => ({
+    id: role.id ?? null,
+    name: role.name.trim(),
+    permissions: [...role.permissions].sort(),
+  }));
+  const normalizedOriginal = toCustomRoleInputs(original).map((role) => ({
+    id: role.id ?? null,
+    name: role.name.trim(),
+    permissions: [...role.permissions].sort(),
+  }));
+
+  return (
+    JSON.stringify(normalizedCurrent) !== JSON.stringify(normalizedOriginal)
+  );
 }
 
 export async function syncCustomRoles(
@@ -40,21 +67,27 @@ export async function syncCustomRoles(
   current: CustomRoleInput[],
 ): Promise<void> {
   const validCurrent = validateCustomRoles(current);
-  const currentIds = new Set(
-    validCurrent.filter((role) => role.id).map((role) => role.id!),
+  const persistedIds = new Set(
+    validCurrent
+      .filter(
+        (role) =>
+          role.id && original.some((existing) => existing.id === role.id),
+      )
+      .map((role) => role.id!),
   );
 
   for (const role of original) {
-    if (!currentIds.has(role.id)) {
+    if (!persistedIds.has(role.id)) {
       await roleDefinitionService.delete(projectId, role.id);
     }
   }
 
   for (const role of validCurrent) {
-    if (role.id) {
-      const existing = original.find((item) => item.id === role.id);
-      if (!existing) continue;
+    const existing = role.id
+      ? original.find((item) => item.id === role.id)
+      : undefined;
 
+    if (existing) {
       const nameChanged = existing.name !== role.name;
       const permissionsChanged = !permissionsEqual(
         existing.permissions,
@@ -62,7 +95,7 @@ export async function syncCustomRoles(
       );
 
       if (nameChanged || permissionsChanged) {
-        await roleDefinitionService.update(projectId, role.id, {
+        await roleDefinitionService.update(projectId, role.id!, {
           name: role.name,
           permissions: role.permissions,
         });
@@ -70,6 +103,9 @@ export async function syncCustomRoles(
       continue;
     }
 
-    await roleDefinitionService.create(projectId, role);
+    await roleDefinitionService.create(projectId, {
+      name: role.name,
+      permissions: role.permissions,
+    });
   }
 }

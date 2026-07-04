@@ -6,6 +6,7 @@ import { PERMISSION_GROUPS } from '@/features/permissions/registry';
 import { projectService } from '../services/project.service';
 import type { CustomRoleInput, ProjectRoleDefinition } from '../types';
 import {
+  hasCustomRoleChanges,
   syncCustomRoles,
   toCustomRoleInputs,
   validateCustomRoles,
@@ -79,8 +80,7 @@ export function ProjectRolesPanel({
         }
       : null;
 
-  const hasChanges =
-    JSON.stringify(roles) !== JSON.stringify(toCustomRoleInputs(originalRoles));
+  const hasChanges = hasCustomRoleChanges(originalRoles, roles);
 
   const handleSave = async () => {
     setError('');
@@ -117,23 +117,14 @@ export function ProjectRolesPanel({
               : 'Your role and permissions in this project.'}
           </p>
         </div>
-        {canManage && hasChanges && (
-          <div className="flex gap-2">
-            <Button type="button" variant="secondary" onClick={handleReset}>
-              Reset
-            </Button>
-            <Button
-              type="button"
-              onClick={() => void handleSave()}
-              isLoading={isSaving}
-            >
-              Save roles
-            </Button>
-          </div>
-        )}
       </div>
 
       <div className="p-5">
+        {canManage && (
+          <p className="mb-4 text-sm text-gray-500">
+            Add or edit roles below, then click Save roles to apply changes.
+          </p>
+        )}
         {error && (
           <div className="mb-4 rounded-lg bg-red-50 px-4 py-3 text-sm text-red-700">
             {error}
@@ -156,6 +147,27 @@ export function ProjectRolesPanel({
           <RolePermissionsSummary role={ownRole} defaultExpanded />
         )}
       </div>
+
+      {canManage && (
+        <div className="flex shrink-0 justify-end gap-3 border-t border-gray-100 bg-white px-5 py-4">
+          <Button
+            type="button"
+            variant="secondary"
+            onClick={handleReset}
+            disabled={!hasChanges || isSaving}
+          >
+            Reset
+          </Button>
+          <Button
+            type="button"
+            onClick={() => void handleSave()}
+            isLoading={isSaving}
+            disabled={!hasChanges}
+          >
+            Save roles
+          </Button>
+        </div>
+      )}
     </div>
   );
 }

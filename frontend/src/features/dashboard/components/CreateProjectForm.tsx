@@ -11,6 +11,7 @@ import type {
   CreateProjectInput,
   PermissionMode,
 } from '@/features/projects/types';
+import { validateCustomRoles } from '@/features/projects/utils/syncCustomRoles';
 import { CustomRolesBuilder } from './CustomRolesBuilder';
 
 const schema = z
@@ -64,25 +65,13 @@ export function CreateProjectForm({
     setError('');
 
     if (permissionMode === 'CUSTOM') {
-      const validRoles = customRoles.filter(
-        (role) => role.name.trim().length >= 2 && role.permissions.length > 0,
-      );
-      if (validRoles.length === 0) {
-        setError(
-          'Add at least one custom role with a name and one permission.',
-        );
-        return;
-      }
-
       try {
+        const validRoles = validateCustomRoles(customRoles);
         await onSubmit({
           name: data.name,
           description: data.description,
           permissionMode: 'CUSTOM',
-          customRoles: validRoles.map((role) => ({
-            name: role.name.trim(),
-            permissions: role.permissions,
-          })),
+          customRoles: validRoles,
         });
         reset();
         setCustomRoles([{ name: 'Project Manager', permissions: [] }]);
