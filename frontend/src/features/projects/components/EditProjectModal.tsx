@@ -60,11 +60,9 @@ export function EditProjectModal({
   const initialMode = project.permissionMode ?? 'DEFAULT';
 
   const {
-    register,
     control,
     handleSubmit,
     watch,
-    reset,
     formState: { errors, isSubmitting },
   } = useForm<FormData>({
     resolver: zodResolver(schema),
@@ -83,14 +81,6 @@ export function EditProjectModal({
   const isEditingCustom =
     initialMode === 'CUSTOM' && permissionMode === 'CUSTOM';
   const rolesChanged = hasCustomRoleChanges(originalRoles, customRoles);
-
-  useEffect(() => {
-    reset({
-      name: project.name,
-      description: project.description ?? '',
-      permissionMode: project.permissionMode ?? 'DEFAULT',
-    });
-  }, [project, reset]);
 
   useEffect(() => {
     if (project.permissionMode !== 'CUSTOM') {
@@ -195,15 +185,35 @@ export function EditProjectModal({
           </div>
         )}
 
-        <Input
-          label="Project Name"
-          error={errors.name?.message}
-          {...register('name')}
+        <Controller
+          name="name"
+          control={control}
+          render={({ field }) => (
+            <Input
+              label="Project Name"
+              error={errors.name?.message}
+              value={field.value ?? ''}
+              onChange={field.onChange}
+              onBlur={field.onBlur}
+              name={field.name}
+              ref={field.ref}
+            />
+          )}
         />
-        <Input
-          label="Description (optional)"
-          error={errors.description?.message}
-          {...register('description')}
+        <Controller
+          name="description"
+          control={control}
+          render={({ field }) => (
+            <Input
+              label="Description (optional)"
+              error={errors.description?.message}
+              value={field.value ?? ''}
+              onChange={field.onChange}
+              onBlur={field.onBlur}
+              name={field.name}
+              ref={field.ref}
+            />
+          )}
         />
 
         <div className="space-y-2">
@@ -213,7 +223,8 @@ export function EditProjectModal({
             control={control}
             render={({ field }) => (
               <Radio.Group
-                {...field}
+                value={field.value}
+                onChange={field.onChange}
                 className="grid w-full gap-2 sm:grid-cols-2"
               >
                 <label className="flex cursor-pointer items-start gap-3 rounded-lg border border-gray-200 p-3 has-[:checked]:border-primary-500 has-[:checked]:bg-primary-50/40">
