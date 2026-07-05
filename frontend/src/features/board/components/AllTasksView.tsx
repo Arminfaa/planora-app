@@ -27,6 +27,7 @@ import { LoadingSpinner } from '@/shared/components/feedback/LoadingSpinner';
 import { Button } from '@/shared/components/ui/Button';
 import { SearchInput } from '@/shared/components/ui/SearchInput';
 import { getApiErrorMessage, isForbiddenError } from '@/lib/api';
+import { exportBoardTasksToExcel } from '../utils/exportTasksToExcel';
 
 const TaskModal = dynamic(
   () => import('./TaskModal').then((mod) => ({ default: mod.TaskModal })),
@@ -159,6 +160,11 @@ export function AllTasksView({
     columns.find((column) => column.id === task.columnId)?.color ??
     '#6B7280';
 
+  const handleExportExcel = () => {
+    if (!board || tasks.length === 0) return;
+    exportBoardTasksToExcel(tasks, board, columns);
+  };
+
   if (isLoading) {
     return (
       <div className="flex min-h-[50vh] items-center justify-center">
@@ -218,11 +224,37 @@ export function AllTasksView({
           </p>
         </div>
 
-        {canCreateTasks && (
-          <Button type="button" onClick={() => setShowCreateModal(true)}>
-            + New task
+        <div className="flex flex-wrap items-center gap-2">
+          <Button
+            type="button"
+            variant="secondary"
+            onClick={handleExportExcel}
+            disabled={tasks.length === 0}
+            aria-label="Export all tasks to Excel"
+          >
+            <svg
+              className="mr-2 h-4 w-4"
+              fill="none"
+              viewBox="0 0 24 24"
+              stroke="currentColor"
+              aria-hidden="true"
+            >
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                strokeWidth={2}
+                d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"
+              />
+            </svg>
+            Export Excel
           </Button>
-        )}
+
+          {canCreateTasks && (
+            <Button type="button" onClick={() => setShowCreateModal(true)}>
+              + New task
+            </Button>
+          )}
+        </div>
       </div>
 
       <div className="mt-6 flex flex-col gap-3 sm:flex-row sm:items-center">
