@@ -20,6 +20,25 @@ function isPublicPath(pathname: string): boolean {
   );
 }
 
+export function getSafeRedirectPath(
+  path: string | null | undefined,
+): string | null {
+  if (!path || !path.startsWith('/') || path.startsWith('//')) {
+    return null;
+  }
+
+  const pathname = path.split(/[?#]/)[0];
+  if (
+    pathname === '/login' ||
+    pathname === '/register' ||
+    pathname.startsWith('/accept-invite')
+  ) {
+    return null;
+  }
+
+  return path;
+}
+
 export function redirectToLogin(): void {
   if (typeof window === 'undefined') return;
 

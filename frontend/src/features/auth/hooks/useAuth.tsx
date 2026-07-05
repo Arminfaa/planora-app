@@ -12,7 +12,11 @@ import {
 } from 'react';
 import { useRouter } from 'next/navigation';
 import { authService } from '../services/auth.service';
-import { startSessionRefresh, stopSessionRefresh } from '@/lib/authSession';
+import {
+  getSafeRedirectPath,
+  startSessionRefresh,
+  stopSessionRefresh,
+} from '@/lib/authSession';
 import { connectSocket, disconnectSocket } from '@/lib/socket';
 import { getCurrentPushEndpoint } from '@/features/notifications/lib/push-client';
 import { notificationService } from '@/features/notifications/services/notification.service';
@@ -89,13 +93,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         return;
       }
 
-      const redirectTo = options?.redirectTo;
-      if (
-        redirectTo &&
-        redirectTo.startsWith('/') &&
-        !redirectTo.startsWith('//')
-      ) {
-        router.replace(redirectTo);
+      const safeRedirect = getSafeRedirectPath(options?.redirectTo);
+      if (safeRedirect) {
+        router.replace(safeRedirect);
         return;
       }
 
