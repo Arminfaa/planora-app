@@ -2,9 +2,10 @@ import type { Response } from 'express';
 import { env } from '../config';
 import {
   ACCESS_TOKEN_COOKIE,
-  AUTH_COOKIE_PATH,
-  LEGACY_AUTH_COOKIE_PATH,
+  ACCESS_TOKEN_COOKIE_PATH,
+  LEGACY_REFRESH_TOKEN_COOKIE_PATH,
   REFRESH_TOKEN_COOKIE,
+  REFRESH_TOKEN_COOKIE_PATH,
 } from '../constants/auth';
 import { parseDurationToMs } from './duration';
 
@@ -17,7 +18,7 @@ const baseCookieOptions = {
 function clearLegacyRefreshCookie(res: Response): void {
   res.clearCookie(REFRESH_TOKEN_COOKIE, {
     ...baseCookieOptions,
-    path: LEGACY_AUTH_COOKIE_PATH,
+    path: LEGACY_REFRESH_TOKEN_COOKIE_PATH,
   });
 }
 
@@ -30,13 +31,13 @@ export function setAuthCookies(
 
   res.cookie(ACCESS_TOKEN_COOKIE, accessToken, {
     ...baseCookieOptions,
-    path: AUTH_COOKIE_PATH,
+    path: ACCESS_TOKEN_COOKIE_PATH,
     maxAge: parseDurationToMs(env.JWT_ACCESS_EXPIRES_IN),
   });
 
   res.cookie(REFRESH_TOKEN_COOKIE, refreshToken, {
     ...baseCookieOptions,
-    path: AUTH_COOKIE_PATH,
+    path: REFRESH_TOKEN_COOKIE_PATH,
     maxAge: parseDurationToMs(env.JWT_REFRESH_EXPIRES_IN),
   });
 }
@@ -44,11 +45,11 @@ export function setAuthCookies(
 export function clearAuthCookies(res: Response): void {
   res.clearCookie(ACCESS_TOKEN_COOKIE, {
     ...baseCookieOptions,
-    path: AUTH_COOKIE_PATH,
+    path: ACCESS_TOKEN_COOKIE_PATH,
   });
   res.clearCookie(REFRESH_TOKEN_COOKIE, {
     ...baseCookieOptions,
-    path: AUTH_COOKIE_PATH,
+    path: REFRESH_TOKEN_COOKIE_PATH,
   });
   clearLegacyRefreshCookie(res);
 }

@@ -2,7 +2,6 @@ import { Router } from 'express';
 import {
   changePassword,
   getMe,
-  getSocketToken,
   login,
   logout,
   refresh,
@@ -34,7 +33,6 @@ router.post('/login', authRateLimiter, validateBody(loginSchema), login);
 router.post('/refresh', authRateLimiter, refresh);
 router.post('/logout', logout);
 router.get('/me', authenticate, getMe);
-router.get('/socket-token', authenticate, getSocketToken);
 router.patch(
   '/me',
   authenticate,

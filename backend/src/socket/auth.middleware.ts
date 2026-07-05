@@ -20,11 +20,6 @@ function parseCookieHeader(header: string): Record<string, string> {
 }
 
 function extractAccessToken(socket: Socket): string | undefined {
-  const authToken = socket.handshake.auth?.token as string | undefined;
-  if (authToken) {
-    return authToken;
-  }
-
   const cookieHeader = socket.handshake.headers.cookie;
   if (!cookieHeader) {
     return undefined;

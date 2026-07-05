@@ -1,9 +1,7 @@
 import { io, type Socket } from 'socket.io-client';
-import { api } from '@/lib/api';
 import { refreshSession } from '@/lib/authSession';
 import type { BoardSocketEvent } from '@/features/board/types/socket';
 import type { ProjectSocketEvent } from '@/features/projects/types/socket';
-import type { ApiSuccessResponse } from '@/shared/types/api';
 
 function getSocketUrl(): string {
   if (process.env.NEXT_PUBLIC_SOCKET_URL) {
@@ -26,28 +24,6 @@ const boardSubscriptions = new Map<string, Set<BoardEventListener>>();
 const projectSubscriptions = new Map<string, Set<ProjectEventListener>>();
 const joinedBoards = new Set<string>();
 const joinedProjects = new Set<string>();
-
-async function fetchSocketToken(): Promise<string | null> {
-  try {
-    const { data } =
-      await api.get<ApiSuccessResponse<{ token: string }>>(
-        '/auth/socket-token',
-      );
-    return data.data.token;
-  } catch {
-    return null;
-  }
-}
-
-async function applySocketAuth(sock: Socket): Promise<boolean> {
-  const token = await fetchSocketToken();
-  if (!token) {
-    return false;
-  }
-
-  sock.auth = { token };
-  return true;
-}
 
 function dispatchBoardEvent(event: BoardSocketEvent): void {
   const listeners = boardSubscriptions.get(event.boardId);
@@ -88,21 +64,11 @@ function attachGlobalHandlers(sock: Socket): void {
     }
 
     void refreshSession()
-      .then(() => applySocketAuth(sock))
-      .then((ready) => {
-        if (!ready) return;
+      .then(() => {
         sock.disconnect();
         sock.connect();
       })
       .catch(() => undefined);
-  });
-
-  sock.io.on('reconnect_attempt', () => {
-    void fetchSocketToken().then((token) => {
-      if (token) {
-        sock.auth = { token };
-      }
-    });
   });
 }
 
@@ -128,8 +94,7 @@ async function ensureSocketConnecting(sock: Socket): Promise<void> {
   }
 
   connectPromise = (async () => {
-    const ready = await applySocketAuth(sock);
-    if (ready && !sock.connected) {
+    if (!sock.connected) {
       sock.connect();
     }
   })().finally(() => {
