@@ -526,10 +526,14 @@ function ProductPreview() {
       <div className="absolute -inset-6 rounded-[2rem] bg-gradient-to-r from-primary-400/20 via-violet-400/15 to-indigo-400/20 blur-3xl" />
       <div className="relative grid gap-4 lg:grid-cols-5 lg:gap-5 lg:items-center">
         <div className="flex flex-col gap-4 lg:col-span-3">
-          <KanbanPreview />
-          <HeroNotificationPanel />
+          <div className="landing-hero-card landing-hero-card-a">
+            <KanbanPreview />
+          </div>
+          <div className="landing-hero-card landing-hero-card-b">
+            <HeroNotificationPanel />
+          </div>
         </div>
-        <div className="lg:col-span-2">
+        <div className="landing-hero-card landing-hero-card-c lg:col-span-2">
           <GroupChatPreview />
         </div>
       </div>

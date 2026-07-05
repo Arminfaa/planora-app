@@ -27,6 +27,42 @@
   animation: landing-float 8s ease-in-out infinite;
 }
 
+@keyframes landing-hero-card-float {
+  0%,
+  100% {
+    transform: translateY(0);
+  }
+  50% {
+    transform: translateY(-10px);
+  }
+}
+
+.landing-hero-card {
+  animation: landing-hero-card-float 6s ease-in-out infinite;
+  will-change: transform;
+}
+
+.landing-hero-card-a {
+  animation-duration: 6s;
+  animation-delay: 0s;
+}
+
+.landing-hero-card-b {
+  animation-duration: 7s;
+  animation-delay: -2s;
+}
+
+.landing-hero-card-c {
+  animation-duration: 5.5s;
+  animation-delay: -3.5s;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .landing-hero-card {
+    animation: none;
+  }
+}
+
 /* Auth page animated background */
 @keyframes auth-orb-drift {
   0%,
