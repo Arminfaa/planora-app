@@ -5,6 +5,7 @@ import Link from 'next/link';
 import { useAuth } from '@/features/auth/hooks/useAuth';
 import { useHasMounted } from '@/shared/hooks/useHasMounted';
 import { LandingNavbar } from './LandingNavbar';
+import { AppLogo } from '@/shared/components/ui/AppLogo';
 
 const highlights = [
   'Project group',
@@ -433,7 +434,7 @@ export function LandingPage() {
         <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(ellipse_at_0%_90%,rgba(139,92,246,0.12),transparent_50%)]" />
         <div className="pointer-events-none absolute left-1/2 top-24 h-72 w-72 -translate-x-1/2 rounded-full bg-primary-200/20 blur-3xl landing-float" />
 
-        <div className="relative mx-auto max-w-7xl px-4 pb-10 pt-8 sm:px-6 sm:pb-12 sm:pt-10 lg:pb-16 lg:pt-14">
+        <div className="relative mx-auto max-w-6xl px-4 pb-10 pt-8 sm:px-6 sm:pb-12 sm:pt-10 lg:pb-16 lg:pt-14">
           <div className="mx-auto max-w-3xl text-center">
             <div className="mb-5 flex flex-wrap items-center justify-center gap-2">
               {highlights.map((item) => (
@@ -496,7 +497,7 @@ export function LandingPage() {
       {/* Features — bento grid */}
       <section
         id="features"
-        className="border-b border-gray-100 bg-white py-16 sm:py-24"
+        className="border-b border-gray-100 bg-white py-10 sm:py-14"
       >
         <div className="mx-auto max-w-6xl px-4 sm:px-6">
           <div className="mx-auto max-w-2xl text-center">
@@ -548,7 +549,7 @@ export function LandingPage() {
       {/* How it works */}
       <section
         id="how-it-works"
-        className="border-b border-gray-100 bg-gradient-to-b from-gray-50 to-white py-16 sm:py-24"
+        className="border-b border-gray-100 bg-gradient-to-b from-gray-50 to-white py-10 sm:py-14"
       >
         <div className="mx-auto max-w-6xl px-4 sm:px-6">
           <div className="mx-auto max-w-2xl text-center">
@@ -587,7 +588,7 @@ export function LandingPage() {
       </section>
 
       {/* CTA */}
-      <section className="relative overflow-hidden bg-gradient-to-br from-indigo-600 via-primary-600 to-violet-700 py-16 sm:py-24">
+      <section className="relative overflow-hidden bg-gradient-to-br from-indigo-600 via-primary-600 to-violet-700 py-10 sm:py-14">
         <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(ellipse_at_top,rgba(255,255,255,0.12),transparent_60%)]" />
         <div className="pointer-events-none absolute -left-24 bottom-0 h-64 w-64 rounded-full bg-white/5 blur-3xl" />
         <div className="pointer-events-none absolute -right-24 top-0 h-64 w-64 rounded-full bg-violet-400/20 blur-3xl" />
@@ -613,15 +614,20 @@ export function LandingPage() {
       </section>
 
       {/* Footer */}
-      <footer className="border-t border-gray-100 bg-white py-10">
+      <footer className="border-t border-gray-100 bg-white py-6">
         <div className="mx-auto flex max-w-6xl flex-col items-center justify-between gap-6 px-4 sm:flex-row sm:px-6">
           <div className="flex items-center gap-2">
-            <span className="flex h-7 w-7 items-center justify-center rounded-md bg-gradient-to-br from-primary-500 to-violet-600 text-xs font-bold text-white">
-              P
-            </span>
+            <AppLogo size="xs" className="rounded-md" />
             <p className="text-sm text-gray-500">
-              © <span suppressHydrationWarning>{new Date().getFullYear()}</span>{' '}
-              {process.env.NEXT_PUBLIC_APP_NAME ?? 'Project Management'}
+              © All rights reserved for{' '}
+              <a
+                href="https://arminfatehi.ir/en"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="font-medium text-gray-700 transition hover:text-primary-600"
+              >
+                Armin Fatehi
+              </a>
             </p>
           </div>
           <div className="flex flex-wrap items-center justify-center gap-4 text-sm">

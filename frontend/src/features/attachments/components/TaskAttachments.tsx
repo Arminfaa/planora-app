@@ -6,6 +6,7 @@ import type { TaskAttachment } from '../types';
 import { Button } from '@/shared/components/ui/Button';
 import { getApiErrorMessage } from '@/lib/api';
 import { getAssetUrl, isImageAttachment } from '@/lib/assets';
+import { AssetImage } from '@/shared/components/ui/AssetImage';
 
 import { formatFileSize } from '../utils/format';
 
@@ -124,11 +125,18 @@ export function TaskAttachments({ taskId }: TaskAttachmentsProps) {
                       rel="noreferrer"
                       className="block"
                     >
-                      {/* eslint-disable-next-line @next/next/no-img-element */}
-                      <img
+                      <AssetImage
                         src={assetUrl}
                         alt={attachment.filename}
+                        width={800}
+                        height={600}
+                        resolveAsset={false}
                         className="max-h-48 w-full max-w-full rounded-md border border-gray-200 bg-white object-contain"
+                        style={{
+                          width: 'auto',
+                          height: 'auto',
+                          maxHeight: '12rem',
+                        }}
                       />
                     </a>
                   ) : (

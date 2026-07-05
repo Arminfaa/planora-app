@@ -3,7 +3,7 @@
 import { useRef, useState } from 'react';
 import { boardService } from '../services/board.service';
 import { getApiErrorMessage } from '@/lib/api';
-import { getAssetUrl } from '@/lib/assets';
+import { AssetImage } from '@/shared/components/ui/AssetImage';
 
 interface BoardBackgroundMenuProps {
   boardId: string;
@@ -65,11 +65,12 @@ export function BoardBackgroundMenu({
 
       {backgroundUrl && (
         <div className="relative mx-4 mt-3 h-24 overflow-hidden rounded-lg">
-          {/* eslint-disable-next-line @next/next/no-img-element */}
-          <img
-            src={getAssetUrl(backgroundUrl)}
+          <AssetImage
+            src={backgroundUrl}
             alt="Current board background"
-            className="h-full w-full object-cover"
+            fill
+            className="object-cover"
+            sizes="200px"
           />
         </div>
       )}

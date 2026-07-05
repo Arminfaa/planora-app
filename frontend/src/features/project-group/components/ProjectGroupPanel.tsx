@@ -12,6 +12,7 @@ import { Button } from '@/shared/components/ui/Button';
 import { TextArea } from '@/shared/components/ui/TextArea';
 import { getApiErrorMessage } from '@/lib/api';
 import { getAssetUrl } from '@/lib/assets';
+import { AssetImage } from '@/shared/components/ui/AssetImage';
 import { useProjectGroup } from '../hooks/useProjectGroup';
 import { formatActivityMessage } from '../utils/formatActivity';
 import { getTaskActivityHref } from '../utils/getTaskActivityHref';
@@ -47,24 +48,28 @@ function UserAvatar({
   author: ProjectGroupAuthor | null;
   size?: 'sm' | 'md';
 }) {
-  const dimension = size === 'sm' ? 'h-7 w-7 text-[10px]' : 'h-8 w-8 text-xs';
+  const sizeClass = size === 'sm' ? 'h-7 w-7 text-[10px]' : 'h-8 w-8 text-xs';
   const name = author?.name ?? '?';
   const avatarUrl = author?.avatar ? getAssetUrl(author.avatar) : null;
 
   if (avatarUrl) {
+    const pixelSize = size === 'sm' ? 28 : 32;
+
     return (
-      // eslint-disable-next-line @next/next/no-img-element
-      <img
+      <AssetImage
         src={avatarUrl}
         alt={name}
-        className={`${dimension} shrink-0 rounded-full object-cover`}
+        width={pixelSize}
+        height={pixelSize}
+        resolveAsset={false}
+        className={`${size === 'sm' ? 'h-7 w-7' : 'h-8 w-8'} shrink-0 rounded-full object-cover`}
       />
     );
   }
 
   return (
     <span
-      className={`${dimension} flex shrink-0 items-center justify-center rounded-full bg-gradient-to-br from-primary-500 to-violet-600 font-semibold text-white`}
+      className={`${sizeClass} flex shrink-0 items-center justify-center rounded-full bg-gradient-to-br from-primary-500 to-violet-600 font-semibold text-white`}
     >
       {getInitials(name)}
     </span>
@@ -239,11 +244,18 @@ function GroupMessageItem({
                         rel="noopener noreferrer"
                         className="block"
                       >
-                        {/* eslint-disable-next-line @next/next/no-img-element */}
-                        <img
+                        <AssetImage
                           src={attachment.url}
                           alt={attachment.filename}
+                          width={400}
+                          height={192}
+                          resolveAsset={false}
                           className="max-h-48 rounded-xl object-cover"
+                          style={{
+                            width: 'auto',
+                            height: 'auto',
+                            maxHeight: '12rem',
+                          }}
                         />
                       </a>
                     ) : (

@@ -4,6 +4,7 @@ import Link from 'next/link';
 import dynamic from 'next/dynamic';
 import { usePathname } from 'next/navigation';
 import { UserMenuDropdown } from '@/shared/components/layout/UserMenuDropdown';
+import { AppLogo, APP_NAME } from '@/shared/components/ui/AppLogo';
 import { cn } from '@/lib/utils';
 
 const GlobalSearch = dynamic(
@@ -13,8 +14,6 @@ const GlobalSearch = dynamic(
     })),
   { ssr: false },
 );
-
-const appName = process.env.NEXT_PUBLIC_APP_NAME ?? 'Project Management';
 
 function getHeaderNavLinks(pathname: string) {
   if (pathname === '/dashboard' || pathname === '/dashboard/') {
@@ -68,13 +67,9 @@ export function Header() {
             href="/dashboard"
             className="group flex shrink-0 items-center gap-2.5"
           >
-            <img
-              src="/logo.webp"
-              alt={appName}
-              className="h-8 w-8 shrink-0 rounded-lg object-contain shadow-sm shadow-primary-500/20 transition group-hover:shadow-md group-hover:shadow-primary-500/25"
-            />
+            <AppLogo className="rounded-lg shadow-sm shadow-primary-500/20 transition group-hover:shadow-md group-hover:shadow-primary-500/25" />
             <span className="hidden text-lg font-semibold text-gray-900 sm:inline">
-              {appName}
+              {APP_NAME}
             </span>
           </Link>
 

@@ -3,6 +3,7 @@
 import { useState } from 'react';
 import { Segmented } from 'antd';
 import { getAssetUrl } from '@/lib/assets';
+import { AssetImage } from '@/shared/components/ui/AssetImage';
 import { cn } from '@/lib/utils';
 import type { BoardProgressStats, ProjectProgressStats } from '../types';
 
@@ -158,9 +159,12 @@ function TeamWorkloadList({
         return (
           <div key={member.userId} className="flex items-center gap-2.5">
             {avatarUrl ? (
-              <img
+              <AssetImage
                 src={avatarUrl}
                 alt=""
+                width={compact ? 24 : 32}
+                height={compact ? 24 : 32}
+                resolveAsset={false}
                 className={cn('shrink-0 rounded-full object-cover', avatarSize)}
               />
             ) : (

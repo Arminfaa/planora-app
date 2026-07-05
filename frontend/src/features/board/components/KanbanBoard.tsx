@@ -29,7 +29,7 @@ import { checklistService } from '@/features/tasks/services/checklist.service';
 import type { CreateTaskInput } from '@/features/tasks/types';
 import { useProjectMembers } from '@/features/projects/hooks/useProjectMembers';
 import { getApiErrorMessage, isForbiddenError } from '@/lib/api';
-import { getAssetUrl } from '@/lib/assets';
+import { AssetImage } from '@/shared/components/ui/AssetImage';
 import { LoadingSpinner } from '@/shared/components/feedback/LoadingSpinner';
 import { Button } from '@/shared/components/ui/Button';
 
@@ -391,12 +391,16 @@ export function KanbanBoard({
       <div className="pointer-events-none absolute inset-0">
         {hasCustomBackground ? (
           <>
-            {/* eslint-disable-next-line @next/next/no-img-element */}
-            <img
-              src={getAssetUrl(backgroundUrl!)}
-              alt=""
-              className="h-full w-full object-cover"
-            />
+            <div className="relative h-full w-full">
+              <AssetImage
+                src={backgroundUrl!}
+                alt=""
+                fill
+                className="object-cover"
+                sizes="100vw"
+                priority
+              />
+            </div>
             <div className="absolute inset-0 bg-slate-900/60 backdrop-blur-[2px]" />
           </>
         ) : (

@@ -12,6 +12,7 @@ import {
 } from '@/features/auth/types';
 import { getApiErrorMessage } from '@/lib/api';
 import { getAssetUrl } from '@/lib/assets';
+import { AssetImage } from '@/shared/components/ui/AssetImage';
 import { PageContainer } from '@/shared/components/layout/PageContainer';
 import { Input } from '@/shared/components/ui/Input';
 
@@ -152,10 +153,12 @@ export function ProfileView() {
             <div className="flex flex-col gap-5 sm:flex-row sm:items-center">
               <div className="relative shrink-0">
                 {avatarUrl ? (
-                  // eslint-disable-next-line @next/next/no-img-element
-                  <img
+                  <AssetImage
                     src={avatarUrl}
                     alt={user.name}
+                    width={80}
+                    height={80}
+                    resolveAsset={false}
                     className="h-20 w-20 rounded-full border-2 border-white object-cover shadow-sm"
                   />
                 ) : (

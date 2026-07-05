@@ -3,9 +3,8 @@
 import Link from 'next/link';
 import { useAuth } from '@/features/auth/hooks/useAuth';
 import { UserMenuDropdown } from '@/shared/components/layout/UserMenuDropdown';
+import { AppLogo, APP_NAME } from '@/shared/components/ui/AppLogo';
 import { useHasMounted } from '@/shared/hooks/useHasMounted';
-
-const appName = process.env.NEXT_PUBLIC_APP_NAME ?? 'Project Management';
 
 const navLinks = [
   { href: '#features', label: 'Features' },
@@ -19,15 +18,11 @@ export function LandingNavbar() {
 
   return (
     <header className="sticky top-0 z-50 border-b border-white/30 bg-white/75 backdrop-blur-xl">
-      <div className="mx-auto flex h-16 max-w-7xl items-center justify-between px-4 sm:px-6">
+      <div className="mx-auto flex h-16 w-full max-w-6xl items-center justify-between px-4 sm:px-6">
         <Link href="/" className="group flex min-w-0 items-center gap-2.5">
-          <img
-            src="/logo.webp"
-            alt={appName}
-            className="h-8 w-8 shrink-0 rounded-lg object-contain shadow-sm shadow-primary-500/25 transition group-hover:shadow-md group-hover:shadow-primary-500/30"
-          />
+          <AppLogo className="rounded-lg shadow-sm shadow-primary-500/25 transition group-hover:shadow-md group-hover:shadow-primary-500/30" />
           <span className="hidden truncate text-lg font-semibold text-gray-900 md:inline">
-            {appName}
+            {APP_NAME}
           </span>
         </Link>
 

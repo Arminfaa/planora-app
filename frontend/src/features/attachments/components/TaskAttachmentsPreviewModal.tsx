@@ -9,6 +9,7 @@ import { formatFileSize, getFileKind } from '../utils/format';
 import { LoadingSpinner } from '@/shared/components/feedback/LoadingSpinner';
 import { getApiErrorMessage } from '@/lib/api';
 import { getAssetUrl, isImageAttachment } from '@/lib/assets';
+import { AssetImage } from '@/shared/components/ui/AssetImage';
 import { AppModal } from '@/shared/components/ui/AppModal';
 
 interface TaskAttachmentsPreviewModalProps {
@@ -129,13 +130,15 @@ export function TaskAttachmentsPreviewModal({
                     href={activeImageUrl}
                     target="_blank"
                     rel="noreferrer"
-                    className="block max-h-[40vh] max-w-full"
+                    className="relative block max-h-[40vh] min-h-[120px] w-full max-w-full"
                   >
-                    {/* eslint-disable-next-line @next/next/no-img-element */}
-                    <img
+                    <AssetImage
                       src={activeImageUrl}
                       alt={activeImage.filename}
-                      className="max-h-[40vh] max-w-full object-contain"
+                      fill
+                      resolveAsset={false}
+                      className="object-contain"
+                      sizes="(max-width: 768px) 100vw, 600px"
                     />
                   </a>
                 )}
@@ -181,10 +184,12 @@ export function TaskAttachmentsPreviewModal({
                           : 'border-transparent opacity-60 hover:opacity-100'
                       }`}
                     >
-                      {/* eslint-disable-next-line @next/next/no-img-element */}
-                      <img
+                      <AssetImage
                         src={getAssetUrl(image.url)}
                         alt={image.filename}
+                        width={44}
+                        height={44}
+                        resolveAsset={false}
                         className="h-11 w-11 object-cover"
                       />
                     </button>
