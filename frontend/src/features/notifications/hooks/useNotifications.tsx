@@ -6,7 +6,6 @@ import {
   useContext,
   useEffect,
   useMemo,
-  useRef,
   useState,
   type ReactNode,
 } from 'react';
@@ -31,6 +30,7 @@ interface NotificationContextValue {
   permission: NotificationPermission | 'unsupported';
   isPushSupported: boolean;
   enableNotifications: () => Promise<boolean>;
+  enablePushForAccount: () => Promise<boolean>;
   refreshUnreadCount: () => Promise<void>;
   markRead: (id: string) => Promise<void>;
   markAllRead: () => Promise<void>;
@@ -49,7 +49,6 @@ export function NotificationProvider({ children }: { children: ReactNode }) {
   const [permission, setPermission] = useState<
     NotificationPermission | 'unsupported'
   >('default');
-  const pushSetupAttempted = useRef(false);
 
   const refreshUnreadCount = useCallback(async () => {
     if (!isAuthenticated) {
@@ -77,6 +76,24 @@ export function NotificationProvider({ children }: { children: ReactNode }) {
     return true;
   }, []);
 
+  const enablePushForAccount = useCallback(async () => {
+    if (!isPushSupported()) return false;
+    if (Notification.permission !== 'granted') return false;
+
+    try {
+      const subscribed = await setupPushSubscription();
+      if (!subscribed) return false;
+
+      showForegroundNotification('Notifications enabled', {
+        body: 'Push alerts are now active for your account on this device.',
+        href: '/dashboard/notifications',
+      });
+      return true;
+    } catch {
+      return false;
+    }
+  }, [setupPushSubscription]);
+
   const enableNotifications = useCallback(async () => {
     if (!isPushSupported()) return false;
 
@@ -87,17 +104,8 @@ export function NotificationProvider({ children }: { children: ReactNode }) {
       return false;
     }
 
-    try {
-      await setupPushSubscription();
-      showForegroundNotification('Notifications enabled', {
-        body: 'You will receive alerts for task changes and group messages.',
-        href: '/dashboard/notifications',
-      });
-      return true;
-    } catch {
-      return false;
-    }
-  }, [setupPushSubscription]);
+    return enablePushForAccount();
+  }, [enablePushForAccount]);
 
   const markRead = useCallback(async (id: string) => {
     const result = await notificationService.markRead(id);
@@ -148,15 +156,6 @@ export function NotificationProvider({ children }: { children: ReactNode }) {
       cancelled = true;
     };
   }, [authLoading, isAuthenticated, refreshUnreadCount]);
-
-  useEffect(() => {
-    if (!isAuthenticated || authLoading) return;
-    if (pushSetupAttempted.current) return;
-    if (permission !== 'granted') return;
-
-    pushSetupAttempted.current = true;
-    void setupPushSubscription().catch(() => undefined);
-  }, [authLoading, isAuthenticated, permission, setupPushSubscription]);
 
   useEffect(() => {
     if (!isAuthenticated) return;
@@ -219,6 +218,7 @@ export function NotificationProvider({ children }: { children: ReactNode }) {
       permission,
       isPushSupported: isPushSupported(),
       enableNotifications,
+      enablePushForAccount,
       refreshUnreadCount,
       markRead,
       markAllRead,
@@ -229,6 +229,7 @@ export function NotificationProvider({ children }: { children: ReactNode }) {
       isLoading,
       permission,
       enableNotifications,
+      enablePushForAccount,
       refreshUnreadCount,
       markRead,
       markAllRead,

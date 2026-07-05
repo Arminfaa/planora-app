@@ -44,6 +44,12 @@ export interface NotificationPreferences {
   updatedAt: string;
 }
 
+export interface PushStatus {
+  pushEnabled: boolean;
+  subscribedOnThisDevice: boolean;
+  subscriptionCount: number;
+}
+
 export type NotificationSocketEvent =
   | {
       type: 'notification:created';

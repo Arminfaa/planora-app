@@ -8,6 +8,7 @@ import { asyncHandler } from '../utils/asyncHandler';
 import { getParam } from '../utils/params';
 import {
   listNotificationsQuerySchema,
+  pushStatusQuerySchema,
   type ListNotificationsQuery,
   type SubscribePushInput,
   type UnsubscribePushInput,
@@ -79,6 +80,21 @@ export const unsubscribePush = asyncHandler(
       req.body as UnsubscribePushInput,
     );
     ApiResponse.success(res, result, 'Push subscription removed');
+  },
+);
+
+export const getPushStatus = asyncHandler(
+  async (req: AuthenticatedRequest, res: Response) => {
+    const parsed = pushStatusQuerySchema.safeParse(req.query);
+    if (!parsed.success) {
+      throw new ApiError(400, 'Validation failed');
+    }
+
+    const status = await notificationService.getPushStatus(
+      req.user!.userId,
+      parsed.data.endpoint,
+    );
+    ApiResponse.success(res, status, 'Push status retrieved');
   },
 );
 

@@ -1,6 +1,7 @@
 import { Router } from 'express';
 import {
   getNotificationPreferences,
+  getPushStatus,
   getUnreadNotificationCount,
   getVapidKey,
   listNotifications,
@@ -36,6 +37,7 @@ router.patch(
 );
 
 router.get('/push/vapid-key', getVapidKey);
+router.get('/push/status', getPushStatus);
 router.post(
   '/push/subscribe',
   validateBody(subscribePushSchema),

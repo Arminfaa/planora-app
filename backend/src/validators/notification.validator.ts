@@ -31,6 +31,10 @@ export const notificationIdParamSchema = z.object({
   id: objectIdSchema,
 });
 
+export const pushStatusQuerySchema = z.object({
+  endpoint: z.string().url().max(2048).optional(),
+});
+
 export type ListNotificationsQuery = z.infer<
   typeof listNotificationsQuerySchema
 >;
@@ -39,3 +43,4 @@ export type UnsubscribePushInput = z.infer<typeof unsubscribePushSchema>;
 export type UpdateNotificationPreferencesInput = z.infer<
   typeof updateNotificationPreferencesSchema
 >;
+export type PushStatusQuery = z.infer<typeof pushStatusQuerySchema>;

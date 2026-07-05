@@ -27,6 +27,18 @@ export class PushSubscriptionRepository extends BaseRepository {
     });
   }
 
+  async findByEndpoint(endpoint: string): Promise<PushSubscription | null> {
+    return this.db.pushSubscription.findUnique({
+      where: { endpoint },
+    });
+  }
+
+  async countByUser(userId: string): Promise<number> {
+    return this.db.pushSubscription.count({
+      where: { userId },
+    });
+  }
+
   async deleteByEndpoint(userId: string, endpoint: string): Promise<boolean> {
     const result = await this.db.pushSubscription.deleteMany({
       where: { userId, endpoint },

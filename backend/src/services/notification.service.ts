@@ -130,6 +130,25 @@ class NotificationService {
     return { success: true };
   }
 
+  async getPushStatus(userId: string, endpoint?: string) {
+    const preference =
+      await notificationPreferenceRepository.getOrCreate(userId);
+    const subscriptionCount =
+      await pushSubscriptionRepository.countByUser(userId);
+
+    let subscribedOnThisDevice = false;
+    if (endpoint) {
+      const record = await pushSubscriptionRepository.findByEndpoint(endpoint);
+      subscribedOnThisDevice = record?.userId === userId;
+    }
+
+    return {
+      pushEnabled: preference.pushEnabled,
+      subscribedOnThisDevice,
+      subscriptionCount,
+    };
+  }
+
   async getPreferences(userId: string) {
     const preference =
       await notificationPreferenceRepository.getOrCreate(userId);

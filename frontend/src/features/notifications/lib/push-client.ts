@@ -55,6 +55,34 @@ export async function subscribeToPush(
   });
 }
 
+export async function getCurrentPushEndpoint(): Promise<string | null> {
+  if (!isPushSupported()) return null;
+
+  try {
+    const registration = await navigator.serviceWorker.getRegistration(SW_PATH);
+    if (!registration) return null;
+
+    const subscription = await registration.pushManager.getSubscription();
+    return subscription?.endpoint ?? null;
+  } catch {
+    return null;
+  }
+}
+
+export async function unsubscribeCurrentDevicePush(): Promise<void> {
+  if (!isPushSupported()) return;
+
+  try {
+    const registration = await navigator.serviceWorker.getRegistration(SW_PATH);
+    const subscription = await registration?.pushManager.getSubscription();
+    if (!subscription) return;
+
+    await subscription.unsubscribe();
+  } catch {
+    // Best-effort cleanup during logout.
+  }
+}
+
 export function showForegroundNotification(
   title: string,
   options: NotificationOptions & { href?: string },

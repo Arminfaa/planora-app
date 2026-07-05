@@ -3,6 +3,7 @@ import type {
   AppNotification,
   NotificationListResult,
   NotificationPreferences,
+  PushStatus,
 } from '../types';
 
 export const notificationService = {
@@ -46,6 +47,16 @@ export const notificationService = {
       '/notifications/push/vapid-key',
     );
     return response.data.data.publicKey;
+  },
+
+  async getPushStatus(endpoint?: string | null): Promise<PushStatus> {
+    const response = await api.get<{ data: PushStatus }>(
+      '/notifications/push/status',
+      {
+        params: endpoint ? { endpoint } : undefined,
+      },
+    );
+    return response.data.data;
   },
 
   async subscribePush(subscription: PushSubscriptionJSON): Promise<void> {
