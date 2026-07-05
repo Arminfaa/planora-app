@@ -62,7 +62,7 @@ export const TaskCard = memo(function TaskCard({
 
   return (
     <div
-      className={`relative cursor-default w-full rounded-lg border bg-white shadow-sm transition ${
+      className={`cursor-default w-full rounded-lg border bg-white shadow-sm transition ${
         isDragOverlay ? 'rotate-2 shadow-lg ring-2 ring-primary-200' : ''
       } ${isDimmed ? 'opacity-35' : ''} ${
         isHighlighted
@@ -70,28 +70,7 @@ export const TaskCard = memo(function TaskCard({
           : 'border-gray-200'
       } ${isCompleted ? 'bg-green-100/70' : ''}`}
     >
-      {attachmentCount > 0 && (
-        <button
-          type="button"
-          onClick={(event) => {
-            event.stopPropagation();
-            onAttachmentClick?.(task);
-          }}
-          onPointerDown={stopCardPointer}
-          className="absolute right-2 top-2 z-10 flex items-center gap-0.5 rounded-md bg-white/90 px-1.5 py-1 text-gray-600 shadow-sm ring-1 ring-gray-200 hover:bg-primary-50 hover:text-primary-600"
-          aria-label={`View ${attachmentCount} attachment${attachmentCount === 1 ? '' : 's'}`}
-          title={`${attachmentCount} attachment${attachmentCount === 1 ? '' : 's'}`}
-        >
-          <PaperclipIcon className="h-3.5 w-3.5" />
-          {attachmentCount > 1 && (
-            <span className="text-[10px] font-semibold leading-none">
-              {attachmentCount}
-            </span>
-          )}
-        </button>
-      )}
-
-      <div className={`p-3 ${attachmentCount > 0 ? 'pr-10' : ''}`}>
+      <div className="p-3">
         <div className="flex items-start gap-1.5 sm:gap-2">
           {dragHandleProps && (
             <button
@@ -128,21 +107,43 @@ export const TaskCard = memo(function TaskCard({
               >
                 {task.title}
               </p>
-              {canEdit && onEdit && (
-                <button
-                  type="button"
-                  onClick={(event) => {
-                    event.stopPropagation();
-                    onEdit(task);
-                  }}
-                  onPointerDown={stopCardPointer}
-                  className="shrink-0 rounded p-1 text-gray-400 transition hover:bg-gray-100 hover:text-primary-600"
-                  aria-label={`Edit ${task.title}`}
-                  title="Edit task"
-                >
-                  <EditIcon className="h-3.5 w-3.5" />
-                </button>
-              )}
+              <div className="flex shrink-0 items-center gap-0.5">
+                {attachmentCount > 0 && (
+                  <button
+                    type="button"
+                    onClick={(event) => {
+                      event.stopPropagation();
+                      onAttachmentClick?.(task);
+                    }}
+                    onPointerDown={stopCardPointer}
+                    className="flex items-center gap-0.5 rounded p-1 text-gray-400 transition hover:bg-gray-100 hover:text-primary-600"
+                    aria-label={`View ${attachmentCount} attachment${attachmentCount === 1 ? '' : 's'}`}
+                    title={`${attachmentCount} attachment${attachmentCount === 1 ? '' : 's'}`}
+                  >
+                    <PaperclipIcon className="h-3.5 w-3.5" />
+                    {attachmentCount > 1 && (
+                      <span className="text-[10px] font-semibold leading-none">
+                        {attachmentCount}
+                      </span>
+                    )}
+                  </button>
+                )}
+                {canEdit && onEdit && (
+                  <button
+                    type="button"
+                    onClick={(event) => {
+                      event.stopPropagation();
+                      onEdit(task);
+                    }}
+                    onPointerDown={stopCardPointer}
+                    className="rounded p-1 text-gray-400 transition hover:bg-gray-100 hover:text-primary-600"
+                    aria-label={`Edit ${task.title}`}
+                    title="Edit task"
+                  >
+                    <EditIcon className="h-3.5 w-3.5" />
+                  </button>
+                )}
+              </div>
             </div>
 
             {task.description && (
