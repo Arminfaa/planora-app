@@ -195,7 +195,7 @@ const stats = [
   { value: 'Group', label: 'Project group' },
 ];
 
-function KanbanPreview() {
+function KanbanPreview({ compact = false }: { compact?: boolean }) {
   const columns = [
     {
       name: 'To Do',
@@ -222,13 +222,17 @@ function KanbanPreview() {
 
   return (
     <div className="overflow-hidden rounded-2xl border border-gray-200/80 bg-white/90 shadow-xl backdrop-blur-sm">
-      <div className="border-b border-gray-100 bg-gradient-to-r from-gray-50 to-white px-4 py-3">
+      <div
+        className={`border-b border-gray-100 bg-gradient-to-r from-gray-50 to-white ${compact ? 'px-3 py-2' : 'px-4 py-3'}`}
+      >
         <div className="flex items-center justify-between">
           <div>
             <p className="text-[10px] font-medium uppercase tracking-wider text-gray-400">
               Sprint board
             </p>
-            <p className="text-sm font-semibold text-gray-900">
+            <p
+              className={`font-semibold text-gray-900 ${compact ? 'text-xs' : 'text-sm'}`}
+            >
               Product launch
             </p>
           </div>
@@ -241,7 +245,9 @@ function KanbanPreview() {
           </span>
         </div>
       </div>
-      <div className="flex gap-2.5 overflow-hidden p-3">
+      <div
+        className={`flex overflow-hidden ${compact ? 'gap-2 p-2' : 'gap-2.5 p-3'}`}
+      >
         {columns.map((col) => (
           <div
             key={col.name}
@@ -520,21 +526,27 @@ function HeroNotificationPanel() {
   );
 }
 
-function ProductPreview() {
+function ProductPreview({ compact = false }: { compact?: boolean }) {
   return (
-    <div className="relative mx-auto max-w-5xl">
-      <div className="absolute -inset-6 rounded-[2rem] bg-gradient-to-r from-primary-400/20 via-violet-400/15 to-indigo-400/20 blur-3xl" />
-      <div className="relative grid gap-4 lg:grid-cols-5 lg:gap-5 lg:items-center">
-        <div className="flex flex-col gap-4 lg:col-span-3">
+    <div className={`relative mx-auto ${compact ? 'max-w-full' : 'max-w-5xl'}`}>
+      <div
+        className={`absolute rounded-[2rem] bg-gradient-to-r from-primary-400/20 via-violet-400/15 to-indigo-400/20 blur-3xl ${compact ? '-inset-3' : '-inset-6'}`}
+      />
+      <div
+        className={`relative grid lg:grid-cols-5 lg:items-center ${compact ? 'gap-2.5 lg:gap-3' : 'gap-4 lg:gap-5'}`}
+      >
+        <div
+          className={`flex flex-col lg:col-span-3 ${compact ? 'gap-2.5' : 'gap-4'}`}
+        >
           <div className="landing-hero-card landing-hero-card-a">
-            <KanbanPreview />
+            <KanbanPreview compact={compact} />
           </div>
           <div className="landing-hero-card landing-hero-card-b">
             <HeroNotificationPanel />
           </div>
         </div>
         <div className="landing-hero-card landing-hero-card-c lg:col-span-2">
-          <GroupChatPreview />
+          <GroupChatPreview compact={compact} />
         </div>
       </div>
     </div>
@@ -584,55 +596,62 @@ export function LandingPage() {
       <LandingNavbar />
 
       {/* Hero */}
-      <section className="relative overflow-hidden border-b border-indigo-100/60">
+      <section className="relative overflow-hidden border-b border-indigo-100/60 min-h-[calc(100dvh-65px)] flex item-center">
         <div className="absolute inset-0 bg-gradient-to-br from-indigo-50 via-white to-violet-50" />
         <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(ellipse_at_70%_0%,rgba(99,102,241,0.18),transparent_55%)]" />
         <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(ellipse_at_0%_90%,rgba(139,92,246,0.12),transparent_50%)]" />
         <div className="pointer-events-none absolute left-1/2 top-24 h-72 w-72 -translate-x-1/2 rounded-full bg-primary-200/20 blur-3xl landing-float" />
 
-        <div className="relative mx-auto max-w-6xl px-4 pb-10 pt-8 sm:px-6 sm:pb-12 sm:pt-10 lg:pb-16 lg:pt-14">
-          <div className="mx-auto max-w-3xl text-center">
-            <div className="mb-5 flex flex-wrap items-center justify-center gap-2">
-              {highlights.map((item) => (
-                <span
-                  key={item}
-                  className="inline-flex rounded-full border border-primary-200/50 bg-white/70 px-2.5 py-1 text-[11px] font-medium text-primary-700 shadow-sm backdrop-blur-sm"
-                >
-                  {item}
+        <div className="relative mx-auto my-auto max-w-6xl px-4 pb-10 pt-8 sm:px-6 sm:pb-12 sm:pt-10 lg:pb-16 lg:pt-14 min-[1400px]:max-w-[1380px]">
+          <div className="min-[1400px]:grid min-[1400px]:grid-cols-[1fr_1.05fr] min-[1400px]:items-center min-[1400px]:gap-12">
+            <div className="mx-auto max-w-3xl text-center min-[1400px]:mx-0 min-[1400px]:max-w-none min-[1400px]:text-left">
+              <div className="mb-5 flex flex-wrap items-center justify-center gap-2 min-[1400px]:justify-start">
+                {highlights.map((item) => (
+                  <span
+                    key={item}
+                    className="inline-flex rounded-full border border-primary-200/50 bg-white/70 px-2.5 py-1 text-[11px] font-medium text-primary-700 shadow-sm backdrop-blur-sm"
+                  >
+                    {item}
+                  </span>
+                ))}
+              </div>
+
+              <h1 className="text-4xl font-bold tracking-tight text-gray-900 sm:text-5xl lg:text-[3.25rem] lg:leading-[1.1] min-[1400px]:text-[2.85rem]">
+                Plan, chat, and ship —{' '}
+                <span className="bg-gradient-to-r from-primary-600 to-violet-600 bg-clip-text text-transparent">
+                  all in one workspace
                 </span>
-              ))}
+              </h1>
+              <p className="mx-auto mt-5 max-w-2xl text-lg leading-relaxed text-gray-600 min-[1400px]:mx-0 min-[1400px]:max-w-lg min-[1400px]:text-base">
+                Kanban boards, Project group with chat bubbles and activity
+                logs, custom roles, and granular permissions — built for teams
+                that move fast and stay aligned.
+              </p>
+
+              <div className="mt-8 flex min-h-[52px] flex-wrap items-center justify-center gap-3 min-[1400px]:justify-start">
+                <Link
+                  href={primaryHref}
+                  className="rounded-xl bg-primary-600 px-7 py-3.5 text-sm font-semibold text-white shadow-lg shadow-primary-600/25 transition hover:bg-primary-700 hover:shadow-xl hover:shadow-primary-600/30"
+                >
+                  {primaryLabel}
+                </Link>
+                <Link
+                  href={secondaryHref}
+                  className="rounded-xl border border-gray-200/80 bg-white/80 px-7 py-3.5 text-sm font-semibold text-gray-700 shadow-sm backdrop-blur-sm transition hover:border-gray-300 hover:bg-white"
+                >
+                  {secondaryLabel}
+                </Link>
+              </div>
             </div>
 
-            <h1 className="text-4xl font-bold tracking-tight text-gray-900 sm:text-5xl lg:text-[3.25rem] lg:leading-[1.1]">
-              Plan, chat, and ship —{' '}
-              <span className="bg-gradient-to-r from-primary-600 to-violet-600 bg-clip-text text-transparent">
-                all in one workspace
-              </span>
-            </h1>
-            <p className="mx-auto mt-5 max-w-2xl text-lg leading-relaxed text-gray-600">
-              Kanban boards, Project group with chat bubbles and activity logs,
-              custom roles, and granular permissions — built for teams that move
-              fast and stay aligned.
-            </p>
-
-            <div className="mt-8 flex min-h-[52px] flex-wrap items-center justify-center gap-3">
-              <Link
-                href={primaryHref}
-                className="rounded-xl bg-primary-600 px-7 py-3.5 text-sm font-semibold text-white shadow-lg shadow-primary-600/25 transition hover:bg-primary-700 hover:shadow-xl hover:shadow-primary-600/30"
-              >
-                {primaryLabel}
-              </Link>
-              <Link
-                href={secondaryHref}
-                className="rounded-xl border border-gray-200/80 bg-white/80 px-7 py-3.5 text-sm font-semibold text-gray-700 shadow-sm backdrop-blur-sm transition hover:border-gray-300 hover:bg-white"
-              >
-                {secondaryLabel}
-              </Link>
+            <div className="mt-14 sm:mt-16 lg:mt-20 min-[1400px]:mt-0">
+              <div className="min-[1400px]:hidden">
+                <ProductPreview />
+              </div>
+              <div className="hidden min-[1400px]:block">
+                <ProductPreview compact />
+              </div>
             </div>
-          </div>
-
-          <div className="mt-14 sm:mt-16 lg:mt-20">
-            <ProductPreview />
           </div>
 
           <div className="mx-auto mt-14 grid max-w-3xl grid-cols-2 gap-4 sm:grid-cols-4 sm:gap-6">
