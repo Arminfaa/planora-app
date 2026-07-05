@@ -55,7 +55,7 @@ export function BoardHeader({
   }, [showBackgroundMenu]);
 
   return (
-    <header className="relative z-10 shrink-0">
+    <header className="relative shrink-0">
       <Link
         href={`/dashboard/projects/${projectSlug}`}
         className="mb-4 inline-flex items-center gap-1.5 text-sm font-medium text-white/70 transition hover:text-white"
@@ -132,7 +132,7 @@ export function BoardHeader({
           )}
 
           {canManageBackground && (
-            <div className="relative" ref={backgroundMenuRef}>
+            <div className="relative z-50" ref={backgroundMenuRef}>
               <button
                 type="button"
                 onClick={() => setShowBackgroundMenu((prev) => !prev)}

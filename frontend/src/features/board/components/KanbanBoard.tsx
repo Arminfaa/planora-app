@@ -54,6 +54,26 @@ const kanbanCollisionDetection: CollisionDetection = (args) => {
   return closestCorners(args);
 };
 
+function findTaskById(
+  columns: BoardColumn[],
+  taskId: string,
+): BoardTask | undefined {
+  for (const column of columns) {
+    const task = column.tasks?.find((item) => item.id === taskId);
+    if (task) return task;
+  }
+}
+
+function findTaskBySlug(
+  columns: BoardColumn[],
+  slug: string,
+): BoardTask | undefined {
+  for (const column of columns) {
+    const task = column.tasks?.find((item) => item.slug === slug);
+    if (task) return task;
+  }
+}
+
 interface KanbanBoardProps {
   board: Board;
   projectId: string;
@@ -91,28 +111,35 @@ export function KanbanBoard({
   const pathname = usePathname();
   const searchParams = useSearchParams();
   const activeTaskSlug = searchParams.get('task');
-  const [selectedTask, setSelectedTask] = useState<BoardTask | null>(null);
+  const [selectedTaskId, setSelectedTaskId] = useState<string | null>(null);
   const [editingColumn, setEditingColumn] = useState<BoardColumn | null>(null);
   const [showCreateColumn, setShowCreateColumn] = useState(false);
   const [actionError, setActionError] = useState('');
-  const [highlightedTaskId, setHighlightedTaskId] = useState<string | null>(
-    null,
-  );
   const [boardName, setBoardName] = useState(board.name);
+  const [prevBoardName, setPrevBoardName] = useState(board.name);
   const [backgroundUrl, setBackgroundUrl] = useState(
+    board.backgroundUrl ?? null,
+  );
+  const [prevBackgroundUrl, setPrevBackgroundUrl] = useState(
     board.backgroundUrl ?? null,
   );
   const [boardDeleted, setBoardDeleted] = useState(false);
   const [attachmentPreviewTask, setAttachmentPreviewTask] =
     useState<BoardTask | null>(null);
+  const [prevActiveTaskSlug, setPrevActiveTaskSlug] = useState<string | null>(
+    null,
+  );
 
-  useEffect(() => {
+  if (board.name !== prevBoardName) {
+    setPrevBoardName(board.name);
     setBoardName(board.name);
-  }, [board.name]);
+  }
 
-  useEffect(() => {
-    setBackgroundUrl(board.backgroundUrl ?? null);
-  }, [board.backgroundUrl]);
+  const nextBackgroundUrl = board.backgroundUrl ?? null;
+  if (nextBackgroundUrl !== prevBackgroundUrl) {
+    setPrevBackgroundUrl(nextBackgroundUrl);
+    setBackgroundUrl(nextBackgroundUrl);
+  }
 
   const handleError = useCallback((message: string) => {
     if (message.toLowerCase().includes('permission')) return;
@@ -136,19 +163,6 @@ export function KanbanBoard({
     handleError,
     onRefresh,
   );
-
-  useEffect(() => {
-    if (!selectedTask) return;
-
-    for (const column of columns) {
-      const updated = column.tasks?.find((task) => task.id === selectedTask.id);
-      if (updated) {
-        setSelectedTask(updated);
-        return;
-      }
-    }
-    // eslint-disable-next-line react-hooks/exhaustive-deps -- only re-sync when columns data changes
-  }, [columns, selectedTask?.id]);
 
   const handleRemoteChange = useCallback(
     (event: BoardSocketEvent) => {
@@ -284,9 +298,35 @@ export function KanbanBoard({
     [pathname, router, searchParams],
   );
 
+  if (activeTaskSlug !== prevActiveTaskSlug) {
+    setPrevActiveTaskSlug(activeTaskSlug);
+    if (!activeTaskSlug) {
+      setSelectedTaskId(null);
+    } else if (canEditTasks) {
+      const task = findTaskBySlug(columns, activeTaskSlug);
+      setSelectedTaskId(task?.id ?? null);
+    }
+  }
+
+  useEffect(() => {
+    if (!canEditTasks && activeTaskSlug) {
+      updateTaskQuery(null);
+    }
+  }, [canEditTasks, activeTaskSlug, updateTaskQuery]);
+
+  const taskFromSlug =
+    activeTaskSlug && canEditTasks
+      ? findTaskBySlug(columns, activeTaskSlug)
+      : undefined;
+  const effectiveTaskId = selectedTaskId ?? taskFromSlug?.id ?? null;
+  const selectedTask = effectiveTaskId
+    ? (findTaskById(columns, effectiveTaskId) ?? null)
+    : null;
+  const highlightedTaskId =
+    attachmentPreviewTask?.id ?? effectiveTaskId ?? null;
+
   const closeTask = useCallback(() => {
-    setSelectedTask(null);
-    setHighlightedTaskId(null);
+    setSelectedTaskId(null);
     updateTaskQuery(null);
   }, [updateTaskQuery]);
 
@@ -297,8 +337,7 @@ export function KanbanBoard({
   const openTask = useCallback(
     (task: BoardTask) => {
       if (!canEditTasks) return;
-      setSelectedTask(task);
-      setHighlightedTaskId(task.id);
+      setSelectedTaskId(task.id);
       updateTaskQuery(task.slug);
     },
     [canEditTasks, updateTaskQuery],
@@ -306,7 +345,6 @@ export function KanbanBoard({
 
   const openTaskAttachments = useCallback((task: BoardTask) => {
     setAttachmentPreviewTask(task);
-    setHighlightedTaskId(task.id);
   }, []);
 
   const handleTaskUpdate = useCallback(async () => {
@@ -361,28 +399,6 @@ export function KanbanBoard({
     0,
   );
 
-  useEffect(() => {
-    if (!activeTaskSlug) {
-      setSelectedTask(null);
-      setHighlightedTaskId(null);
-      return;
-    }
-
-    if (!canEditTasks) {
-      updateTaskQuery(null);
-      return;
-    }
-
-    const task = columns
-      .flatMap((col) => col.tasks ?? [])
-      .find((item) => item.slug === activeTaskSlug);
-
-    if (task) {
-      setSelectedTask(task);
-      setHighlightedTaskId(task.id);
-    }
-  }, [activeTaskSlug, canEditTasks, columns, updateTaskQuery]);
-
   const hasCustomBackground = Boolean(backgroundUrl);
 
   return (
@@ -420,7 +436,7 @@ export function KanbanBoard({
 
       {/* Content */}
       <div className="relative flex flex-col">
-        <div className="shrink-0 py-6">
+        <div className="relative z-20 shrink-0 py-6">
           <BoardHeader
             boardName={boardName}
             boardId={board.id}

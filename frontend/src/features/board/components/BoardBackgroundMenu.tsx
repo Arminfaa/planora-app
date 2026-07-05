@@ -55,7 +55,7 @@ export function BoardBackgroundMenu({
   };
 
   return (
-    <div className="absolute right-0 top-full z-30 mt-2 w-72 overflow-hidden rounded-xl border border-white/20 bg-white/95 shadow-xl backdrop-blur-md">
+    <div className="absolute right-0 top-full z-50 mt-2 w-72 overflow-hidden rounded-xl border border-white/20 bg-white/95 shadow-xl backdrop-blur-md">
       <div className="border-b border-gray-100 px-4 py-3">
         <p className="text-sm font-semibold text-gray-900">Board background</p>
         <p className="mt-0.5 text-xs text-gray-500">
