@@ -1,29 +1,16 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useQuery } from '@tanstack/react-query';
+import { queryKeys, STALE_TIME } from '@/lib/query-keys';
 import { projectService } from '../services/project.service';
-import type { ProjectMember } from '../types';
 
 export function useProjectMembers(projectId: string | null) {
-  const [members, setMembers] = useState<ProjectMember[]>([]);
+  const query = useQuery({
+    queryKey: queryKeys.projects.members(projectId ?? ''),
+    queryFn: () => projectService.listMembers(projectId!),
+    enabled: Boolean(projectId),
+    staleTime: STALE_TIME.members,
+  });
 
-  useEffect(() => {
-    if (!projectId) {
-      setMembers([]);
-      return;
-    }
-
-    const fetchMembers = async () => {
-      try {
-        const data = await projectService.listMembers(projectId);
-        setMembers(data);
-      } catch {
-        setMembers([]);
-      }
-    };
-
-    void fetchMembers();
-  }, [projectId]);
-
-  return members;
+  return query.data ?? [];
 }

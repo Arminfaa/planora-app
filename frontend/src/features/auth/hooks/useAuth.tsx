@@ -11,6 +11,7 @@ import {
   type ReactNode,
 } from 'react';
 import { useRouter } from 'next/navigation';
+import { useQueryClient } from '@tanstack/react-query';
 import { authService } from '../services/auth.service';
 import {
   getSafeRedirectPath,
@@ -40,6 +41,7 @@ const AuthContext = createContext<AuthContextValue | null>(null);
 
 export function AuthProvider({ children }: { children: ReactNode }) {
   const router = useRouter();
+  const queryClient = useQueryClient();
   const [user, setUser] = useState<User | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const loadUserRequestId = useRef(0);
@@ -150,9 +152,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     }
     stopSessionRefresh();
     disconnectSocket();
+    queryClient.clear();
     setUser(null);
     router.push('/login');
-  }, [router]);
+  }, [queryClient, router]);
 
   const updateUser = useCallback((nextUser: User) => {
     setUser(nextUser);

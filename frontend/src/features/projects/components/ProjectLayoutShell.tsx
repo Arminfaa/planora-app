@@ -3,8 +3,7 @@
 import Link from 'next/link';
 import type { ReactNode } from 'react';
 import { formatDate } from '@/features/dashboard/utils/stats';
-import { useBoards } from '@/features/board/hooks/useBoards';
-import { useProjectPermissions } from '@/features/permissions/hooks/useProjectPermissions';
+import { useProjectBoardSocket } from '../hooks/useProjectBoardSocket';
 import { useProjectContext } from '../context/ProjectContext';
 import { ProjectSubNav } from './ProjectSubNav';
 
@@ -14,12 +13,9 @@ interface ProjectLayoutShellProps {
 
 export function ProjectLayoutShell({ children }: ProjectLayoutShellProps) {
   const { project, memberCount, boardCount } = useProjectContext();
-  const { can } = useProjectPermissions(project);
-  const canViewBoards = can('board.view');
 
-  const { isConnected, isJoined, lastRemoteUpdate } = useBoards(
+  const { isConnected, isJoined, lastRemoteUpdate } = useProjectBoardSocket(
     project.id,
-    canViewBoards,
   );
 
   const roleLabel =

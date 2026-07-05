@@ -1,33 +1,19 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useQuery } from '@tanstack/react-query';
 import { searchService } from '../services/search.service';
-import type { SearchAssigneeOption } from '../types';
+import { queryKeys, STALE_TIME } from '@/lib/query-keys';
 
 export function useSearchAssignees(enabled: boolean) {
-  const [assignees, setAssignees] = useState<SearchAssigneeOption[]>([]);
-  const [isLoading, setIsLoading] = useState(false);
+  const query = useQuery({
+    queryKey: queryKeys.search.assignees,
+    queryFn: () => searchService.listAssignees(),
+    enabled,
+    staleTime: STALE_TIME.searchAssignees,
+  });
 
-  useEffect(() => {
-    if (!enabled) {
-      setAssignees([]);
-      return;
-    }
-
-    const fetchAssignees = async () => {
-      setIsLoading(true);
-      try {
-        const data = await searchService.listAssignees();
-        setAssignees(data);
-      } catch {
-        setAssignees([]);
-      } finally {
-        setIsLoading(false);
-      }
-    };
-
-    void fetchAssignees();
-  }, [enabled]);
-
-  return { assignees, isLoading };
+  return {
+    assignees: query.data ?? [],
+    isLoading: query.isLoading,
+  };
 }

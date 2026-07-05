@@ -1,33 +1,19 @@
 'use client';
 
-import { useEffect, useState } from 'react';
 import { useParams } from 'next/navigation';
 import { KanbanBoard } from '@/features/board/components/KanbanBoard';
 import { useBoard } from '@/features/board/hooks/useBoard';
 import { useProjectPermissions } from '@/features/permissions/hooks/useProjectPermissions';
-import { projectService } from '@/features/projects/services/project.service';
-import type { Project } from '@/features/projects/types';
+import { useProjectContext } from '@/features/projects/context/ProjectContext';
 import { LoadingSpinner } from '@/shared/components/feedback/LoadingSpinner';
 
 export default function BoardPage() {
   const params = useParams<{ slug: string; boardSlug: string }>();
+  const { project } = useProjectContext();
   const { board, isLoading, error, refetch, revision } = useBoard(
     params.slug,
     params.boardSlug,
   );
-  const [project, setProject] = useState<Project | null>(null);
-
-  useEffect(() => {
-    const fetchProject = async () => {
-      try {
-        const data = await projectService.getBySlug(params.slug);
-        setProject(data);
-      } catch {
-        setProject(null);
-      }
-    };
-    void fetchProject();
-  }, [params.slug]);
 
   const { can } = useProjectPermissions(project);
 
@@ -44,7 +30,7 @@ export default function BoardPage() {
   return (
     <KanbanBoard
       board={board}
-      projectId={project?.id ?? board.projectId}
+      projectId={project.id}
       projectSlug={params.slug}
       revision={revision}
       onRefresh={refetch}

@@ -4,14 +4,15 @@ import {
   createContext,
   useCallback,
   useContext,
-  useEffect,
   useMemo,
   useState,
   type ReactNode,
 } from 'react';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { projectService } from '../services/project.service';
 import type { Project, ProjectRoleDefinition } from '../types';
 import { getApiErrorMessage } from '@/lib/api';
+import { queryKeys, STALE_TIME } from '@/lib/query-keys';
 import { LoadingSpinner } from '@/shared/components/feedback/LoadingSpinner';
 
 interface ProjectContextValue {
@@ -36,54 +37,53 @@ export function ProjectProvider({
   slug: string;
   children: ReactNode;
 }) {
-  const [project, setProject] = useState<Project | null>(null);
-  const [customRoles, setCustomRoles] = useState<ProjectRoleDefinition[]>([]);
-  const [error, setError] = useState('');
-  const [loading, setLoading] = useState(true);
-  const [memberCount, setMemberCount] = useState(0);
-  const [boardCount, setBoardCount] = useState(0);
+  const queryClient = useQueryClient();
+  const [memberCountOverride, setMemberCountOverride] = useState<number | null>(
+    null,
+  );
+  const [boardCountOverride, setBoardCountOverride] = useState<number | null>(
+    null,
+  );
+
+  const projectQuery = useQuery({
+    queryKey: queryKeys.projects.detail(slug),
+    queryFn: () => projectService.getBySlug(slug),
+    staleTime: STALE_TIME.projectDetail,
+  });
+
+  const project = projectQuery.data ?? null;
+
+  const rolesQuery = useQuery({
+    queryKey: queryKeys.projects.roles(project?.id ?? ''),
+    queryFn: () => projectService.listRoles(project!.id),
+    enabled: Boolean(project?.id && project.permissionMode === 'CUSTOM'),
+    staleTime: STALE_TIME.roles,
+  });
+
+  const customRoles = rolesQuery.data ?? [];
+
+  const setCustomRoles = useCallback(
+    (roles: ProjectRoleDefinition[]) => {
+      if (!project?.id) return;
+      queryClient.setQueryData(queryKeys.projects.roles(project.id), roles);
+    },
+    [project?.id, queryClient],
+  );
 
   const refreshProject = useCallback(async () => {
-    try {
-      const data = await projectService.getBySlug(slug);
-      setProject(data);
-      setBoardCount(data._count?.boards ?? 0);
-      setMemberCount(data._count?.members ?? 0);
-      return data;
-    } catch (err) {
-      setError(getApiErrorMessage(err));
-      setProject(null);
-      return null;
-    }
-  }, [slug]);
+    const result = await projectQuery.refetch();
+    return result.data ?? null;
+  }, [projectQuery]);
 
-  useEffect(() => {
-    const load = async () => {
-      setLoading(true);
-      setError('');
-      await refreshProject();
-      setLoading(false);
-    };
-    void load();
-  }, [refreshProject]);
+  const setProject = useCallback(
+    (nextProject: Project) => {
+      queryClient.setQueryData(queryKeys.projects.detail(slug), nextProject);
+    },
+    [queryClient, slug],
+  );
 
-  useEffect(() => {
-    if (!project?.id || project.permissionMode !== 'CUSTOM') {
-      setCustomRoles([]);
-      return;
-    }
-
-    const loadRoles = async () => {
-      try {
-        const roles = await projectService.listRoles(project.id);
-        setCustomRoles(roles);
-      } catch {
-        setCustomRoles([]);
-      }
-    };
-
-    void loadRoles();
-  }, [project?.id, project?.permissionMode]);
+  const memberCount = memberCountOverride ?? project?._count?.members ?? 0;
+  const boardCount = boardCountOverride ?? project?._count?.boards ?? 0;
 
   const value = useMemo(
     () =>
@@ -96,21 +96,34 @@ export function ProjectProvider({
             refreshProject,
             setProject,
             memberCount,
-            setMemberCount,
+            setMemberCount: setMemberCountOverride,
             boardCount,
-            setBoardCount,
+            setBoardCount: setBoardCountOverride,
           }
         : null,
-    [project, slug, customRoles, refreshProject, memberCount, boardCount],
+    [
+      project,
+      slug,
+      customRoles,
+      setCustomRoles,
+      refreshProject,
+      setProject,
+      memberCount,
+      boardCount,
+    ],
   );
 
-  if (loading) {
+  if (projectQuery.isLoading) {
     return (
       <div className="flex min-h-[calc(100vh-4rem)] items-center justify-center">
         <LoadingSpinner />
       </div>
     );
   }
+
+  const error = projectQuery.error
+    ? getApiErrorMessage(projectQuery.error)
+    : '';
 
   if (error || !value) {
     return (
@@ -133,4 +146,8 @@ export function useProjectContext(): ProjectContextValue {
     throw new Error('useProjectContext must be used within ProjectProvider');
   }
   return context;
+}
+
+export function useOptionalProjectContext(): ProjectContextValue | null {
+  return useContext(ProjectContext);
 }

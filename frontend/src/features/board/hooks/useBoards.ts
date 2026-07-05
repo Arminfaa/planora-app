@@ -1,7 +1,9 @@
 'use client';
 
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback } from 'react';
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { getApiErrorMessage, isForbiddenError } from '@/lib/api';
+import { queryKeys, STALE_TIME } from '@/lib/query-keys';
 import { boardService } from '../services/board.service';
 import type { Board, CreateBoardInput, UpdateBoardInput } from '../types';
 import { useProjectSocket } from '@/features/projects/hooks/useProjectSocket';
@@ -9,78 +11,104 @@ import { applyProjectBoardEvent } from '@/features/projects/utils/applyProjectBo
 import type { ProjectSocketEvent } from '@/features/projects/types/socket';
 
 export function useBoards(projectId: string | null, canViewBoards = true) {
-  const [boards, setBoards] = useState<Board[]>([]);
-  const [isLoading, setIsLoading] = useState(false);
-  const [error, setError] = useState('');
+  const queryClient = useQueryClient();
+  const enabled = Boolean(projectId && canViewBoards);
+  const boardsKey = queryKeys.projects.boards(projectId ?? '');
 
-  const fetchBoards = useCallback(async () => {
-    if (!projectId || !canViewBoards) {
-      setBoards([]);
-      setError('');
-      setIsLoading(false);
-      return;
-    }
+  const query = useQuery({
+    queryKey: boardsKey,
+    queryFn: () => boardService.listByProject(projectId!),
+    enabled,
+    staleTime: STALE_TIME.boards,
+  });
 
-    setIsLoading(true);
-    setError('');
-    try {
-      const result = await boardService.listByProject(projectId);
-      setBoards(result);
-    } catch (err) {
-      if (!isForbiddenError(err)) {
-        setError(getApiErrorMessage(err));
-      }
-      setBoards([]);
-    } finally {
-      setIsLoading(false);
-    }
-  }, [canViewBoards, projectId]);
-
-  useEffect(() => {
-    void fetchBoards();
-  }, [fetchBoards]);
-
-  const applyRemoteUpdate = useCallback((event: ProjectSocketEvent) => {
-    setBoards((prev) => applyProjectBoardEvent(prev, event));
-  }, []);
+  const applyRemoteUpdate = useCallback(
+    (event: ProjectSocketEvent) => {
+      if (!projectId) return;
+      queryClient.setQueryData<Board[]>(boardsKey, (prev) =>
+        applyProjectBoardEvent(prev ?? [], event),
+      );
+    },
+    [boardsKey, projectId, queryClient],
+  );
 
   const { isConnected, isJoined, lastRemoteUpdate } = useProjectSocket(
     projectId ?? '',
     { onRemoteChange: applyRemoteUpdate },
   );
 
+  const invalidateBoards = useCallback(() => {
+    if (!projectId) return Promise.resolve();
+    return queryClient.invalidateQueries({ queryKey: boardsKey });
+  }, [boardsKey, projectId, queryClient]);
+
+  const invalidateProgress = useCallback(() => {
+    if (!projectId) return;
+    void queryClient.invalidateQueries({
+      queryKey: queryKeys.projects.progress(projectId),
+    });
+  }, [projectId, queryClient]);
+
+  const createMutation = useMutation({
+    mutationFn: (input: CreateBoardInput) =>
+      boardService.create(projectId!, input),
+    onSuccess: async () => {
+      await invalidateBoards();
+      invalidateProgress();
+    },
+  });
+
+  const updateMutation = useMutation({
+    mutationFn: ({
+      boardId,
+      input,
+    }: {
+      boardId: string;
+      input: UpdateBoardInput;
+    }) => boardService.update(boardId, input),
+    onSuccess: () => invalidateBoards(),
+  });
+
+  const deleteMutation = useMutation({
+    mutationFn: (boardId: string) => boardService.delete(boardId),
+    onSuccess: async () => {
+      await invalidateBoards();
+      invalidateProgress();
+    },
+  });
+
   const createBoard = useCallback(
     async (input: CreateBoardInput) => {
       if (!projectId) return;
-      const board = await boardService.create(projectId, input);
-      await fetchBoards();
-      return board;
+      return createMutation.mutateAsync(input);
     },
-    [fetchBoards, projectId],
+    [createMutation, projectId],
   );
 
   const updateBoard = useCallback(
     async (boardId: string, input: UpdateBoardInput) => {
-      const board = await boardService.update(boardId, input);
-      await fetchBoards();
-      return board;
+      return updateMutation.mutateAsync({ boardId, input });
     },
-    [fetchBoards],
+    [updateMutation],
   );
 
   const deleteBoard = useCallback(
     async (boardId: string) => {
-      await boardService.delete(boardId);
-      await fetchBoards();
+      await deleteMutation.mutateAsync(boardId);
     },
-    [fetchBoards],
+    [deleteMutation],
   );
 
+  const error =
+    query.error && !isForbiddenError(query.error)
+      ? getApiErrorMessage(query.error)
+      : '';
+
   return {
-    boards,
-    isLoading,
+    boards: enabled ? (query.data ?? []) : [],
+    isLoading: enabled && query.isLoading,
     error,
-    refetch: fetchBoards,
+    refetch: query.refetch,
     createBoard,
     updateBoard,
     deleteBoard,

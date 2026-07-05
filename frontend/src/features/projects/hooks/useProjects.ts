@@ -1,49 +1,41 @@
 'use client';
 
-import { useCallback, useEffect, useState } from 'react';
+import { useState } from 'react';
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { getApiErrorMessage } from '@/lib/api';
+import { queryKeys, STALE_TIME } from '@/lib/query-keys';
 import { projectService } from '../services/project.service';
-import type { CreateProjectInput, Project } from '../types';
-import type { PaginatedData } from '@/shared/types/api';
+import type { CreateProjectInput } from '../types';
 
-export function useProjects() {
-  const [data, setData] = useState<PaginatedData<Project> | null>(null);
-  const [isLoading, setIsLoading] = useState(true);
-  const [error, setError] = useState('');
+export function useProjects(initialPage = 1, limit = 10) {
+  const queryClient = useQueryClient();
+  const [page, setPage] = useState(initialPage);
 
-  const fetchProjects = useCallback(async (page = 1) => {
-    setIsLoading(true);
-    setError('');
-    try {
-      const result = await projectService.list(page);
-      setData(result);
-    } catch (err) {
-      setError(getApiErrorMessage(err));
-    } finally {
-      setIsLoading(false);
-    }
-  }, []);
+  const query = useQuery({
+    queryKey: queryKeys.projects.list(page, limit),
+    queryFn: () => projectService.list(page, limit),
+    staleTime: STALE_TIME.projectsList,
+  });
 
-  const createProject = useCallback(
-    async (input: CreateProjectInput) => {
-      const project = await projectService.create(input);
-      await fetchProjects(data?.pagination.page ?? 1);
-      return project;
+  const createMutation = useMutation({
+    mutationFn: (input: CreateProjectInput) => projectService.create(input),
+    onSuccess: () => {
+      void queryClient.invalidateQueries({ queryKey: queryKeys.projects.all });
     },
-    [fetchProjects, data?.pagination.page],
-  );
+  });
 
-  useEffect(() => {
-    void fetchProjects();
-  }, [fetchProjects]);
+  const createProject = async (input: CreateProjectInput) => {
+    return createMutation.mutateAsync(input);
+  };
 
   return {
-    projects: data?.items ?? [],
-    pagination: data?.pagination,
-    stats: data?.stats,
-    isLoading,
-    error,
-    refetch: fetchProjects,
+    projects: query.data?.items ?? [],
+    pagination: query.data?.pagination,
+    stats: query.data?.stats,
+    isLoading: query.isLoading,
+    error: query.error ? getApiErrorMessage(query.error) : '',
+    refetch: query.refetch,
+    goToPage: setPage,
     createProject,
   };
 }

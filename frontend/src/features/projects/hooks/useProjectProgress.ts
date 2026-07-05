@@ -1,50 +1,27 @@
 'use client';
 
-import { useCallback, useEffect, useState } from 'react';
+import { useQuery } from '@tanstack/react-query';
 import { getApiErrorMessage, isForbiddenError } from '@/lib/api';
+import { queryKeys, STALE_TIME } from '@/lib/query-keys';
 import { projectService } from '../services/project.service';
-import type { ProjectProgressStats } from '../types';
 
-export function useProjectProgress(
-  projectId: string | null,
-  enabled = true,
-  refetchKey?: number,
-) {
-  const [stats, setStats] = useState<ProjectProgressStats | null>(null);
-  const [isLoading, setIsLoading] = useState(false);
-  const [error, setError] = useState('');
+export function useProjectProgress(projectId: string | null, enabled = true) {
+  const query = useQuery({
+    queryKey: queryKeys.projects.progress(projectId ?? ''),
+    queryFn: () => projectService.getProgressStats(projectId!),
+    enabled: Boolean(projectId && enabled),
+    staleTime: STALE_TIME.progress,
+  });
 
-  const fetchProgress = useCallback(async () => {
-    if (!projectId || !enabled) {
-      setStats(null);
-      setError('');
-      setIsLoading(false);
-      return;
-    }
-
-    setIsLoading(true);
-    setError('');
-    try {
-      const result = await projectService.getProgressStats(projectId);
-      setStats(result);
-    } catch (err) {
-      if (!isForbiddenError(err)) {
-        setError(getApiErrorMessage(err));
-      }
-      setStats(null);
-    } finally {
-      setIsLoading(false);
-    }
-  }, [enabled, projectId]);
-
-  useEffect(() => {
-    void fetchProgress();
-  }, [fetchProgress, refetchKey]);
+  const error =
+    query.error && !isForbiddenError(query.error)
+      ? getApiErrorMessage(query.error)
+      : '';
 
   return {
-    stats,
-    isLoading,
+    stats: query.data ?? null,
+    isLoading: query.isLoading,
     error,
-    refetch: fetchProgress,
+    refetch: query.refetch,
   };
 }

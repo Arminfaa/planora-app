@@ -1,48 +1,37 @@
 'use client';
 
-import { useCallback, useEffect, useState } from 'react';
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { labelService } from '../services/label.service';
-import type { CreateLabelInput, ProjectLabel } from '../types';
+import type { CreateLabelInput } from '../types';
+import { queryKeys, STALE_TIME } from '@/lib/query-keys';
 
 export function useProjectLabels(projectId: string | null) {
-  const [labels, setLabels] = useState<ProjectLabel[]>([]);
-  const [isLoading, setIsLoading] = useState(false);
-  const [error, setError] = useState('');
+  const queryClient = useQueryClient();
+  const labelsKey = queryKeys.projects.labels(projectId ?? '');
 
-  const fetchLabels = useCallback(async () => {
-    if (!projectId) return;
+  const query = useQuery({
+    queryKey: labelsKey,
+    queryFn: () => labelService.listByProject(projectId!),
+    enabled: Boolean(projectId),
+    staleTime: STALE_TIME.labels,
+  });
 
-    setIsLoading(true);
-    setError('');
-    try {
-      const data = await labelService.listByProject(projectId);
-      setLabels(data);
-    } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed to load labels');
-    } finally {
-      setIsLoading(false);
-    }
-  }, [projectId]);
+  const createMutation = useMutation({
+    mutationFn: (input: CreateLabelInput) =>
+      labelService.create(projectId!, input),
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: labelsKey }),
+  });
 
-  useEffect(() => {
-    void fetchLabels();
-  }, [fetchLabels]);
-
-  const createLabel = useCallback(
-    async (input: CreateLabelInput) => {
-      if (!projectId) return null;
-      const label = await labelService.create(projectId, input);
-      await fetchLabels();
-      return label;
-    },
-    [fetchLabels, projectId],
-  );
+  const createLabel = async (input: CreateLabelInput) => {
+    if (!projectId) return null;
+    return createMutation.mutateAsync(input);
+  };
 
   return {
-    labels,
-    isLoading,
-    error,
-    refetch: fetchLabels,
+    labels: query.data ?? [],
+    isLoading: query.isLoading,
+    error: query.error instanceof Error ? query.error.message : '',
+    refetch: query.refetch,
     createLabel,
   };
 }

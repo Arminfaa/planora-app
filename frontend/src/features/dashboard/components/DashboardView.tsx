@@ -31,7 +31,7 @@ export function DashboardView() {
     isLoading,
     error,
     createProject,
-    refetch,
+    goToPage,
   } = useProjects();
   const [showCreateModal, setShowCreateModal] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
@@ -194,7 +194,7 @@ export function DashboardView() {
                 <Pagination
                   page={pagination.page}
                   totalPages={pagination.totalPages}
-                  onPageChange={(page) => void refetch(page)}
+                  onPageChange={goToPage}
                 />
               </div>
             )}

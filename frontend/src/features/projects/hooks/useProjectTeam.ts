@@ -1,6 +1,7 @@
 'use client';
 
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback } from 'react';
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import {
   inviteService,
   projectMemberService,
@@ -12,104 +13,121 @@ import type {
   UpdateProjectMemberInput,
 } from '../types';
 import { getApiErrorMessage, isForbiddenError } from '@/lib/api';
+import { queryKeys, STALE_TIME } from '@/lib/query-keys';
 
 export function useProjectTeam(
   projectId: string | null,
   enabled = true,
   canManageInvites = false,
 ) {
-  const [members, setMembers] = useState<ProjectMember[]>([]);
-  const [invites, setInvites] = useState<ProjectInvite[]>([]);
-  const [isLoading, setIsLoading] = useState(false);
-  const [error, setError] = useState('');
+  const queryClient = useQueryClient();
+  const membersKey = queryKeys.projects.members(projectId ?? '');
+  const invitesKey = queryKeys.projects.invites(projectId ?? '');
 
-  const fetchTeam = useCallback(async () => {
-    if (!projectId || !enabled) {
-      setMembers([]);
-      setInvites([]);
-      setError('');
-      return;
-    }
+  const membersQuery = useQuery({
+    queryKey: membersKey,
+    queryFn: () => projectMemberService.list(projectId!),
+    enabled: Boolean(projectId && enabled),
+    staleTime: STALE_TIME.members,
+  });
 
-    setIsLoading(true);
-    setError('');
-    try {
-      const memberList = await projectMemberService.list(projectId);
-      setMembers(memberList);
+  const invitesQuery = useQuery({
+    queryKey: invitesKey,
+    queryFn: () => projectMemberService.listInvites(projectId!),
+    enabled: Boolean(projectId && enabled && canManageInvites),
+    staleTime: STALE_TIME.invites,
+    retry: (_, error) => !isForbiddenError(error),
+  });
 
-      if (canManageInvites) {
-        try {
-          const inviteList = await projectMemberService.listInvites(projectId);
-          setInvites(inviteList);
-        } catch (err) {
-          if (!isForbiddenError(err)) {
-            throw err;
-          }
-          setInvites([]);
-        }
-      } else {
-        setInvites([]);
-      }
-    } catch (err) {
-      if (isForbiddenError(err)) {
-        setMembers([]);
-        setInvites([]);
-        setError('');
-        return;
-      }
-      setError(getApiErrorMessage(err));
-    } finally {
-      setIsLoading(false);
-    }
-  }, [canManageInvites, enabled, projectId]);
+  const invalidateTeam = useCallback(() => {
+    if (!projectId) return Promise.resolve();
+    return Promise.all([
+      queryClient.invalidateQueries({ queryKey: membersKey }),
+      canManageInvites
+        ? queryClient.invalidateQueries({ queryKey: invitesKey })
+        : Promise.resolve(),
+    ]).then(() => undefined);
+  }, [canManageInvites, invitesKey, membersKey, projectId, queryClient]);
 
-  useEffect(() => {
-    void fetchTeam();
-  }, [fetchTeam]);
+  const inviteMutation = useMutation({
+    mutationFn: (input: AddProjectMemberInput) =>
+      projectMemberService.add(projectId!, input),
+    onSuccess: () => invalidateTeam(),
+  });
+
+  const updateRoleMutation = useMutation({
+    mutationFn: ({
+      userId,
+      input,
+    }: {
+      userId: string;
+      input: UpdateProjectMemberInput;
+    }) => projectMemberService.updateRole(projectId!, userId, input),
+    onSuccess: () => invalidateTeam(),
+  });
+
+  const removeMutation = useMutation({
+    mutationFn: (userId: string) =>
+      projectMemberService.remove(projectId!, userId),
+    onSuccess: () => invalidateTeam(),
+  });
+
+  const revokeInviteMutation = useMutation({
+    mutationFn: (inviteId: string) =>
+      projectMemberService.revokeInvite(projectId!, inviteId),
+    onSuccess: () => invalidateTeam(),
+  });
 
   const inviteMember = useCallback(
     async (input: AddProjectMemberInput) => {
       if (!projectId) return null;
-      const result = await projectMemberService.add(projectId, input);
-      await fetchTeam();
-      return result;
+      return inviteMutation.mutateAsync(input);
     },
-    [fetchTeam, projectId],
+    [inviteMutation, projectId],
   );
 
   const updateMemberRole = useCallback(
     async (userId: string, input: UpdateProjectMemberInput) => {
       if (!projectId) return;
-      await projectMemberService.updateRole(projectId, userId, input);
-      await fetchTeam();
+      await updateRoleMutation.mutateAsync({ userId, input });
     },
-    [fetchTeam, projectId],
+    [projectId, updateRoleMutation],
   );
 
   const removeMember = useCallback(
     async (userId: string) => {
       if (!projectId) return;
-      await projectMemberService.remove(projectId, userId);
-      await fetchTeam();
+      await removeMutation.mutateAsync(userId);
     },
-    [fetchTeam, projectId],
+    [projectId, removeMutation],
   );
 
   const revokeInvite = useCallback(
     async (inviteId: string) => {
       if (!projectId) return;
-      await projectMemberService.revokeInvite(projectId, inviteId);
-      await fetchTeam();
+      await revokeInviteMutation.mutateAsync(inviteId);
     },
-    [fetchTeam, projectId],
+    [projectId, revokeInviteMutation],
   );
+
+  const members = enabled ? (membersQuery.data ?? []) : [];
+  const invites: ProjectInvite[] =
+    enabled && canManageInvites ? (invitesQuery.data ?? []) : [];
+
+  const queryError = membersQuery.error ?? invitesQuery.error;
+  const error =
+    queryError && !isForbiddenError(queryError)
+      ? getApiErrorMessage(queryError)
+      : '';
 
   return {
     members,
     invites,
-    isLoading,
+    isLoading:
+      (enabled && membersQuery.isLoading) ||
+      (enabled && canManageInvites && invitesQuery.isLoading),
     error,
-    refetch: fetchTeam,
+    refetch: invalidateTeam,
     inviteMember,
     updateMemberRole,
     removeMember,
@@ -118,34 +136,17 @@ export function useProjectTeam(
 }
 
 export function useInvitePreview(token: string | null) {
-  const [preview, setPreview] = useState<
-    import('../types').InvitePreview | null
-  >(null);
-  const [isLoading, setIsLoading] = useState(false);
-  const [error, setError] = useState('');
+  const query = useQuery({
+    queryKey: queryKeys.invites.preview(token ?? ''),
+    queryFn: () => inviteService.getPreview(token!),
+    enabled: Boolean(token),
+    staleTime: STALE_TIME.invitePreview,
+    retry: false,
+  });
 
-  useEffect(() => {
-    if (!token) {
-      setPreview(null);
-      return;
-    }
-
-    const load = async () => {
-      setIsLoading(true);
-      setError('');
-      try {
-        const data = await inviteService.getPreview(token);
-        setPreview(data);
-      } catch (err) {
-        setPreview(null);
-        setError(getApiErrorMessage(err));
-      } finally {
-        setIsLoading(false);
-      }
-    };
-
-    void load();
-  }, [token]);
-
-  return { preview, isLoading, error };
+  return {
+    preview: query.data ?? null,
+    isLoading: query.isLoading,
+    error: query.error ? getApiErrorMessage(query.error) : '',
+  };
 }

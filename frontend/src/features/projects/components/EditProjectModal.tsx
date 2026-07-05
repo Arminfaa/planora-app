@@ -4,6 +4,7 @@ import { useEffect, useState } from 'react';
 import { useForm, Controller } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { Button, Radio } from 'antd';
 import type {
   CustomRoleInput,
@@ -22,6 +23,7 @@ import {
 import { CustomRolesBuilder } from '@/features/dashboard/components/CustomRolesBuilder';
 import { Input } from '@/shared/components/ui/Input';
 import { getApiErrorMessage } from '@/lib/api';
+import { queryKeys, STALE_TIME } from '@/lib/query-keys';
 import { AppModal } from '@/shared/components/ui/AppModal';
 
 const schema = z.object({
@@ -49,6 +51,7 @@ export function EditProjectModal({
   onSubmit,
   onRolesUpdated,
 }: EditProjectModalProps) {
+  const queryClient = useQueryClient();
   const [error, setError] = useState('');
   const [originalRoles, setOriginalRoles] = useState<ProjectRoleDefinition[]>(
     [],
@@ -82,24 +85,22 @@ export function EditProjectModal({
     initialMode === 'CUSTOM' && permissionMode === 'CUSTOM';
   const rolesChanged = hasCustomRoleChanges(originalRoles, customRoles);
 
+  const rolesQuery = useQuery({
+    queryKey: queryKeys.projects.roles(project.id),
+    queryFn: () => projectService.listRoles(project.id),
+    enabled: project.permissionMode === 'CUSTOM',
+    staleTime: STALE_TIME.roles,
+  });
+
   useEffect(() => {
-    if (project.permissionMode !== 'CUSTOM') {
+    if (project.permissionMode !== 'CUSTOM' || !rolesQuery.data) {
       setOriginalRoles([]);
       return;
     }
 
-    const loadRoles = async () => {
-      try {
-        const roles = await projectService.listRoles(project.id);
-        setOriginalRoles(roles);
-        setCustomRoles(toCustomRoleInputs(roles));
-      } catch {
-        setOriginalRoles([]);
-      }
-    };
-
-    void loadRoles();
-  }, [project.id, project.permissionMode]);
+    setOriginalRoles(rolesQuery.data);
+    setCustomRoles(toCustomRoleInputs(rolesQuery.data));
+  }, [project.id, project.permissionMode, rolesQuery.data]);
 
   const handleFormSubmit = async (data: FormData) => {
     setError('');
@@ -141,7 +142,10 @@ export function EditProjectModal({
       if (isEditingCustom && canManageRoles && rolesChanged) {
         try {
           await syncCustomRoles(project.id, originalRoles, customRoles);
-          const refreshed = await projectService.listRoles(project.id);
+          const refreshed = await queryClient.fetchQuery({
+            queryKey: queryKeys.projects.roles(project.id),
+            queryFn: () => projectService.listRoles(project.id),
+          });
           onRolesUpdated?.(refreshed);
         } catch (err) {
           setError(getApiErrorMessage(err));

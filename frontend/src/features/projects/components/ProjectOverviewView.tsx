@@ -45,7 +45,7 @@ export function ProjectOverviewView() {
     stats: progressStats,
     isLoading: loadingProgress,
     error: progressError,
-  } = useProjectProgress(project.id, canViewBoards, boards.length);
+  } = useProjectProgress(project.id, canViewBoards);
 
   useEffect(() => {
     setBoardCount(boards.length);

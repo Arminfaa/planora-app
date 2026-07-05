@@ -1,6 +1,7 @@
 'use client';
 
 import { useEffect, useState } from 'react';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { CustomRolesBuilder } from '@/features/dashboard/components/CustomRolesBuilder';
 import { PERMISSION_GROUPS } from '@/features/permissions/registry';
 import { projectService } from '../services/project.service';
@@ -14,6 +15,7 @@ import {
 import { Button } from '@/shared/components/ui/Button';
 import { LoadingSpinner } from '@/shared/components/feedback/LoadingSpinner';
 import { getApiErrorMessage } from '@/lib/api';
+import { queryKeys, STALE_TIME } from '@/lib/query-keys';
 
 interface CurrentUserRoleInfo {
   id?: string | null;
@@ -34,39 +36,31 @@ export function ProjectRolesPanel({
   currentUserRole,
   onRolesChange,
 }: ProjectRolesPanelProps) {
+  const queryClient = useQueryClient();
   const [originalRoles, setOriginalRoles] = useState<ProjectRoleDefinition[]>(
     [],
   );
   const [roles, setRoles] = useState<CustomRoleInput[]>([]);
-  const [isLoading, setIsLoading] = useState(true);
   const [isSaving, setIsSaving] = useState(false);
   const [error, setError] = useState('');
   const [success, setSuccess] = useState('');
 
-  const loadRoles = async () => {
-    setIsLoading(true);
-    setError('');
-    try {
-      const data = await projectService.listRoles(projectId);
-      setOriginalRoles(data);
-      setRoles(toCustomRoleInputs(data));
-      onRolesChange?.(data);
-    } catch (err) {
-      setError(getApiErrorMessage(err));
-    } finally {
-      setIsLoading(false);
-    }
-  };
+  const rolesQuery = useQuery({
+    queryKey: queryKeys.projects.roles(projectId),
+    queryFn: () => projectService.listRoles(projectId),
+    enabled: canManage,
+    staleTime: STALE_TIME.roles,
+  });
 
   useEffect(() => {
-    if (canManage) {
-      void loadRoles();
-      return;
-    }
+    if (!canManage || !rolesQuery.data) return;
 
-    setIsLoading(false);
-    // eslint-disable-next-line react-hooks/exhaustive-deps -- non-managers only see their own role
-  }, [projectId, canManage]);
+    setOriginalRoles(rolesQuery.data);
+    setRoles(toCustomRoleInputs(rolesQuery.data));
+    onRolesChange?.(rolesQuery.data);
+  }, [canManage, onRolesChange, rolesQuery.data]);
+
+  const isLoading = canManage && rolesQuery.isLoading;
 
   const ownRole: ProjectRoleDefinition | null =
     currentUserRole?.name != null
@@ -89,7 +83,9 @@ export function ProjectRolesPanel({
     try {
       validateCustomRoles(roles);
       await syncCustomRoles(projectId, originalRoles, roles);
-      await loadRoles();
+      await queryClient.invalidateQueries({
+        queryKey: queryKeys.projects.roles(projectId),
+      });
       setSuccess('Roles updated successfully.');
     } catch (err) {
       setError(getApiErrorMessage(err));
