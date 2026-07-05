@@ -90,7 +90,7 @@ export const KanbanColumn = memo(function KanbanColumn({
 
   return (
     <div
-      className={`flex h-full max-h-full w-72 shrink-0 flex-col rounded-xl border transition ${bgClass} ${columnClass}`}
+      className={`flex h-full max-h-full w-[min(100%,calc(100vw-2.5rem))] shrink-0 flex-col rounded-xl border transition sm:w-72 ${bgClass} ${columnClass}`}
     >
       <div
         className="flex shrink-0 items-start gap-2 rounded-t-xl px-4 py-3"
@@ -99,7 +99,7 @@ export const KanbanColumn = memo(function KanbanColumn({
         {canReorder && dragHandleProps && (
           <button
             type="button"
-            className={`-ml-1 mt-0.5 shrink-0 cursor-grab touch-none rounded p-0.5 transition active:cursor-grabbing ${
+            className={`-ml-1 mt-0.5 shrink-0 cursor-grab touch-none rounded p-1.5 transition active:cursor-grabbing sm:p-0.5 ${
               isGlass
                 ? 'text-white/50 hover:bg-white/10 hover:text-white/80'
                 : 'text-gray-400 hover:bg-gray-200 hover:text-gray-600'

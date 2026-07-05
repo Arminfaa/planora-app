@@ -451,6 +451,10 @@ export function KanbanBoard({
           <DndContext
             sensors={sensors}
             collisionDetection={kanbanCollisionDetection}
+            autoScroll={{
+              threshold: { x: 0.12, y: 0.15 },
+              acceleration: 12,
+            }}
             onDragStart={handleDragStart}
             onDragOver={handleDragOver}
             onDragEnd={handleDragEnd}
@@ -496,7 +500,7 @@ export function KanbanBoard({
                     variant="glass"
                   />
                 ) : (
-                  <div className="flex w-72 shrink-0 items-start pt-1">
+                  <div className="flex w-[min(100%,calc(100vw-2.5rem))] shrink-0 items-start pt-1 sm:w-72">
                     <Button
                       type="button"
                       variant="secondary"

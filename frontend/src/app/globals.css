@@ -298,6 +298,8 @@
 .kanban-board-scroll {
   scrollbar-width: thin;
   scrollbar-color: rgba(255, 255, 255, 0.38) rgba(255, 255, 255, 0.08);
+  overscroll-behavior-x: contain;
+  -webkit-overflow-scrolling: touch;
 }
 
 .kanban-board-scroll::-webkit-scrollbar {
@@ -333,6 +335,8 @@
 .kanban-column-scroll {
   scrollbar-width: thin;
   scrollbar-color: rgba(255, 255, 255, 0.32) transparent;
+  overscroll-behavior-y: contain;
+  touch-action: pan-y;
 }
 
 .kanban-column-scroll::-webkit-scrollbar {

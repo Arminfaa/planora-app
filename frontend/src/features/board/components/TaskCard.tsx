@@ -1,7 +1,7 @@
 'use client';
 
 import { Checkbox } from 'antd';
-import { memo } from 'react';
+import { memo, type HTMLAttributes } from 'react';
 import { useSortable } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
 import type { BoardTask } from '../types';
@@ -12,6 +12,7 @@ import { formatDueDate, isDueDateOverdue } from '@/features/tasks/utils/dates';
 import { getTaskAttachmentCount } from '../utils/taskMeta';
 import { PaperclipIcon } from './PaperclipIcon';
 import { EditIcon } from './EditIcon';
+import { GripVerticalIcon } from './GripVerticalIcon';
 import { TaskChecklistPreview } from './TaskChecklistPreview';
 import { AssigneeDisplay } from './AssigneeDisplay';
 
@@ -26,6 +27,7 @@ interface TaskCardProps {
     isDone: boolean,
   ) => void | Promise<void>;
   onAttachmentClick?: (task: BoardTask) => void;
+  dragHandleProps?: HTMLAttributes<HTMLButtonElement>;
   isDragOverlay?: boolean;
   isDimmed?: boolean;
   isHighlighted?: boolean;
@@ -41,6 +43,7 @@ export const TaskCard = memo(function TaskCard({
   onToggleComplete,
   onChecklistItemToggle,
   onAttachmentClick,
+  dragHandleProps,
   isDragOverlay = false,
   isDimmed = false,
   isHighlighted = false,
@@ -88,7 +91,19 @@ export const TaskCard = memo(function TaskCard({
       )}
 
       <div className={`p-3 ${attachmentCount > 0 ? 'pr-10' : ''}`}>
-        <div className="flex items-start gap-2">
+        <div className="flex items-start gap-1.5 sm:gap-2">
+          {dragHandleProps && (
+            <button
+              type="button"
+              className="-ml-0.5 mt-0.5 shrink-0 cursor-grab touch-none rounded p-1.5 text-gray-400 transition active:cursor-grabbing hover:bg-gray-100 hover:text-gray-600 sm:p-0.5"
+              aria-label={`Drag ${task.title}`}
+              title="Hold to drag"
+              {...dragHandleProps}
+            >
+              <GripVerticalIcon className="h-4 w-4" />
+            </button>
+          )}
+
           <div
             className="shrink-0 pt-0.5"
             onClick={stopCardPointer}
@@ -232,12 +247,7 @@ export const SortableTaskCard = memo(function SortableTaskCard({
   };
 
   return (
-    <div
-      ref={setNodeRef}
-      style={style}
-      {...(canDrag ? attributes : {})}
-      {...(canDrag ? listeners : {})}
-    >
+    <div ref={setNodeRef} style={style} {...(canDrag ? attributes : {})}>
       <TaskCard
         task={task}
         isCompleted={isCompleted}
@@ -245,6 +255,7 @@ export const SortableTaskCard = memo(function SortableTaskCard({
         onToggleComplete={onToggleComplete}
         onChecklistItemToggle={onChecklistItemToggle}
         onAttachmentClick={onAttachmentClick}
+        dragHandleProps={canDrag ? listeners : undefined}
         isDimmed={isDimmed}
         isHighlighted={isHighlighted}
         canEdit={canEdit}
