@@ -6,6 +6,7 @@ import { ApiResponse } from '../utils/ApiResponse';
 import { asyncHandler } from '../utils/asyncHandler';
 import { clearAuthCookies, setAuthCookies } from '../utils/cookies';
 import { REFRESH_TOKEN_COOKIE } from '../constants/auth';
+import { extractAccessToken } from '../utils/extractAccessToken';
 import type {
   ChangePasswordInput,
   LoginInput,
@@ -68,6 +69,18 @@ export const getMe = asyncHandler(
   async (req: AuthenticatedRequest, res: Response) => {
     const profile = await authService.getProfile(req.user!.userId);
     ApiResponse.success(res, profile, 'Profile retrieved');
+  },
+);
+
+export const getSocketToken = asyncHandler(
+  async (req: AuthenticatedRequest, res: Response) => {
+    const token = extractAccessToken(req);
+
+    if (!token) {
+      throw new ApiError(401, 'Authentication required');
+    }
+
+    ApiResponse.success(res, { token }, 'Socket token retrieved');
   },
 );
 

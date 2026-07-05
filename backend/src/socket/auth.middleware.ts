@@ -20,6 +20,16 @@ function parseCookieHeader(header: string): Record<string, string> {
 }
 
 function extractAccessToken(socket: Socket): string | undefined {
+  const authToken = socket.handshake.auth?.token;
+  if (typeof authToken === 'string' && authToken.length > 0) {
+    return authToken;
+  }
+
+  const authHeader = socket.handshake.headers.authorization;
+  if (authHeader?.startsWith('Bearer ')) {
+    return authHeader.split(' ')[1];
+  }
+
   const cookieHeader = socket.handshake.headers.cookie;
   if (!cookieHeader) {
     return undefined;
