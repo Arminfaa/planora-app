@@ -653,7 +653,7 @@ export function LandingPage() {
       {/* Features — bento grid */}
       <section
         id="features"
-        className="border-b border-gray-100 bg-white py-10 sm:py-14"
+        className="border-b border-gray-100 bg-white py-10 sm:py-14 md:py-20"
       >
         <div className="mx-auto max-w-6xl px-4 sm:px-6">
           <div className="mx-auto max-w-2xl text-center">
@@ -733,7 +733,7 @@ export function LandingPage() {
       {/* How it works */}
       <section
         id="how-it-works"
-        className="border-b border-gray-100 bg-gradient-to-b from-gray-50 to-white py-10 sm:py-14"
+        className="border-b border-gray-100 bg-gradient-to-b from-gray-50 to-white py-10 sm:py-14 md:py-20"
       >
         <div className="mx-auto max-w-6xl px-4 sm:px-6">
           <div className="mx-auto max-w-2xl text-center">
