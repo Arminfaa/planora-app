@@ -3,7 +3,7 @@
 import { useForm, Controller } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { Button } from 'antd';
 import type { BoardColumn, BoardTask } from '../types';
 import type { ProjectMember } from '@/features/projects/types';
@@ -40,6 +40,16 @@ const schema = z.object({
 type FormData = z.infer<typeof schema>;
 
 const FORM_ID = 'task-edit-form';
+
+function getTaskFormValues(task: BoardTask): FormData {
+  return {
+    title: task.title,
+    description: task.description ?? '',
+    priority: task.priority,
+    columnId: task.columnId,
+    dueDate: toDateInputValue(task.dueDate),
+  };
+}
 
 function arraysEqual(a: string[], b: string[]): boolean {
   if (a.length !== b.length) return false;
@@ -78,20 +88,17 @@ export function TaskModal({
   const taskLabels = normalizeTaskLabels(task.labels);
   const checklistItems = task.checklistItems ?? [];
 
+  useEffect(() => {
+    setAssigneeIds(getTaskAssignees(task).map((assignee) => assignee.id));
+  }, [task.id, task]);
+
   const {
-    register,
     control,
     handleSubmit,
     formState: { errors, isSubmitting },
   } = useForm<FormData>({
     resolver: zodResolver(schema),
-    defaultValues: {
-      title: task.title,
-      description: task.description ?? '',
-      priority: task.priority,
-      columnId: task.columnId,
-      dueDate: toDateInputValue(task.dueDate),
-    },
+    values: getTaskFormValues(task),
   });
 
   const onSubmit = async (data: FormData) => {
@@ -179,10 +186,12 @@ export function TaskModal({
         onSubmit={handleSubmit(onSubmit)}
         className="space-y-4"
       >
-        <Input
-          label="Title"
-          error={errors.title?.message}
-          {...register('title')}
+        <Controller
+          name="title"
+          control={control}
+          render={({ field }) => (
+            <Input label="Title" error={errors.title?.message} {...field} />
+          )}
         />
 
         <Controller

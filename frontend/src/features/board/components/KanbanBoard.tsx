@@ -111,7 +111,7 @@ export function KanbanBoard({
   const pathname = usePathname();
   const searchParams = useSearchParams();
   const activeTaskSlug = searchParams.get('task');
-  const [selectedTaskId, setSelectedTaskId] = useState<string | null>(null);
+  const [editingTask, setEditingTask] = useState<BoardTask | null>(null);
   const [editingColumn, setEditingColumn] = useState<BoardColumn | null>(null);
   const [showCreateColumn, setShowCreateColumn] = useState(false);
   const [actionError, setActionError] = useState('');
@@ -301,10 +301,12 @@ export function KanbanBoard({
   if (activeTaskSlug !== prevActiveTaskSlug) {
     setPrevActiveTaskSlug(activeTaskSlug);
     if (!activeTaskSlug) {
-      setSelectedTaskId(null);
+      setEditingTask(null);
     } else if (canEditTasks) {
       const task = findTaskBySlug(columns, activeTaskSlug);
-      setSelectedTaskId(task?.id ?? null);
+      if (task) {
+        setEditingTask(task);
+      }
     }
   }
 
@@ -314,21 +316,19 @@ export function KanbanBoard({
     }
   }, [canEditTasks, activeTaskSlug, updateTaskQuery]);
 
-  const taskFromSlug =
-    activeTaskSlug && canEditTasks
-      ? findTaskBySlug(columns, activeTaskSlug)
-      : undefined;
-  const effectiveTaskId = selectedTaskId ?? taskFromSlug?.id ?? null;
-  const selectedTask = effectiveTaskId
-    ? (findTaskById(columns, effectiveTaskId) ?? null)
+  const columnTask = editingTask
+    ? findTaskById(columns, editingTask.id)
+    : undefined;
+  const modalTask = editingTask
+    ? { ...(columnTask ?? {}), ...editingTask }
     : null;
-  const highlightedTaskId =
-    attachmentPreviewTask?.id ?? effectiveTaskId ?? null;
+  const highlightedTaskId = attachmentPreviewTask?.id ?? modalTask?.id ?? null;
 
   const closeTask = useCallback(() => {
-    setSelectedTaskId(null);
+    setEditingTask(null);
+    setPrevActiveTaskSlug(activeTaskSlug);
     updateTaskQuery(null);
-  }, [updateTaskQuery]);
+  }, [activeTaskSlug, updateTaskQuery]);
 
   const closeAttachmentPreview = useCallback(() => {
     setAttachmentPreviewTask(null);
@@ -337,7 +337,7 @@ export function KanbanBoard({
   const openTask = useCallback(
     (task: BoardTask) => {
       if (!canEditTasks) return;
-      setSelectedTaskId(task.id);
+      setEditingTask(task);
       updateTaskQuery(task.slug);
     },
     [canEditTasks, updateTaskQuery],
@@ -557,9 +557,10 @@ export function KanbanBoard({
         </div>
       </div>
 
-      {selectedTask && canEditTasks && (
+      {modalTask && canEditTasks && (
         <TaskModal
-          task={selectedTask}
+          key={modalTask.id}
+          task={modalTask}
           columns={columns}
           members={members}
           projectId={projectId}
