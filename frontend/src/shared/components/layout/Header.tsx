@@ -4,6 +4,7 @@ import Link from 'next/link';
 import dynamic from 'next/dynamic';
 import { usePathname } from 'next/navigation';
 import { UserMenuDropdown } from '@/shared/components/layout/UserMenuDropdown';
+import { cn } from '@/lib/utils';
 
 const GlobalSearch = dynamic(
   () =>
@@ -34,21 +35,44 @@ function getHeaderNavLinks(pathname: string) {
   return [];
 }
 
+function isBoardKanbanPage(pathname: string) {
+  return /^\/dashboard\/projects\/[^/]+\/boards\/[^/]+\/?$/.test(pathname);
+}
+
+function getHeaderContainerClass(pathname: string) {
+  if (isBoardKanbanPage(pathname)) {
+    return 'w-full';
+  }
+
+  if (pathname.startsWith('/dashboard')) {
+    return 'w-full max-w-7xl';
+  }
+
+  return 'w-full';
+}
+
 export function Header() {
   const pathname = usePathname();
   const navLinks = getHeaderNavLinks(pathname);
 
   return (
     <header className="border-b border-gray-200 bg-white">
-      <div className="mx-auto flex h-16 items-center gap-4 px-4 sm:px-6">
+      <div
+        className={cn(
+          'mx-auto flex h-16 items-center gap-4 px-4 sm:px-6',
+          getHeaderContainerClass(pathname),
+        )}
+      >
         <div className="flex min-w-0 items-center gap-3">
           <Link
             href="/dashboard"
             className="group flex shrink-0 items-center gap-2.5"
           >
-            <span className="flex h-8 w-8 items-center justify-center rounded-lg bg-gradient-to-br from-primary-500 to-violet-600 text-sm font-bold text-white shadow-sm shadow-primary-500/20 transition group-hover:shadow-md group-hover:shadow-primary-500/25">
-              P
-            </span>
+            <img
+              src="/logo.webp"
+              alt={appName}
+              className="h-8 w-8 shrink-0 rounded-lg object-contain shadow-sm shadow-primary-500/20 transition group-hover:shadow-md group-hover:shadow-primary-500/25"
+            />
             <span className="hidden text-lg font-semibold text-gray-900 sm:inline">
               {appName}
             </span>

@@ -21,9 +21,11 @@ export function LandingNavbar() {
     <header className="sticky top-0 z-50 border-b border-white/30 bg-white/75 backdrop-blur-xl">
       <div className="mx-auto flex h-16 max-w-7xl items-center justify-between px-4 sm:px-6">
         <Link href="/" className="group flex min-w-0 items-center gap-2.5">
-          <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-gradient-to-br from-primary-500 to-violet-600 text-sm font-bold text-white shadow-sm shadow-primary-500/25 transition group-hover:shadow-md group-hover:shadow-primary-500/30">
-            P
-          </span>
+          <img
+            src="/logo.webp"
+            alt={appName}
+            className="h-8 w-8 shrink-0 rounded-lg object-contain shadow-sm shadow-primary-500/25 transition group-hover:shadow-md group-hover:shadow-primary-500/30"
+          />
           <span className="hidden truncate text-lg font-semibold text-gray-900 md:inline">
             {appName}
           </span>

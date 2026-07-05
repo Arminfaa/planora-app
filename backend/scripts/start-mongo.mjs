@@ -47,7 +47,8 @@ const mongod = findMongod();
 const child = spawn(mongod, ['--config', configPath], {
   cwd: mongoDir,
   stdio: 'inherit',
-  shell: process.platform === 'win32',
+  // Avoid shell: true on Windows — paths like "C:\Program Files\..." break without quoting.
+  windowsHide: true,
 });
 
 child.on('error', (error) => {

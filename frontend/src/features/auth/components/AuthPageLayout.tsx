@@ -1,6 +1,8 @@
 import Link from 'next/link';
 import { AuthShowcase } from './AuthShowcase';
 
+const appName = process.env.NEXT_PUBLIC_APP_NAME ?? 'Project Management';
+
 interface AuthPageLayoutProps {
   children: React.ReactNode;
 }
@@ -21,9 +23,11 @@ export function AuthPageLayout({ children }: AuthPageLayoutProps) {
 
           <div className="flex flex-col justify-center px-8 py-10 sm:px-12 lg:py-12">
             <div className="mb-8 flex items-center justify-center gap-2.5">
-              <div className="flex h-10 w-10 items-center justify-center rounded-full bg-primary-600 shadow-md shadow-primary-600/30">
-                <span className="text-lg font-bold text-white">P</span>
-              </div>
+              <img
+                src="/logo.webp"
+                alt={appName}
+                className="h-10 w-10 shrink-0 rounded-lg object-contain shadow-md shadow-primary-600/30"
+              />
               <Link
                 href="/"
                 className="text-xl font-bold tracking-tight text-gray-900 transition hover:text-primary-600"
