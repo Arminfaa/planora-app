@@ -18,7 +18,7 @@ export function LandingNavbar() {
 
   return (
     <header className="sticky top-0 z-50 border-b border-white/30 bg-white/75 backdrop-blur-xl">
-      <div className="mx-auto flex h-16 w-full max-w-6xl items-center justify-between px-4 sm:px-6">
+      <div className="mx-auto flex h-16 w-full max-w-6xl min-[1400px]:max-w-[1380px] items-center justify-between px-4 sm:px-6">
         <Link href="/" className="group flex min-w-0 items-center gap-2.5">
           <AppLogo className="rounded-lg shadow-sm shadow-primary-500/25 transition group-hover:shadow-md group-hover:shadow-primary-500/30" />
           <span className="hidden truncate text-lg font-semibold text-gray-900 md:inline">

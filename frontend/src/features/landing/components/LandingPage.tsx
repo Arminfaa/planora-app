@@ -674,7 +674,7 @@ export function LandingPage() {
         id="features"
         className="border-b border-gray-100 bg-white py-10 sm:py-14 md:py-20"
       >
-        <div className="mx-auto max-w-6xl px-4 sm:px-6">
+        <div className="mx-auto max-w-6xl px-4 sm:px-6 min-[1400px]:max-w-[1380px]">
           <div className="mx-auto max-w-2xl text-center">
             <p className="text-sm font-semibold uppercase tracking-wider text-primary-600">
               Features
@@ -754,7 +754,7 @@ export function LandingPage() {
         id="how-it-works"
         className="border-b border-gray-100 bg-gradient-to-b from-gray-50 to-white py-10 sm:py-14 md:py-20"
       >
-        <div className="mx-auto max-w-6xl px-4 sm:px-6">
+        <div className="mx-auto max-w-6xl px-4 sm:px-6 min-[1400px]:max-w-[1380px]">
           <div className="mx-auto max-w-2xl text-center">
             <p className="text-sm font-semibold uppercase tracking-wider text-primary-600">
               How it works
@@ -818,7 +818,7 @@ export function LandingPage() {
 
       {/* Footer */}
       <footer className="border-t border-gray-100 bg-white py-6">
-        <div className="mx-auto flex max-w-6xl flex-col items-center justify-between gap-6 px-4 sm:flex-row sm:px-6">
+        <div className="mx-auto flex max-w-6xl min-[1400px]:max-w-[1380px] flex-col items-center justify-between gap-6 px-4 sm:flex-row sm:px-6">
           <div className="flex items-center gap-2">
             <AppLogo size="xs" className="rounded-md" />
             <p className="text-sm text-gray-500">
