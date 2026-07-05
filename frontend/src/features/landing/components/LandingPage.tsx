@@ -536,7 +536,7 @@ function ProductPreview({ compact = false }: { compact?: boolean }) {
         className={`relative grid lg:grid-cols-5 lg:items-center ${compact ? 'gap-2.5 lg:gap-3' : 'gap-4 lg:gap-5'}`}
       >
         <div
-          className={`flex flex-col lg:col-span-3 ${compact ? 'gap-2.5' : 'gap-4'}`}
+          className={`flex flex-col lg:col-span-3 ${compact ? 'gap-3' : 'gap-4'}`}
         >
           <div className="landing-hero-card landing-hero-card-a">
             <KanbanPreview compact={compact} />
