@@ -141,6 +141,15 @@ export class BoardRepository extends BaseRepository {
     });
     return board?.projectId ?? null;
   }
+
+  async findSlugById(
+    boardId: string,
+  ): Promise<{ slug: string; projectId: string; name: string } | null> {
+    return this.db.board.findUnique({
+      where: { id: boardId },
+      select: { slug: true, projectId: true, name: true },
+    });
+  }
 }
 
 export const boardRepository = new BoardRepository();

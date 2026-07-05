@@ -139,10 +139,21 @@ export const updateTask = asyncHandler(
     const isMove = input.columnId !== undefined || input.position !== undefined;
     const eventType = isMove ? 'task:moved' : 'task:updated';
 
+    let movePayload: Record<string, unknown> = { task };
+    if (isMove && input.columnId && input.columnId !== existing?.columnId) {
+      const fromColumn = await columnRepository.findById(existing!.columnId);
+      const toColumn = await columnRepository.findById(input.columnId);
+      movePayload = {
+        task,
+        fromColumnName: fromColumn?.name,
+        toColumnName: toColumn?.name,
+      };
+    }
+
     await notifyBoardTaskEvent(req.user!.userId, eventType, {
       taskId,
       columnId: task.columnId,
-      payload: { task },
+      payload: movePayload,
     });
 
     if (existing) {
@@ -205,11 +216,19 @@ export const deleteTask = asyncHandler(
 
     await taskService.delete(req.user!.userId, taskId);
 
-    await notifyBoardTaskEvent(req.user!.userId, 'task:deleted', {
-      columnId: columnId ?? undefined,
-      taskId,
-      payload: { taskId, columnId },
-    });
+    if (existing) {
+      await notifyBoardTaskEvent(req.user!.userId, 'task:deleted', {
+        columnId: columnId ?? undefined,
+        taskId,
+        payload: {
+          task: {
+            id: existing.id,
+            slug: existing.slug,
+            title: existing.title,
+          },
+        },
+      });
+    }
 
     if (existing && columnId) {
       const boardId = await columnRepository.getBoardId(columnId);

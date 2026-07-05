@@ -4,6 +4,7 @@ import { taskRepository } from '../repositories/task.repository';
 import { serializeAttachmentUrl } from '../services/storage/storage.service';
 import { emitBoardEvent, emitProjectEvent } from '../socket';
 import type { BoardEventType, ProjectEventType } from '../socket/types';
+import { dispatchBoardTaskNotifications } from '../services/notification-dispatch.service';
 
 async function resolveBoardIdFromColumn(
   columnId: string,
@@ -107,6 +108,7 @@ export async function notifyBoardTaskEvent(
   if (!boardId) return;
 
   let payload = options.payload;
+  const dispatchPayload = payload;
 
   if (type === 'task:moved') {
     const board = await boardRepository.findById(boardId);
@@ -128,6 +130,12 @@ export async function notifyBoardTaskEvent(
     userId,
     payload,
   });
+
+  void dispatchBoardTaskNotifications(userId, type, {
+    boardId,
+    payload: dispatchPayload,
+    taskId: options.taskId,
+  }).catch(() => undefined);
 }
 
 type ColumnEventType =

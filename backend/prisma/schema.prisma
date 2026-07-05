@@ -37,6 +37,14 @@ enum ProjectGroupMessageType {
   ACTIVITY
 }
 
+enum NotificationType {
+  TASK_CREATED
+  TASK_UPDATED
+  TASK_MOVED
+  TASK_DELETED
+  GROUP_MESSAGE
+}
+
 // ─── User ────────────────────────────────────────────────
 
 model User {
@@ -55,6 +63,10 @@ model User {
   comments            Comment[]
   projectGroupMessages ProjectGroupMessage[]
   refreshTokens        RefreshToken[]
+  notifications        Notification[]
+  notificationActors   Notification[]        @relation("NotificationActor")
+  pushSubscriptions    PushSubscription[]
+  notificationPreference NotificationPreference?
 
   @@map("users")
 }
@@ -327,4 +339,56 @@ model ProjectGroupAttachment {
   message ProjectGroupMessage @relation(fields: [messageId], references: [id], onDelete: Cascade)
 
   @@map("project_group_attachments")
+}
+
+// ─── Notifications ─────────────────────────────────────────
+
+model Notification {
+  id        String           @id @default(auto()) @map("_id") @db.ObjectId
+  userId    String           @db.ObjectId
+  type      NotificationType
+  title     String
+  body      String
+  href      String
+  projectId String?          @db.ObjectId
+  boardId   String?          @db.ObjectId
+  taskId    String?          @db.ObjectId
+  actorId   String?          @db.ObjectId
+  readAt    DateTime?
+  createdAt DateTime         @default(now())
+
+  user  User  @relation(fields: [userId], references: [id])
+  actor User? @relation("NotificationActor", fields: [actorId], references: [id])
+
+  @@index([userId, createdAt])
+  @@index([userId, readAt])
+  @@map("notifications")
+}
+
+model PushSubscription {
+  id        String   @id @default(auto()) @map("_id") @db.ObjectId
+  userId    String   @db.ObjectId
+  endpoint  String   @unique
+  p256dh    String
+  auth      String
+  userAgent String?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  user User @relation(fields: [userId], references: [id])
+
+  @@index([userId])
+  @@map("push_subscriptions")
+}
+
+model NotificationPreference {
+  userId        String   @id @map("_id") @db.ObjectId
+  taskChanges   Boolean  @default(true)
+  groupMessages Boolean  @default(true)
+  pushEnabled   Boolean  @default(true)
+  updatedAt     DateTime @updatedAt
+
+  user User @relation(fields: [userId], references: [id])
+
+  @@map("notification_preferences")
 }

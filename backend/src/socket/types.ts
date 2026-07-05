@@ -47,3 +47,7 @@ export function getBoardRoom(boardId: string): string {
 export function getProjectRoom(projectId: string): string {
   return `project:${projectId}`;
 }
+
+export function getUserRoom(userId: string): string {
+  return `user:${userId}`;
+}

@@ -23,7 +23,7 @@ interface AuthContextValue {
   isAuthenticated: boolean;
   login: (
     data: LoginFormData,
-    options?: { inviteToken?: string },
+    options?: { inviteToken?: string; redirectTo?: string },
   ) => Promise<void>;
   register: (data: RegisterFormData, inviteToken?: string) => Promise<void>;
   logout: () => Promise<void>;
@@ -70,7 +70,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }, [loadUser]);
 
   const login = useCallback(
-    async (data: LoginFormData, options?: { inviteToken?: string }) => {
+    async (
+      data: LoginFormData,
+      options?: { inviteToken?: string; redirectTo?: string },
+    ) => {
       invalidateLoadUser();
 
       const result = await authService.login(data.email, data.password);
@@ -81,6 +84,16 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
       if (options?.inviteToken) {
         router.replace(`/accept-invite?token=${options.inviteToken}`);
+        return;
+      }
+
+      const redirectTo = options?.redirectTo;
+      if (
+        redirectTo &&
+        redirectTo.startsWith('/') &&
+        !redirectTo.startsWith('//')
+      ) {
+        router.replace(redirectTo);
         return;
       }
 

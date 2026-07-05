@@ -24,6 +24,10 @@ const envSchema = z.object({
   CLOUDINARY_API_KEY: z.string().optional(),
   CLOUDINARY_API_SECRET: z.string().optional(),
   API_PUBLIC_URL: z.string().default('http://localhost:5000'),
+  VAPID_PUBLIC_KEY: z.string().optional(),
+  VAPID_PRIVATE_KEY: z.string().optional(),
+  VAPID_SUBJECT: z.string().default('mailto:admin@localhost'),
+  APP_PUBLIC_URL: z.string().default('http://localhost:3000'),
 });
 
 export const env = envSchema.parse(process.env);

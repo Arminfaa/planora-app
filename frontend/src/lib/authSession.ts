@@ -26,7 +26,8 @@ export function redirectToLogin(): void {
   const pathname = window.location.pathname;
   if (isPublicPath(pathname)) return;
 
-  window.location.href = '/login';
+  const redirect = encodeURIComponent(`${pathname}${window.location.search}`);
+  window.location.href = `/login?redirect=${redirect}`;
 }
 
 export async function refreshSession(): Promise<void> {

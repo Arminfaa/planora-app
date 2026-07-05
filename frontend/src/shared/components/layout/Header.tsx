@@ -24,6 +24,10 @@ function getHeaderNavLinks(pathname: string) {
     return [{ href: '/dashboard', label: 'Dashboard' }];
   }
 
+  if (pathname.startsWith('/dashboard/notifications')) {
+    return [{ href: '/dashboard', label: 'Dashboard' }];
+  }
+
   if (pathname.startsWith('/dashboard/')) {
     return [
       { href: '/dashboard', label: 'Dashboard' },

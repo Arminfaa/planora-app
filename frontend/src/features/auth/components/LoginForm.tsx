@@ -12,9 +12,13 @@ import { getApiErrorMessage } from '@/lib/api';
 
 interface LoginFormProps {
   inviteToken?: string | null;
+  redirectTo?: string | null;
 }
 
-export function LoginForm({ inviteToken = null }: LoginFormProps) {
+export function LoginForm({
+  inviteToken = null,
+  redirectTo = null,
+}: LoginFormProps) {
   const { login } = useAuth();
   const [error, setError] = useState('');
 
@@ -29,7 +33,10 @@ export function LoginForm({ inviteToken = null }: LoginFormProps) {
   const onSubmit = async (data: LoginFormData) => {
     setError('');
     try {
-      await login(data, inviteToken ? { inviteToken } : undefined);
+      await login(
+        data,
+        inviteToken ? { inviteToken } : redirectTo ? { redirectTo } : undefined,
+      );
     } catch (err) {
       setError(getApiErrorMessage(err));
     }
