@@ -447,7 +447,7 @@ export function KanbanBoard({
           )}
         </div>
 
-        <div className="kanban-board-scroll sticky top-16 z-10 mt-2 h-[calc(100dvh-1rem)] overflow-x-auto overflow-y-hidden pb-2">
+        <div className="kanban-board-scroll sticky top-16 z-10 mt-2 h-[calc(100dvh-1rem)] overflow-x-auto overflow-y-hidden pb-2 max-sm:-mx-4 max-sm:px-4">
           <DndContext
             sensors={sensors}
             collisionDetection={kanbanCollisionDetection}
@@ -500,7 +500,7 @@ export function KanbanBoard({
                     variant="glass"
                   />
                 ) : (
-                  <div className="flex w-[min(100%,calc(100vw-2.5rem))] shrink-0 items-start pt-1 sm:w-72">
+                  <div className="flex w-[calc(100dvw-2rem)] min-w-[calc(100dvw-2rem)] shrink-0 items-start pt-1 sm:w-72 sm:min-w-0">
                     <Button
                       type="button"
                       variant="secondary"

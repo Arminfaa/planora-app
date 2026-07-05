@@ -336,7 +336,18 @@
   scrollbar-width: thin;
   scrollbar-color: rgba(255, 255, 255, 0.32) transparent;
   overscroll-behavior-y: contain;
-  touch-action: pan-y;
+}
+
+@media (max-width: 639px) {
+  .kanban-column-scroll {
+    touch-action: pan-x pan-y;
+  }
+}
+
+@media (min-width: 640px) {
+  .kanban-column-scroll {
+    touch-action: pan-y;
+  }
 }
 
 .kanban-column-scroll::-webkit-scrollbar {

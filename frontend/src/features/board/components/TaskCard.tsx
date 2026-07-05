@@ -15,6 +15,7 @@ import { EditIcon } from './EditIcon';
 import { GripVerticalIcon } from './GripVerticalIcon';
 import { TaskChecklistPreview } from './TaskChecklistPreview';
 import { AssigneeDisplay } from './AssigneeDisplay';
+import { useMediaQuery } from '@/shared/hooks/useMediaQuery';
 
 interface TaskCardProps {
   task: BoardTask;
@@ -95,7 +96,7 @@ export const TaskCard = memo(function TaskCard({
           {dragHandleProps && (
             <button
               type="button"
-              className="-ml-0.5 mt-0.5 shrink-0 cursor-grab touch-none rounded p-1.5 text-gray-400 transition active:cursor-grabbing hover:bg-gray-100 hover:text-gray-600 sm:p-0.5"
+              className="-ml-0.5 mt-0.5 shrink-0 cursor-grab touch-none rounded p-1.5 text-gray-400 transition active:cursor-grabbing hover:bg-gray-100 hover:text-gray-600"
               aria-label={`Drag ${task.title}`}
               title="Hold to drag"
               {...dragHandleProps}
@@ -227,6 +228,7 @@ export const SortableTaskCard = memo(function SortableTaskCard({
   canToggleChecklist = false,
   canDrag = true,
 }: SortableTaskCardProps) {
+  const isMobile = useMediaQuery('(max-width: 639px)');
   const {
     attributes,
     listeners,
@@ -247,7 +249,12 @@ export const SortableTaskCard = memo(function SortableTaskCard({
   };
 
   return (
-    <div ref={setNodeRef} style={style} {...(canDrag ? attributes : {})}>
+    <div
+      ref={setNodeRef}
+      style={style}
+      {...(canDrag ? attributes : {})}
+      {...(canDrag && !isMobile ? listeners : {})}
+    >
       <TaskCard
         task={task}
         isCompleted={isCompleted}
@@ -255,7 +262,7 @@ export const SortableTaskCard = memo(function SortableTaskCard({
         onToggleComplete={onToggleComplete}
         onChecklistItemToggle={onChecklistItemToggle}
         onAttachmentClick={onAttachmentClick}
-        dragHandleProps={canDrag ? listeners : undefined}
+        dragHandleProps={canDrag && isMobile ? listeners : undefined}
         isDimmed={isDimmed}
         isHighlighted={isHighlighted}
         canEdit={canEdit}
