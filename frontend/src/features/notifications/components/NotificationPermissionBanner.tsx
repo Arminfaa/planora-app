@@ -53,7 +53,7 @@ export function NotificationPermissionBanner() {
   if (bannerVariant === 'blocked') {
     return (
       <div className="border-b border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-900">
-        <div className="mx-auto flex max-w-7xl flex-wrap items-center justify-between gap-3">
+        <div className="mx-auto flex max-w-7xl flex-wrap items-center justify-between gap-3 px-4 sm:px-6">
           <p>
             Notifications are blocked in your browser. Open site settings to
             allow alerts for {user.name.split(' ')[0] || 'your account'}.
@@ -74,7 +74,7 @@ export function NotificationPermissionBanner() {
   if (bannerVariant === 'account') {
     return (
       <div className="border-b border-primary-100 bg-primary-50 px-4 py-3 text-sm text-primary-950">
-        <div className="mx-auto flex max-w-7xl flex-wrap items-center justify-between gap-3">
+        <div className="mx-auto flex max-w-7xl flex-wrap items-center justify-between gap-3 px-4 sm:px-6">
           <p>
             Turn on push notifications for{' '}
             <span className="font-semibold">{user.name}</span> on this device.
@@ -116,7 +116,7 @@ export function NotificationPermissionBanner() {
 
   return (
     <div className="border-b border-primary-100 bg-primary-50 px-4 py-3 text-sm text-primary-950">
-      <div className="mx-auto flex max-w-7xl flex-wrap items-center justify-between gap-3">
+      <div className="mx-auto flex max-w-7xl flex-wrap items-center justify-between gap-3 px-4 sm:px-6">
         <p>
           Enable notifications to get alerts for task changes and project group
           messages on desktop and mobile.

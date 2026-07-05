@@ -199,6 +199,10 @@ export function resolveNotificationPromptBanner(params: {
     return 'none';
   }
 
+  if (record.decision === 'opted_in') {
+    return 'none';
+  }
+
   if (isSnoozeActive(record)) {
     return 'none';
   }

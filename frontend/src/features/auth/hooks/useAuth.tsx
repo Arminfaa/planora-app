@@ -14,10 +14,7 @@ import { useRouter } from 'next/navigation';
 import { authService } from '../services/auth.service';
 import { startSessionRefresh, stopSessionRefresh } from '@/lib/authSession';
 import { connectSocket, disconnectSocket } from '@/lib/socket';
-import {
-  getCurrentPushEndpoint,
-  unsubscribeCurrentDevicePush,
-} from '@/features/notifications/lib/push-client';
+import { getCurrentPushEndpoint } from '@/features/notifications/lib/push-client';
 import { notificationService } from '@/features/notifications/services/notification.service';
 import type { LoginFormData, RegisterFormData } from '../types';
 import type { User } from '@/shared/types/api';
@@ -142,9 +139,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
           .unsubscribePush(endpoint)
           .catch(() => undefined);
       }
-      await unsubscribeCurrentDevicePush();
     } catch {
-      // Best-effort push cleanup before logout.
+      // Detach this device from the current user on the server only.
     }
 
     try {

@@ -1,6 +1,6 @@
 'use client';
 
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { useAuth } from '@/features/auth/hooks/useAuth';
 import { notificationService } from '../services/notification.service';
 import type { PushStatus } from '../types';
@@ -16,6 +16,7 @@ import {
   isPushSupported,
 } from '../lib/push-client';
 import { useNotificationPromptStorage } from './useNotificationPromptStorage';
+import { useNotifications } from './useNotifications';
 
 const defaultPushStatus: PushStatus = {
   pushEnabled: true,
@@ -25,6 +26,7 @@ const defaultPushStatus: PushStatus = {
 
 export function useNotificationPromptState() {
   const { user } = useAuth();
+  const { enablePushForAccount } = useNotifications();
   const userId = user?.id;
   const { record, markOptedIn, markOptedOut, clearRecord } =
     useNotificationPromptStorage(userId);
@@ -34,6 +36,7 @@ export function useNotificationPromptState() {
   const [pushStatus, setPushStatus] = useState<PushStatus>(defaultPushStatus);
   const [sessionDismissed, setSessionDismissed] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
+  const autoResubscribeAttempted = useRef<string | null>(null);
 
   const refresh = useCallback(async () => {
     if (!userId || !isPushSupported()) {
@@ -63,8 +66,40 @@ export function useNotificationPromptState() {
   }, [userId]);
 
   useEffect(() => {
+    autoResubscribeAttempted.current = null;
+  }, [userId]);
+
+  useEffect(() => {
     void refresh();
   }, [refresh]);
+
+  useEffect(() => {
+    if (isLoading || !userId) return;
+    if (record.decision !== 'opted_in') return;
+    if (permission !== 'granted') return;
+    if (!pushStatus.pushEnabled) return;
+    if (pushStatus.subscribedOnThisDevice) return;
+    if (autoResubscribeAttempted.current === userId) return;
+
+    autoResubscribeAttempted.current = userId;
+
+    void enablePushForAccount({ silent: true })
+      .then((enabled) => {
+        if (enabled) {
+          void refresh();
+        }
+      })
+      .catch(() => undefined);
+  }, [
+    enablePushForAccount,
+    isLoading,
+    permission,
+    pushStatus.pushEnabled,
+    pushStatus.subscribedOnThisDevice,
+    record.decision,
+    refresh,
+    userId,
+  ]);
 
   const bannerVariant: NotificationPromptBannerVariant =
     !userId || !isPushSupported() || isLoading

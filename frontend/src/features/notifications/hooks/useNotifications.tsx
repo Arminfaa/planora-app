@@ -30,7 +30,7 @@ interface NotificationContextValue {
   permission: NotificationPermission | 'unsupported';
   isPushSupported: boolean;
   enableNotifications: () => Promise<boolean>;
-  enablePushForAccount: () => Promise<boolean>;
+  enablePushForAccount: (options?: { silent?: boolean }) => Promise<boolean>;
   refreshUnreadCount: () => Promise<void>;
   markRead: (id: string) => Promise<void>;
   markAllRead: () => Promise<void>;
@@ -76,23 +76,28 @@ export function NotificationProvider({ children }: { children: ReactNode }) {
     return true;
   }, []);
 
-  const enablePushForAccount = useCallback(async () => {
-    if (!isPushSupported()) return false;
-    if (Notification.permission !== 'granted') return false;
+  const enablePushForAccount = useCallback(
+    async (options?: { silent?: boolean }) => {
+      if (!isPushSupported()) return false;
+      if (Notification.permission !== 'granted') return false;
 
-    try {
-      const subscribed = await setupPushSubscription();
-      if (!subscribed) return false;
+      try {
+        const subscribed = await setupPushSubscription();
+        if (!subscribed) return false;
 
-      showForegroundNotification('Notifications enabled', {
-        body: 'Push alerts are now active for your account on this device.',
-        href: '/dashboard/notifications',
-      });
-      return true;
-    } catch {
-      return false;
-    }
-  }, [setupPushSubscription]);
+        if (!options?.silent) {
+          showForegroundNotification('Notifications enabled', {
+            body: 'Push alerts are now active for your account on this device.',
+            href: '/dashboard/notifications',
+          });
+        }
+        return true;
+      } catch {
+        return false;
+      }
+    },
+    [setupPushSubscription],
+  );
 
   const enableNotifications = useCallback(async () => {
     if (!isPushSupported()) return false;
