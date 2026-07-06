@@ -97,8 +97,31 @@ export function InviteMemberModal({
 
   const handleCopy = async () => {
     if (!inviteUrl) return;
-    await navigator.clipboard.writeText(inviteUrl);
-    setCopied(true);
+    setError('');
+
+    try {
+      if (navigator.clipboard?.writeText) {
+        await navigator.clipboard.writeText(inviteUrl);
+      } else {
+        throw new Error('Clipboard API unavailable');
+      }
+      setCopied(true);
+    } catch {
+      try {
+        const textarea = document.createElement('textarea');
+        textarea.value = inviteUrl;
+        textarea.setAttribute('readonly', '');
+        textarea.style.position = 'fixed';
+        textarea.style.opacity = '0';
+        document.body.appendChild(textarea);
+        textarea.select();
+        document.execCommand('copy');
+        document.body.removeChild(textarea);
+        setCopied(true);
+      } catch {
+        setError('Could not copy the invite link. Please copy it manually.');
+      }
+    }
   };
 
   const customRoleOptions = customRoles.map((role) => ({

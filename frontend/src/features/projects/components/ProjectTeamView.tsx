@@ -40,7 +40,6 @@ export function ProjectTeamView() {
     }
 
     const inviteUrl = `${window.location.origin}/register?invite=${result.invite.token}`;
-    await navigator.clipboard.writeText(inviteUrl);
     return {
       type: 'invite' as const,
       inviteUrl,
