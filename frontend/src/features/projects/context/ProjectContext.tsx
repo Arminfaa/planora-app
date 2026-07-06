@@ -22,6 +22,11 @@ interface ProjectContextValue {
   setCustomRoles: (roles: ProjectRoleDefinition[]) => void;
   refreshProject: () => Promise<Project | null>;
   setProject: (project: Project) => void;
+  applyProjectUpdate: (project: Project) => {
+    slugChanged: boolean;
+    previousSlug: string;
+    nextSlug: string;
+  };
   memberCount: number;
   setMemberCount: (count: number) => void;
   boardCount: number;
@@ -82,6 +87,34 @@ export function ProjectProvider({
     [queryClient, slug],
   );
 
+  const applyProjectUpdate = useCallback(
+    (updatedProject: Project) => {
+      const slugChanged = updatedProject.slug !== slug;
+
+      if (slugChanged) {
+        queryClient.setQueryData(
+          queryKeys.projects.detail(updatedProject.slug),
+          updatedProject,
+        );
+        queryClient.removeQueries({ queryKey: queryKeys.projects.detail(slug) });
+      } else {
+        queryClient.setQueryData(
+          queryKeys.projects.detail(slug),
+          updatedProject,
+        );
+      }
+
+      void queryClient.invalidateQueries({ queryKey: queryKeys.projects.all });
+
+      return {
+        slugChanged,
+        previousSlug: slug,
+        nextSlug: updatedProject.slug,
+      };
+    },
+    [queryClient, slug],
+  );
+
   const memberCount = memberCountOverride ?? project?._count?.members ?? 0;
   const boardCount = boardCountOverride ?? project?._count?.boards ?? 0;
 
@@ -95,6 +128,7 @@ export function ProjectProvider({
             setCustomRoles,
             refreshProject,
             setProject,
+            applyProjectUpdate,
             memberCount,
             setMemberCount: setMemberCountOverride,
             boardCount,
@@ -108,6 +142,7 @@ export function ProjectProvider({
       setCustomRoles,
       refreshProject,
       setProject,
+      applyProjectUpdate,
       memberCount,
       boardCount,
     ],

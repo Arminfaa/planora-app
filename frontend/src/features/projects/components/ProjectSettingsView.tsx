@@ -1,24 +1,24 @@
 'use client';
 
 import { useState } from 'react';
-import { useRouter } from 'next/navigation';
+import { usePathname, useRouter } from 'next/navigation';
 import { useProjectPermissions } from '@/features/permissions/hooks/useProjectPermissions';
 import { projectService } from '../services/project.service';
 import { useProjectContext } from '../context/ProjectContext';
 import { EditProjectModal } from './EditProjectModal';
 import { ProjectRolesPanel } from './ProjectRolesPanel';
+import { replaceProjectSlugInPath } from '../utils/projectPaths';
 import type { UpdateProjectInput } from '../types';
 import { getApiErrorMessage, isForbiddenError } from '@/lib/api';
 
 export function ProjectSettingsView() {
   const router = useRouter();
+  const pathname = usePathname();
   const {
     project,
-    slug,
     customRoles,
     setCustomRoles,
-    refreshProject,
-    setProject,
+    applyProjectUpdate,
   } = useProjectContext();
   const { can } = useProjectPermissions(project);
 
@@ -38,10 +38,14 @@ export function ProjectSettingsView() {
     data: UpdateProjectInput,
   ) => {
     setActionError('');
-    await projectService.update(projectId, data);
-    const refreshed = await refreshProject();
-    if (refreshed && refreshed.slug !== slug) {
-      router.replace(`/dashboard/projects/${refreshed.slug}/settings`);
+    const updated = await projectService.update(projectId, data);
+    const { slugChanged, previousSlug, nextSlug } =
+      applyProjectUpdate(updated);
+
+    if (slugChanged) {
+      router.replace(
+        replaceProjectSlugInPath(pathname, previousSlug, nextSlug),
+      );
     }
   };
 
@@ -139,8 +143,8 @@ export function ProjectSettingsView() {
           onSubmit={handleUpdateProject}
           onRolesUpdated={(roles) => {
             setCustomRoles(roles);
-            void refreshProject().then((refreshed) => {
-              if (refreshed) setProject(refreshed);
+            void projectService.getById(project.id).then((refreshed) => {
+              applyProjectUpdate(refreshed);
             });
           }}
         />

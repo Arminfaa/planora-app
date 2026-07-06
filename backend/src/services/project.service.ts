@@ -201,16 +201,17 @@ export class ProjectService {
         }
 
         updateData.permissionMode = PermissionMode.CUSTOM;
-        const project = await projectRepository.update(projectId, updateData);
+        await projectRepository.update(projectId, updateData);
         await this.switchToCustomRoles(projectId, input.customRoles);
-        return project;
+        return this.getById(userId, projectId);
       }
 
       await this.switchToDefaultRoles(projectId);
       updateData.permissionMode = PermissionMode.DEFAULT;
     }
 
-    return projectRepository.update(projectId, updateData);
+    await projectRepository.update(projectId, updateData);
+    return this.getById(userId, projectId);
   }
 
   async delete(userId: string, idOrSlug: string) {
