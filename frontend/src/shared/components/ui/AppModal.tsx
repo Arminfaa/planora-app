@@ -201,7 +201,6 @@ export function AppModal({
         ...modalStyles,
       }}
       {...restModalProps}
-      lockScroll={false}
     >
       {children}
     </Modal>
