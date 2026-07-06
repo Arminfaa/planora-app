@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { useSearchParams } from 'next/navigation';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { App, Button as AntButton, Empty, Spin, Switch } from 'antd';
 import { useNotifications } from '../hooks/useNotifications';
 import { notificationService } from '../services/notification.service';
@@ -9,6 +10,7 @@ import type { AppNotification, NotificationPreferences } from '../types';
 import { PageContainer } from '@/shared/components/layout/PageContainer';
 import { Button } from '@/shared/components/ui/Button';
 import { getApiErrorMessage } from '@/lib/api';
+import { queryKeys, STALE_TIME } from '@/lib/query-keys';
 import { cn } from '@/lib/utils';
 
 function formatRelativeTime(value: string): string {
@@ -77,6 +79,7 @@ function NotificationItem({
 
 export function NotificationsView() {
   const { message } = App.useApp();
+  const queryClient = useQueryClient();
   const searchParams = useSearchParams();
   const highlightId = searchParams.get('id');
   const {
@@ -89,29 +92,22 @@ export function NotificationsView() {
     refreshUnreadCount,
   } = useNotifications();
 
-  const [notifications, setNotifications] = useState<AppNotification[]>([]);
-  const [isLoading, setIsLoading] = useState(true);
   const [isMarkingAll, setIsMarkingAll] = useState(false);
   const [preferences, setPreferences] =
     useState<NotificationPreferences | null>(null);
   const [isSavingPreferences, setIsSavingPreferences] = useState(false);
-  const hasLoadedOnceRef = useRef(false);
+  const syncedUnreadCountRef = useRef<number | null>(null);
+
+  const notificationsQuery = useQuery({
+    queryKey: queryKeys.notifications.list(1, 50),
+    queryFn: () => notificationService.list({ page: 1, limit: 50 }),
+    staleTime: STALE_TIME.notificationsList,
+  });
+
+  const notifications = notificationsQuery.data?.items ?? [];
 
   const hasUnreadNotifications =
     unreadCount > 0 || notifications.some((item) => !item.readAt);
-
-  const loadNotifications = useCallback(async () => {
-    setIsLoading(true);
-    try {
-      const result = await notificationService.list({ page: 1, limit: 50 });
-      setNotifications(result.items);
-      await refreshUnreadCount();
-    } catch (error) {
-      message.error(getApiErrorMessage(error));
-    } finally {
-      setIsLoading(false);
-    }
-  }, [message, refreshUnreadCount]);
 
   const loadPreferences = useCallback(async () => {
     try {
@@ -123,34 +119,27 @@ export function NotificationsView() {
   }, []);
 
   useEffect(() => {
-    void loadNotifications().finally(() => {
-      hasLoadedOnceRef.current = true;
-    });
     void loadPreferences();
-  }, [loadNotifications, loadPreferences]);
+  }, [loadPreferences]);
 
   useEffect(() => {
-    if (!hasLoadedOnceRef.current || isLoading) return;
+    const listUnreadCount = notificationsQuery.data?.unreadCount;
+    if (listUnreadCount === undefined) return;
+    if (syncedUnreadCountRef.current === listUnreadCount) return;
 
-    void (async () => {
-      try {
-        const result = await notificationService.list({ page: 1, limit: 50 });
-        setNotifications(result.items);
-      } catch {
-        // Keep the current list if the silent refresh fails.
-      }
-    })();
-  }, [isLoading, unreadCount]);
+    syncedUnreadCountRef.current = listUnreadCount;
+    void refreshUnreadCount();
+  }, [notificationsQuery.data?.unreadCount, refreshUnreadCount]);
 
   const handleMarkAllRead = async () => {
     setIsMarkingAll(true);
     try {
       await markAllRead();
-      setNotifications((current) =>
-        current.map((item) =>
-          item.readAt ? item : { ...item, readAt: new Date().toISOString() },
-        ),
-      );
+      await queryClient.invalidateQueries({
+        queryKey: queryKeys.notifications.all,
+      });
+      await notificationsQuery.refetch();
+      await refreshUnreadCount();
       message.success('All notifications marked as read');
     } catch (error) {
       message.error(getApiErrorMessage(error));
@@ -161,12 +150,21 @@ export function NotificationsView() {
 
   const handleItemClick = (notification: AppNotification) => {
     if (!notification.readAt) {
-      setNotifications((current) =>
-        current.map((item) =>
-          item.id === notification.id
-            ? { ...item, readAt: new Date().toISOString() }
-            : item,
-        ),
+      queryClient.setQueryData(
+        queryKeys.notifications.list(1, 50),
+        (current: Awaited<ReturnType<typeof notificationService.list>> | undefined) => {
+          if (!current) return current;
+
+          return {
+            ...current,
+            items: current.items.map((item) =>
+              item.id === notification.id
+                ? { ...item, readAt: new Date().toISOString() }
+                : item,
+            ),
+            unreadCount: Math.max(0, current.unreadCount - 1),
+          };
+        },
       );
     }
 
@@ -198,6 +196,8 @@ export function NotificationsView() {
       setIsSavingPreferences(false);
     }
   };
+
+  const isLoading = notificationsQuery.isLoading;
 
   return (
     <PageContainer>

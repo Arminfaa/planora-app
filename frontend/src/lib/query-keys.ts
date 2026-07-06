@@ -22,6 +22,11 @@ export const queryKeys = {
   invites: {
     preview: (token: string) => ['invites', 'preview', token] as const,
   },
+  notifications: {
+    all: ['notifications'] as const,
+    list: (page = 1, limit = 50) =>
+      ['notifications', 'list', page, limit] as const,
+  },
 } as const;
 
 export const STALE_TIME = {
@@ -36,4 +41,5 @@ export const STALE_TIME = {
   progress: 30_000,
   searchAssignees: 300_000,
   invitePreview: 60_000,
+  notificationsList: 30_000,
 } as const;

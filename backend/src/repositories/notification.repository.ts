@@ -64,9 +64,12 @@ export class NotificationRepository extends BaseRepository {
   }
 
   async countUnread(userId: string): Promise<number> {
-    return this.db.notification.count({
-      where: { userId, readAt: null },
+    const notifications = await this.db.notification.findMany({
+      where: { userId },
+      select: { readAt: true },
     });
+
+    return notifications.filter((notification) => !notification.readAt).length;
   }
 
   async findByIdForUser(
@@ -95,10 +98,24 @@ export class NotificationRepository extends BaseRepository {
   }
 
   async markAllRead(userId: string): Promise<number> {
+    const unreadNotifications = await this.db.notification.findMany({
+      where: { userId },
+      select: { id: true, readAt: true },
+    });
+
+    const unreadIds = unreadNotifications
+      .filter((notification) => !notification.readAt)
+      .map((notification) => notification.id);
+
+    if (unreadIds.length === 0) {
+      return 0;
+    }
+
     const result = await this.db.notification.updateMany({
-      where: { userId, readAt: null },
+      where: { id: { in: unreadIds } },
       data: { readAt: new Date() },
     });
+
     return result.count;
   }
 
@@ -107,15 +124,24 @@ export class NotificationRepository extends BaseRepository {
     projectId: string,
     type: NotificationType,
   ): Promise<number> {
+    const unreadNotifications = await this.db.notification.findMany({
+      where: { userId, projectId, type },
+      select: { id: true, readAt: true },
+    });
+
+    const unreadIds = unreadNotifications
+      .filter((notification) => !notification.readAt)
+      .map((notification) => notification.id);
+
+    if (unreadIds.length === 0) {
+      return 0;
+    }
+
     const result = await this.db.notification.updateMany({
-      where: {
-        userId,
-        projectId,
-        type,
-        readAt: null,
-      },
+      where: { id: { in: unreadIds } },
       data: { readAt: new Date() },
     });
+
     return result.count;
   }
 }

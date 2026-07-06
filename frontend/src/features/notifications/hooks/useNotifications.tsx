@@ -10,8 +10,10 @@ import {
   type ReactNode,
 } from 'react';
 import { useRouter } from 'next/navigation';
+import { useQueryClient } from '@tanstack/react-query';
 import { useAuth } from '@/features/auth/hooks/useAuth';
 import { connectSocket } from '@/lib/socket';
+import { queryKeys } from '@/lib/query-keys';
 import { notificationService } from '../services/notification.service';
 import type { AppNotification, NotificationSocketEvent, NotificationType } from '../types';
 import { appendNotificationId } from '../lib/notification-url';
@@ -47,6 +49,7 @@ const NotificationContext = createContext<NotificationContextValue | null>(
 
 export function NotificationProvider({ children }: { children: ReactNode }) {
   const router = useRouter();
+  const queryClient = useQueryClient();
   const { isAuthenticated, isLoading: authLoading } = useAuth();
   const [unreadCount, setUnreadCount] = useState(0);
   const [isLoading, setIsLoading] = useState(true);
@@ -116,15 +119,23 @@ export function NotificationProvider({ children }: { children: ReactNode }) {
     return enablePushForAccount();
   }, [enablePushForAccount]);
 
+  const invalidateNotificationLists = useCallback(async () => {
+    await queryClient.invalidateQueries({
+      queryKey: queryKeys.notifications.all,
+    });
+  }, [queryClient]);
+
   const markRead = useCallback(async (id: string) => {
     const result = await notificationService.markRead(id);
     setUnreadCount(result.unreadCount);
-  }, []);
+    await invalidateNotificationLists();
+  }, [invalidateNotificationLists]);
 
   const markAllRead = useCallback(async () => {
     const result = await notificationService.markAllRead();
     setUnreadCount(result.unreadCount);
-  }, []);
+    await invalidateNotificationLists();
+  }, [invalidateNotificationLists]);
 
   const markProjectNotificationsRead = useCallback(
     async (projectId: string, type: NotificationType = 'GROUP_MESSAGE') => {
@@ -133,8 +144,9 @@ export function NotificationProvider({ children }: { children: ReactNode }) {
         type,
       );
       setUnreadCount(result.unreadCount);
+      await invalidateNotificationLists();
     },
-    [],
+    [invalidateNotificationLists],
   );
 
   const handleNotificationClick = useCallback(
@@ -189,6 +201,7 @@ export function NotificationProvider({ children }: { children: ReactNode }) {
     const handleNotificationEvent = (event: NotificationSocketEvent) => {
       if (event.type === 'notification:created') {
         setUnreadCount(event.unreadCount);
+        void invalidateNotificationLists();
         showForegroundNotification(event.notification.title, {
           body: event.notification.body,
           tag: event.notification.id,
@@ -208,6 +221,7 @@ export function NotificationProvider({ children }: { children: ReactNode }) {
       }
 
       setUnreadCount(event.unreadCount);
+      void invalidateNotificationLists();
     };
 
     socket.on('notification:event', handleNotificationEvent);
@@ -215,7 +229,7 @@ export function NotificationProvider({ children }: { children: ReactNode }) {
     return () => {
       socket.off('notification:event', handleNotificationEvent);
     };
-  }, [isAuthenticated]);
+  }, [isAuthenticated, invalidateNotificationLists]);
 
   useEffect(() => {
     if (!('serviceWorker' in navigator)) return;
