@@ -221,6 +221,18 @@
   padding: 10px 24px 0 24px !important;
 }
 
+html.app-scroll-locked,
+html.app-scroll-locked body {
+  overflow: hidden !important;
+  overscroll-behavior: none;
+}
+
+html.app-scroll-locked body {
+  position: fixed;
+  top: var(--app-scroll-lock-top, 0);
+  width: 100%;
+}
+
 /* AppModal — full width & height below Tailwind sm (640px) */
 @media (max-width: 639px) {
   .app-modal-root .ant-modal-wrap {

@@ -11,6 +11,7 @@ import {
   type ReactNode,
 } from 'react';
 import { cn } from '@/lib/utils';
+import { lockBodyScroll, unlockBodyScroll } from '@/lib/bodyScrollLock';
 
 const MOBILE_MODAL_QUERY = '(max-width: 639px)';
 
@@ -161,6 +162,13 @@ export function AppModal({
     [],
   );
 
+  useLayoutEffect(() => {
+    if (!open) return;
+
+    lockBodyScroll();
+    return () => unlockBodyScroll();
+  }, [open]);
+
   return (
     <Modal
       title={<ModalTitle title={title} subtitle={subtitle} />}
@@ -193,6 +201,7 @@ export function AppModal({
         ...modalStyles,
       }}
       {...restModalProps}
+      lockScroll={false}
     >
       {children}
     </Modal>
