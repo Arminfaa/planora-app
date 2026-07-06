@@ -2,6 +2,7 @@
 
 import Link from 'next/link';
 import { useMemo, useRef, useState } from 'react';
+import { copyText } from '@/lib/copyText';
 import {
   formatDateSeparator,
   formatMessageTime,
@@ -15,6 +16,7 @@ import { getAssetUrl } from '@/lib/assets';
 import { AssetImage } from '@/shared/components/ui/AssetImage';
 import { useProjectGroup } from '../hooks/useProjectGroup';
 import { formatActivityMessage } from '../utils/formatActivity';
+import { formatMessageText } from '../utils/formatMessageText';
 import { getTaskActivityHref } from '../utils/getTaskActivityHref';
 import type { ProjectGroupAuthor, ProjectGroupMessage } from '../types';
 
@@ -136,6 +138,58 @@ function ActivityLogItem({
   );
 }
 
+function CopyMessageButton({ text }: { text: string }) {
+  const [copied, setCopied] = useState(false);
+
+  const handleCopy = async () => {
+    const success = await copyText(text);
+    if (!success) return;
+
+    setCopied(true);
+    window.setTimeout(() => setCopied(false), 1500);
+  };
+
+  return (
+    <button
+      type="button"
+      onClick={() => void handleCopy()}
+      title={copied ? 'Copied' : 'Copy message'}
+      aria-label={copied ? 'Copied' : 'Copy message'}
+      className="rounded-md p-1 text-gray-400 transition hover:bg-white/70 hover:text-gray-600 sm:opacity-0 sm:group-hover/bubble:opacity-100"
+    >
+      {copied ? (
+        <svg
+          className="h-3.5 w-3.5"
+          fill="none"
+          viewBox="0 0 24 24"
+          stroke="currentColor"
+        >
+          <path
+            strokeLinecap="round"
+            strokeLinejoin="round"
+            strokeWidth={2}
+            d="M5 13l4 4L19 7"
+          />
+        </svg>
+      ) : (
+        <svg
+          className="h-3.5 w-3.5"
+          fill="none"
+          viewBox="0 0 24 24"
+          stroke="currentColor"
+        >
+          <path
+            strokeLinecap="round"
+            strokeLinejoin="round"
+            strokeWidth={2}
+            d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z"
+          />
+        </svg>
+      )}
+    </button>
+  );
+}
+
 function GroupMessageItem({
   message,
   projectSlug,
@@ -184,7 +238,7 @@ function GroupMessageItem({
       className={`flex w-full py-1 ${isOwn ? 'justify-end' : 'justify-start'}`}
     >
       <div
-        className={`group flex max-w-[80%] gap-2.5 ${isOwn ? 'flex-row-reverse' : 'flex-row'}`}
+        className={`group flex min-w-0 max-w-[85%] gap-2.5 sm:max-w-[75%] ${isOwn ? 'flex-row-reverse' : 'flex-row'}`}
       >
         <div className="flex shrink-0 items-end pb-5">
           <UserAvatar author={message.author} />
@@ -226,12 +280,17 @@ function GroupMessageItem({
             </div>
           ) : (
             <div
-              className={`relative rounded-2xl px-3.5 pt-2.5 pb-6 ${bubbleClass}`}
+              className={`group/bubble relative min-w-0 max-w-[min(72vw,18rem)] rounded-2xl px-3.5 pt-2.5 pb-6 sm:max-w-[min(100%,24rem)] ${bubbleClass}`}
             >
               {message.content && (
-                <p className="whitespace-pre-wrap pe-10 text-sm leading-relaxed">
-                  {message.content}
+                <p className="whitespace-pre-wrap break-words pe-8 text-sm leading-relaxed [overflow-wrap:anywhere]">
+                  {formatMessageText(message.content)}
                 </p>
+              )}
+              {message.content && (
+                <div className="absolute end-2 top-2">
+                  <CopyMessageButton text={message.content} />
+                </div>
               )}
               {message.attachments.length > 0 && (
                 <div className={`space-y-2 ${message.content ? 'mt-2' : ''}`}>
