@@ -1,7 +1,7 @@
 'use client';
 
-import { useEffect, useState } from 'react';
-import { useForm } from 'react-hook-form';
+import { useState } from 'react';
+import { Controller, useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import { Button } from 'antd';
@@ -32,18 +32,13 @@ export function EditBoardModal({
   const [error, setError] = useState('');
 
   const {
-    register,
+    control,
     handleSubmit,
-    reset,
     formState: { errors, isSubmitting },
   } = useForm<FormData>({
     resolver: zodResolver(schema),
-    defaultValues: { name: board.name },
+    values: { name: board.name },
   });
-
-  useEffect(() => {
-    reset({ name: board.name });
-  }, [board, reset]);
 
   const handleFormSubmit = async (data: FormData) => {
     setError('');
@@ -84,10 +79,16 @@ export function EditBoardModal({
         onSubmit={handleSubmit(handleFormSubmit)}
         className="space-y-4"
       >
-        <Input
-          label="Board Name"
-          error={errors.name?.message}
-          {...register('name')}
+        <Controller
+          name="name"
+          control={control}
+          render={({ field }) => (
+            <Input
+              label="Board Name"
+              error={errors.name?.message}
+              {...field}
+            />
+          )}
         />
       </form>
     </AppModal>
