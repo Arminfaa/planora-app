@@ -6,6 +6,7 @@ import {
   getVapidKey,
   listNotifications,
   markAllNotificationsRead,
+  markProjectNotificationsRead,
   markNotificationRead,
   subscribePush,
   unsubscribePush,
@@ -18,6 +19,7 @@ import {
 } from '../../middlewares/validate.middleware';
 import {
   notificationIdParamSchema,
+  projectNotificationReadParamSchema,
   subscribePushSchema,
   unsubscribePushSchema,
   updateNotificationPreferencesSchema,
@@ -30,6 +32,11 @@ router.use(authenticate);
 router.get('/', listNotifications);
 router.get('/unread-count', getUnreadNotificationCount);
 router.patch('/read-all', markAllNotificationsRead);
+router.patch(
+  '/projects/:projectId/read',
+  validateParams(projectNotificationReadParamSchema),
+  markProjectNotificationsRead,
+);
 router.patch(
   '/:id/read',
   validateParams(notificationIdParamSchema),

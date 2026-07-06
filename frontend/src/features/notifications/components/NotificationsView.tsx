@@ -1,6 +1,6 @@
 'use client';
 
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { useSearchParams } from 'next/navigation';
 import { App, Button as AntButton, Empty, Spin, Switch } from 'antd';
 import { useNotifications } from '../hooks/useNotifications';
@@ -95,6 +95,10 @@ export function NotificationsView() {
   const [preferences, setPreferences] =
     useState<NotificationPreferences | null>(null);
   const [isSavingPreferences, setIsSavingPreferences] = useState(false);
+  const hasLoadedOnceRef = useRef(false);
+
+  const hasUnreadNotifications =
+    unreadCount > 0 || notifications.some((item) => !item.readAt);
 
   const loadNotifications = useCallback(async () => {
     setIsLoading(true);
@@ -119,9 +123,24 @@ export function NotificationsView() {
   }, []);
 
   useEffect(() => {
-    void loadNotifications();
+    void loadNotifications().finally(() => {
+      hasLoadedOnceRef.current = true;
+    });
     void loadPreferences();
   }, [loadNotifications, loadPreferences]);
+
+  useEffect(() => {
+    if (!hasLoadedOnceRef.current || isLoading) return;
+
+    void (async () => {
+      try {
+        const result = await notificationService.list({ page: 1, limit: 50 });
+        setNotifications(result.items);
+      } catch {
+        // Keep the current list if the silent refresh fails.
+      }
+    })();
+  }, [isLoading, unreadCount]);
 
   const handleMarkAllRead = async () => {
     setIsMarkingAll(true);
@@ -141,6 +160,16 @@ export function NotificationsView() {
   };
 
   const handleItemClick = (notification: AppNotification) => {
+    if (!notification.readAt) {
+      setNotifications((current) =>
+        current.map((item) =>
+          item.id === notification.id
+            ? { ...item, readAt: new Date().toISOString() }
+            : item,
+        ),
+      );
+    }
+
     handleNotificationClick(notification);
   };
 
@@ -193,7 +222,7 @@ export function NotificationsView() {
               </AntButton>
             )}
             <Button
-              disabled={unreadCount === 0}
+              disabled={!hasUnreadNotifications}
               isLoading={isMarkingAll}
               onClick={() => void handleMarkAllRead()}
             >

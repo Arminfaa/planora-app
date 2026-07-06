@@ -1,4 +1,4 @@
-import type { Notification } from '@prisma/client';
+import type { Notification, NotificationType } from '@prisma/client';
 import { emitNotificationEvent } from '../socket/notification.events';
 import { notificationRepository } from '../repositories/notification.repository';
 import { notificationPreferenceRepository } from '../repositories/notification-preference.repository';
@@ -93,6 +93,30 @@ class NotificationService {
     });
 
     return { updatedCount: count, unreadCount: 0 };
+  }
+
+  async markProjectNotificationsRead(
+    userId: string,
+    projectId: string,
+    type: NotificationType = 'GROUP_MESSAGE',
+  ) {
+    const updatedCount = await notificationRepository.markReadByProjectAndType(
+      userId,
+      projectId,
+      type,
+    );
+    const unreadCount = await notificationRepository.countUnread(userId);
+
+    if (updatedCount > 0) {
+      emitNotificationEvent(userId, {
+        type: 'notification:read-batch',
+        projectId,
+        notificationType: type,
+        unreadCount,
+      });
+    }
+
+    return { updatedCount, unreadCount };
   }
 
   async subscribePush(userId: string, input: SubscribePushInput) {

@@ -64,4 +64,10 @@ export type NotificationSocketEvent =
   | {
       type: 'notification:read-all';
       unreadCount: number;
+    }
+  | {
+      type: 'notification:read-batch';
+      projectId: string;
+      notificationType: NotificationType;
+      unreadCount: number;
     };

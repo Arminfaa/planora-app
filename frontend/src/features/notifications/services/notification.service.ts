@@ -3,6 +3,7 @@ import type {
   AppNotification,
   NotificationListResult,
   NotificationPreferences,
+  NotificationType,
   PushStatus,
 } from '../types';
 
@@ -39,6 +40,18 @@ export const notificationService = {
     const response = await api.patch<{
       data: { updatedCount: number; unreadCount: number };
     }>('/notifications/read-all');
+    return response.data.data;
+  },
+
+  async markProjectNotificationsRead(
+    projectId: string,
+    type: NotificationType = 'GROUP_MESSAGE',
+  ): Promise<{ updatedCount: number; unreadCount: number }> {
+    const response = await api.patch<{
+      data: { updatedCount: number; unreadCount: number };
+    }>(`/notifications/projects/${projectId}/read`, null, {
+      params: { type },
+    });
     return response.data.data;
   },
 

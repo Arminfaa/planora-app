@@ -13,7 +13,7 @@ import { useRouter } from 'next/navigation';
 import { useAuth } from '@/features/auth/hooks/useAuth';
 import { connectSocket } from '@/lib/socket';
 import { notificationService } from '../services/notification.service';
-import type { AppNotification, NotificationSocketEvent } from '../types';
+import type { AppNotification, NotificationSocketEvent, NotificationType } from '../types';
 import { appendNotificationId } from '../lib/notification-url';
 import {
   getNotificationPermission,
@@ -34,6 +34,10 @@ interface NotificationContextValue {
   refreshUnreadCount: () => Promise<void>;
   markRead: (id: string) => Promise<void>;
   markAllRead: () => Promise<void>;
+  markProjectNotificationsRead: (
+    projectId: string,
+    type?: NotificationType,
+  ) => Promise<void>;
   handleNotificationClick: (notification: AppNotification) => void;
 }
 
@@ -122,11 +126,25 @@ export function NotificationProvider({ children }: { children: ReactNode }) {
     setUnreadCount(result.unreadCount);
   }, []);
 
+  const markProjectNotificationsRead = useCallback(
+    async (projectId: string, type: NotificationType = 'GROUP_MESSAGE') => {
+      const result = await notificationService.markProjectNotificationsRead(
+        projectId,
+        type,
+      );
+      setUnreadCount(result.unreadCount);
+    },
+    [],
+  );
+
   const handleNotificationClick = useCallback(
     (notification: AppNotification) => {
+      if (!notification.readAt) {
+        void markRead(notification.id);
+      }
       router.push(appendNotificationId(notification.href, notification.id));
     },
-    [router],
+    [markRead, router],
   );
 
   useEffect(() => {
@@ -227,6 +245,7 @@ export function NotificationProvider({ children }: { children: ReactNode }) {
       refreshUnreadCount,
       markRead,
       markAllRead,
+      markProjectNotificationsRead,
       handleNotificationClick,
     }),
     [
@@ -238,6 +257,7 @@ export function NotificationProvider({ children }: { children: ReactNode }) {
       refreshUnreadCount,
       markRead,
       markAllRead,
+      markProjectNotificationsRead,
       handleNotificationClick,
     ],
   );

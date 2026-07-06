@@ -8,6 +8,7 @@ import {
   useState,
 } from 'react';
 import type { ProjectSocketEvent } from '@/features/projects/types/socket';
+import { useNotifications } from '@/features/notifications/hooks/useNotifications';
 import { useProjectSocket } from '@/features/projects/hooks/useProjectSocket';
 import { getApiErrorMessage } from '@/lib/api';
 import { projectGroupService } from '../services/project-group.service';
@@ -59,6 +60,7 @@ export function useProjectGroup(
     scrollHeight: number;
     scrollTop: number;
   } | null>(null);
+  const { markProjectNotificationsRead } = useNotifications();
 
   const scrollToBottom = useCallback((behavior: ScrollBehavior = 'smooth') => {
     messagesEndRef.current?.scrollIntoView({ behavior });
@@ -136,6 +138,17 @@ export function useProjectGroup(
     }
     void loadMessages(1, false);
   }, [enabled, loadMessages]);
+
+  useEffect(() => {
+    if (!enabled || !projectId || isLoading) return;
+    void markProjectNotificationsRead(projectId, 'GROUP_MESSAGE');
+  }, [
+    enabled,
+    isLoading,
+    markProjectNotificationsRead,
+    messages,
+    projectId,
+  ]);
 
   useEffect(() => {
     if (isLoading || messages.length === 0) return;

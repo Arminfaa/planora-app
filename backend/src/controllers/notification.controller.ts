@@ -8,6 +8,7 @@ import { asyncHandler } from '../utils/asyncHandler';
 import { getParam } from '../utils/params';
 import {
   listNotificationsQuerySchema,
+  markProjectNotificationsReadQuerySchema,
   pushStatusQuerySchema,
   type ListNotificationsQuery,
   type SubscribePushInput,
@@ -53,6 +54,22 @@ export const markAllNotificationsRead = asyncHandler(
   async (req: AuthenticatedRequest, res: Response) => {
     const result = await notificationService.markAllRead(req.user!.userId);
     ApiResponse.success(res, result, 'All notifications marked as read');
+  },
+);
+
+export const markProjectNotificationsRead = asyncHandler(
+  async (req: AuthenticatedRequest, res: Response) => {
+    const parsed = markProjectNotificationsReadQuerySchema.safeParse(req.query);
+    if (!parsed.success) {
+      throw new ApiError(400, 'Validation failed');
+    }
+
+    const result = await notificationService.markProjectNotificationsRead(
+      req.user!.userId,
+      getParam(req.params, 'projectId'),
+      parsed.data.type ?? 'GROUP_MESSAGE',
+    );
+    ApiResponse.success(res, result, 'Project notifications marked as read');
   },
 );
 

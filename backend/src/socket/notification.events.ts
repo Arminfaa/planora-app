@@ -2,7 +2,11 @@ import { getSocketServer } from './io';
 import { getUserRoom } from './types';
 
 export interface NotificationSocketEvent {
-  type: 'notification:created' | 'notification:read' | 'notification:read-all';
+  type:
+    | 'notification:created'
+    | 'notification:read'
+    | 'notification:read-all'
+    | 'notification:read-batch';
   notification?: {
     id: string;
     type: string;
@@ -18,6 +22,8 @@ export interface NotificationSocketEvent {
     createdAt: string;
   };
   notificationId?: string;
+  projectId?: string;
+  notificationType?: string;
   unreadCount: number;
 }
 

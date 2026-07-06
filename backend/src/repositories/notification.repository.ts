@@ -101,6 +101,23 @@ export class NotificationRepository extends BaseRepository {
     });
     return result.count;
   }
+
+  async markReadByProjectAndType(
+    userId: string,
+    projectId: string,
+    type: NotificationType,
+  ): Promise<number> {
+    const result = await this.db.notification.updateMany({
+      where: {
+        userId,
+        projectId,
+        type,
+        readAt: null,
+      },
+      data: { readAt: new Date() },
+    });
+    return result.count;
+  }
 }
 
 export const notificationRepository = new NotificationRepository();

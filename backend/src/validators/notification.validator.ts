@@ -1,4 +1,5 @@
 import { z } from 'zod';
+import { NotificationType } from '@prisma/client';
 import { objectIdSchema, paginationSchema } from '../utils/pagination';
 
 export const listNotificationsQuerySchema = paginationSchema.extend({
@@ -31,6 +32,14 @@ export const notificationIdParamSchema = z.object({
   id: objectIdSchema,
 });
 
+export const projectNotificationReadParamSchema = z.object({
+  projectId: objectIdSchema,
+});
+
+export const markProjectNotificationsReadQuerySchema = z.object({
+  type: z.nativeEnum(NotificationType).optional(),
+});
+
 export const pushStatusQuerySchema = z.object({
   endpoint: z.string().url().max(2048).optional(),
 });
@@ -44,3 +53,6 @@ export type UpdateNotificationPreferencesInput = z.infer<
   typeof updateNotificationPreferencesSchema
 >;
 export type PushStatusQuery = z.infer<typeof pushStatusQuerySchema>;
+export type MarkProjectNotificationsReadQuery = z.infer<
+  typeof markProjectNotificationsReadQuerySchema
+>;
