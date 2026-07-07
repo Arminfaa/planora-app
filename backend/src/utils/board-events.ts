@@ -18,7 +18,33 @@ async function resolveBoardIdFromTask(taskId: string): Promise<string | null> {
   return columnRepository.getBoardId(columnId);
 }
 
+function serializeTaskLabels(task: Record<string, unknown>) {
+  if (!Array.isArray(task.labels)) return [];
+
+  return task.labels
+    .map((item) => {
+      const entry = item as {
+        label?: { id: string; name: string; color: string };
+      };
+      if (!entry.label) return null;
+
+      return {
+        label: {
+          id: String(entry.label.id),
+          name: entry.label.name,
+          color: entry.label.color,
+        },
+      };
+    })
+    .filter(
+      (item): item is { label: { id: string; name: string; color: string } } =>
+        item !== null,
+    );
+}
+
 function serializeTask(task: Record<string, unknown>) {
+  const count = task._count as { attachments?: number } | undefined;
+
   return {
     id: String(task.id),
     slug: String(task.slug ?? ''),
@@ -37,6 +63,7 @@ function serializeTask(task: Record<string, unknown>) {
     parentTaskId: task.parentTaskId ? String(task.parentTaskId) : null,
     isCompleted: Boolean(task.isCompleted),
     assignees: task.assignees ?? [],
+    labels: serializeTaskLabels(task),
     checklistItems: Array.isArray(task.checklistItems)
       ? task.checklistItems.map((item) => ({
           id: String((item as { id: string }).id),
@@ -45,6 +72,9 @@ function serializeTask(task: Record<string, unknown>) {
           position: Number((item as { position: number }).position),
         }))
       : [],
+    ...(count
+      ? { _count: { attachments: Number(count.attachments ?? 0) } }
+      : {}),
   };
 }
 

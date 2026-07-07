@@ -11,6 +11,33 @@ function normalizeTask(task: BoardTask): BoardTask {
   };
 }
 
+function findExistingTask(
+  columns: BoardColumn[],
+  taskId: string,
+): BoardTask | undefined {
+  const id = String(taskId);
+
+  for (const column of columns) {
+    const task = (column.tasks ?? []).find((item) => String(item.id) === id);
+    if (task) return task;
+  }
+
+  return undefined;
+}
+
+function mergeTaskFromCache(
+  incoming: BoardTask,
+  existing?: BoardTask,
+): BoardTask {
+  if (!existing) return incoming;
+
+  return {
+    ...incoming,
+    labels: incoming.labels ?? existing.labels,
+    _count: incoming._count ?? existing._count,
+  };
+}
+
 function removeTask(columns: BoardColumn[], taskId: string): BoardColumn[] {
   const id = String(taskId);
 
@@ -21,7 +48,8 @@ function removeTask(columns: BoardColumn[], taskId: string): BoardColumn[] {
 }
 
 function insertTask(columns: BoardColumn[], task: BoardTask): BoardColumn[] {
-  const normalized = normalizeTask(task);
+  const existing = findExistingTask(columns, task.id);
+  const normalized = normalizeTask(mergeTaskFromCache(task, existing));
   const cleaned = removeTask(columns, normalized.id);
 
   return cleaned.map((col) => {
