@@ -4,6 +4,7 @@ import Link from 'next/link';
 import type { Project } from '../types';
 import { formatDate } from '@/features/dashboard/utils/stats';
 import { useLocale } from '@/i18n/LocaleProvider';
+import { BackChevronIcon } from '@/shared/components/ui/BackChevronIcon';
 import { SearchInput } from '@/shared/components/ui/SearchInput';
 
 interface ProjectHeaderProps {
@@ -46,19 +47,7 @@ export function ProjectHeader({
         href="/dashboard"
         className="mb-4 inline-flex items-center gap-1.5 text-sm font-medium text-gray-500 transition hover:text-gray-900"
       >
-        <svg
-          className="h-4 w-4"
-          fill="none"
-          viewBox="0 0 24 24"
-          stroke="currentColor"
-        >
-          <path
-            strokeLinecap="round"
-            strokeLinejoin="round"
-            strokeWidth={2}
-            d="M15 19l-7-7 7-7"
-          />
-        </svg>
+        <BackChevronIcon />
         {t('projects.backToDashboard')}
       </Link>
 

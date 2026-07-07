@@ -4,6 +4,7 @@ import { useEffect, useRef, useState } from 'react';
 import Link from 'next/link';
 import { BoardBackgroundMenu } from './BoardBackgroundMenu';
 import { useLocale } from '@/i18n/LocaleProvider';
+import { BackChevronIcon } from '@/shared/components/ui/BackChevronIcon';
 
 interface BoardHeaderProps {
   boardName: string;
@@ -62,19 +63,7 @@ export function BoardHeader({
         href={`/dashboard/projects/${projectSlug}`}
         className="mb-4 inline-flex items-center gap-1.5 text-sm font-medium text-white/70 transition hover:text-white"
       >
-        <svg
-          className="h-4 w-4"
-          fill="none"
-          viewBox="0 0 24 24"
-          stroke="currentColor"
-        >
-          <path
-            strokeLinecap="round"
-            strokeLinejoin="round"
-            strokeWidth={2}
-            d="M15 19l-7-7 7-7"
-          />
-        </svg>
+        <BackChevronIcon />
         {t('board.backToProject')}
       </Link>
 
