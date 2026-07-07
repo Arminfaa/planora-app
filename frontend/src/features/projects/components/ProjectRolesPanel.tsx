@@ -182,7 +182,7 @@ function RolePermissionsSummary({
       <button
         type="button"
         onClick={() => setExpanded((prev) => !prev)}
-        className="flex w-full items-center justify-between gap-3 px-4 py-3 text-left"
+        className="flex w-full items-center justify-between gap-3 px-4 py-3 text-start"
       >
         <div>
           <p className="font-medium text-gray-900">{role.name}</p>

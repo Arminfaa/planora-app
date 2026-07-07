@@ -154,7 +154,7 @@ export function TaskChecklistEditor({
                   type="button"
                   disabled={!canEditItems}
                   onDoubleClick={() => startEdit(item)}
-                  className={`min-w-0 flex-1 text-left text-sm ${
+                  className={`min-w-0 flex-1 text-start text-sm ${
                     item.isDone ? 'text-gray-400 line-through' : 'text-gray-700'
                   } ${canEditItems ? 'cursor-text rounded px-1' : 'cursor-default'}`}
                 >

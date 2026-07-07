@@ -5,9 +5,11 @@ import { useAuth } from '@/features/auth/hooks/useAuth';
 import { Button } from '@/shared/components/ui/Button';
 import { useNotificationPromptState } from '../hooks/useNotificationPromptState';
 import { useNotifications } from '../hooks/useNotifications';
+import { useLocale } from '@/i18n/LocaleProvider';
 
 export function NotificationPermissionBanner() {
   const { user } = useAuth();
+  const { t } = useLocale();
   const { enableNotifications, enablePushForAccount } = useNotifications();
   const {
     bannerVariant,
@@ -17,6 +19,8 @@ export function NotificationPermissionBanner() {
     refresh,
   } = useNotificationPromptState();
   const [isEnabling, setIsEnabling] = useState(false);
+
+  const displayName = user?.name.split(' ')[0] || t('common.you');
 
   const handleSuccess = useCallback(
     (enabled: boolean) => {
@@ -55,8 +59,7 @@ export function NotificationPermissionBanner() {
       <div className="border-b border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-900">
         <div className="mx-auto flex max-w-7xl flex-wrap items-center justify-between gap-3 px-4 sm:px-6">
           <p>
-            Notifications are blocked in your browser. Open site settings to
-            allow alerts for {user.name.split(' ')[0] || 'your account'}.
+            {t('notifications.permissionBanner.blocked', { name: displayName })}
           </p>
           <Button
             type="button"
@@ -64,7 +67,7 @@ export function NotificationPermissionBanner() {
             className="!text-amber-900"
             onClick={handleDeclined}
           >
-            Don&apos;t ask again
+            {t('notifications.permissionBanner.dontAskAgain')}
           </Button>
         </div>
       </div>
@@ -76,8 +79,9 @@ export function NotificationPermissionBanner() {
       <div className="border-b border-primary-100 bg-primary-50 px-4 py-3 text-sm text-primary-950">
         <div className="mx-auto flex max-w-7xl flex-wrap items-center justify-between gap-3 px-4 sm:px-6">
           <p>
-            Turn on push notifications for{' '}
-            <span className="font-semibold">{user.name}</span> on this device.
+            {t('notifications.permissionBanner.accountPrompt', {
+              name: user.name,
+            })}
           </p>
           <div className="flex flex-wrap items-center gap-2">
             <Button
@@ -86,7 +90,7 @@ export function NotificationPermissionBanner() {
               className="!text-primary-900"
               onClick={handleNotNow}
             >
-              Not now
+              {t('notifications.permissionBanner.dismiss')}
             </Button>
             <Button
               type="button"
@@ -94,7 +98,7 @@ export function NotificationPermissionBanner() {
               className="!text-primary-900"
               onClick={handleDeclined}
             >
-              Don&apos;t ask again
+              {t('notifications.permissionBanner.dontAskAgain')}
             </Button>
             <Button
               type="button"
@@ -106,7 +110,7 @@ export function NotificationPermissionBanner() {
                   .finally(() => setIsEnabling(false));
               }}
             >
-              Enable for my account
+              {t('notifications.permissionBanner.enableForAccount')}
             </Button>
           </div>
         </div>
@@ -117,10 +121,7 @@ export function NotificationPermissionBanner() {
   return (
     <div className="border-b border-primary-100 bg-primary-50 px-4 py-3 text-sm text-primary-950">
       <div className="mx-auto flex max-w-7xl flex-wrap items-center justify-between gap-3 px-4 sm:px-6">
-        <p>
-          Enable notifications to get alerts for task changes and project group
-          messages on desktop and mobile.
-        </p>
+        <p>{t('notifications.permissionBanner.descriptionExtended')}</p>
         <div className="flex flex-wrap items-center gap-2">
           <Button
             type="button"
@@ -128,7 +129,7 @@ export function NotificationPermissionBanner() {
             className="!text-primary-900"
             onClick={handleNotNow}
           >
-            Not now
+            {t('notifications.permissionBanner.dismiss')}
           </Button>
           <Button
             type="button"
@@ -136,7 +137,7 @@ export function NotificationPermissionBanner() {
             className="!text-primary-900"
             onClick={handleDeclined}
           >
-            Don&apos;t ask again
+            {t('notifications.permissionBanner.dontAskAgain')}
           </Button>
           <Button
             type="button"
@@ -148,7 +149,7 @@ export function NotificationPermissionBanner() {
                 .finally(() => setIsEnabling(false));
             }}
           >
-            Enable notifications
+            {t('notifications.permissionBanner.enable')}
           </Button>
         </div>
       </div>

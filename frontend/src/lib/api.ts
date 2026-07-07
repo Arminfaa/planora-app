@@ -1,5 +1,8 @@
 import axios, { type AxiosError, type InternalAxiosRequestConfig } from 'axios';
 import type { ApiErrorResponse } from '@/shared/types/api';
+import { getMessages } from '@/i18n/messages';
+import { LOCALE_COOKIE, type Locale } from '@/i18n/types';
+import { createTranslator } from '@/i18n/utils';
 import {
   bindAuthApi,
   redirectToLogin,
@@ -7,6 +10,19 @@ import {
 } from '@/lib/authSession';
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL ?? '/api/v1';
+
+function readClientLocale(): Locale {
+  if (typeof document === 'undefined') return 'en';
+  const match = document.cookie.match(
+    new RegExp(`(?:^|; )${LOCALE_COOKIE}=([^;]*)`),
+  );
+  return match?.[1] === 'fa' ? 'fa' : 'en';
+}
+
+function getClientTranslator() {
+  const locale = readClientLocale();
+  return createTranslator(locale, getMessages(locale));
+}
 
 export const api = axios.create({
   baseURL: API_URL,
@@ -17,6 +33,10 @@ export const api = axios.create({
 bindAuthApi(api);
 
 api.interceptors.request.use((config: InternalAxiosRequestConfig) => {
+  if (typeof window !== 'undefined') {
+    config.headers['X-Locale'] = readClientLocale();
+  }
+
   if (config.method?.toLowerCase() === 'get') {
     config.headers['Cache-Control'] = 'no-cache';
     config.headers.Pragma = 'no-cache';
@@ -81,6 +101,8 @@ export const isNotFoundError = (error: unknown): boolean =>
   getApiStatus(error) === 404;
 
 export const getApiErrorMessage = (error: unknown): string => {
+  const t = getClientTranslator();
+
   if (axios.isAxiosError<ApiErrorResponse>(error)) {
     const data = error.response?.data;
     if (data?.errors?.length) {
@@ -90,7 +112,7 @@ export const getApiErrorMessage = (error: unknown): string => {
       return data.message;
     }
     if (error.response?.status === 403) {
-      return 'You do not have permission to perform this action';
+      return t('common.noPermission');
     }
   }
 
@@ -98,5 +120,5 @@ export const getApiErrorMessage = (error: unknown): string => {
     return error.message;
   }
 
-  return 'Something went wrong';
+  return t('common.somethingWentWrong');
 };

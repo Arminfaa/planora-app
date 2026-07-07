@@ -9,6 +9,7 @@ import {
 import type { CustomRoleInput } from '@/features/projects/types';
 import { Button } from '@/shared/components/ui/Button';
 import { Input } from '@/shared/components/ui/Input';
+import { useLocale } from '@/i18n/LocaleProvider';
 
 interface CustomRolesBuilderProps {
   roles: CustomRoleInput[];
@@ -23,6 +24,7 @@ export function CustomRolesBuilder({
   roles,
   onChange,
 }: CustomRolesBuilderProps) {
+  const { t } = useLocale();
   const [expandedIndex, setExpandedIndex] = useState<number | null>(
     roles.length > 0 ? 0 : null,
   );
@@ -71,15 +73,17 @@ export function CustomRolesBuilder({
   return (
     <div className="space-y-3">
       <div className="flex items-center justify-between">
-        <p className="text-sm font-medium text-gray-900">Custom roles</p>
+        <p className="text-sm font-medium text-gray-900">
+          {t('permissions.builder.title')}
+        </p>
         <Button type="button" variant="secondary" onClick={addRole}>
-          Add role
+          {t('permissions.builder.addRole')}
         </Button>
       </div>
 
       {roles.length === 0 ? (
         <p className="rounded-lg border border-dashed border-gray-200 px-4 py-6 text-center text-sm text-gray-500">
-          Add at least one role with permissions.
+          {t('permissions.builder.addOneRole')}
         </p>
       ) : (
         roles.map((role, index) => {
@@ -94,15 +98,21 @@ export function CustomRolesBuilder({
               <button
                 type="button"
                 onClick={() => setExpandedIndex(isExpanded ? null : index)}
-                className="flex w-full items-center justify-between gap-3 px-4 py-3 text-left"
+                className="flex w-full items-center justify-between gap-3 px-4 py-3 text-start"
               >
                 <div>
                   <p className="font-medium text-gray-900">
-                    {role.name.trim() || `Role ${index + 1}`}
+                    {role.name.trim() ||
+                      t('permissions.builder.roleNumber', { index: index + 1 })}
                   </p>
                   <p className="text-xs text-gray-500">
-                    {role.permissions.length} permission
-                    {role.permissions.length === 1 ? '' : 's'}
+                    {role.permissions.length === 1
+                      ? t('permissions.builder.permissionCount', {
+                          count: role.permissions.length,
+                        })
+                      : t('permissions.builder.permissionCountPlural', {
+                          count: role.permissions.length,
+                        })}
                   </p>
                 </div>
                 <span className="text-gray-400">{isExpanded ? '−' : '+'}</span>
@@ -111,12 +121,12 @@ export function CustomRolesBuilder({
               {isExpanded && (
                 <div className="space-y-4 border-t border-gray-200 px-4 py-4">
                   <Input
-                    label="Role name"
+                    label={t('permissions.builder.roleName')}
                     value={role.name}
                     onChange={(event) =>
                       updateRole(index, { name: event.target.value })
                     }
-                    placeholder="e.g. Project Manager"
+                    placeholder={t('permissions.builder.rolePlaceholder')}
                   />
 
                   <div className="space-y-3">
@@ -175,12 +185,12 @@ export function CustomRolesBuilder({
                       onClick={() => removeRole(index)}
                       className="text-red-600 hover:bg-red-50"
                     >
-                      Remove role
+                      {t('permissions.builder.removeRole')}
                     </Button>
                   )}
                   {roles.length === 1 && !role.id && (
                     <p className="text-xs text-gray-500">
-                      At least one role is required.
+                      {t('permissions.builder.atLeastOne')}
                     </p>
                   )}
                 </div>

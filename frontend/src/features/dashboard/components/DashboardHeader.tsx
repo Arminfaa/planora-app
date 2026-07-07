@@ -2,6 +2,7 @@
 
 import { useAuth } from '@/features/auth/hooks/useAuth';
 import { SearchInput } from '@/shared/components/ui/SearchInput';
+import { useLocale } from '@/i18n/LocaleProvider';
 
 interface DashboardHeaderProps {
   projectCount: number;
@@ -17,19 +18,21 @@ export function DashboardHeader({
   onNewProject,
 }: DashboardHeaderProps) {
   const { user } = useAuth();
-  const firstName = user?.name?.split(' ')[0] ?? 'there';
+  const { t } = useLocale();
+  const firstName = user?.name?.split(' ')[0] ?? t('common.there');
+  const projectSummary =
+    projectCount === 1
+      ? t('dashboard.manageWorkspacesSingular')
+      : t('dashboard.manageWorkspaces', { count: projectCount });
 
   return (
     <header className="relative">
       <div className="flex flex-col gap-5 lg:flex-row lg:items-end lg:justify-between">
         <div className="min-w-0">
           <h1 className="text-3xl font-bold tracking-tight text-gray-900 sm:text-4xl">
-            Welcome back, {firstName}
+            {t('dashboard.welcomeName', { name: firstName })}
           </h1>
-          <p className="mt-1.5 text-sm text-gray-500">
-            {projectCount} project{projectCount === 1 ? '' : 's'} · manage your
-            workspaces
-          </p>
+          <p className="mt-1.5 text-sm text-gray-500">{projectSummary}</p>
         </div>
 
         <div className="flex flex-wrap items-center gap-2">
@@ -37,8 +40,8 @@ export function DashboardHeader({
             <SearchInput
               value={searchQuery}
               onChange={(event) => onSearchChange(event.target.value)}
-              placeholder="Search projects..."
-              aria-label="Search projects"
+              placeholder={t('dashboard.searchProjects')}
+              aria-label={t('dashboard.searchProjects')}
               className="rounded-xl border-gray-200 bg-white/80 shadow-sm backdrop-blur-sm"
             />
           </div>
@@ -61,7 +64,7 @@ export function DashboardHeader({
                 d="M12 4v16m8-8H4"
               />
             </svg>
-            New Project
+            {t('dashboard.newProject')}
           </button>
         </div>
       </div>

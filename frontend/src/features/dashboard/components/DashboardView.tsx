@@ -10,6 +10,7 @@ import { computeDashboardStats } from '@/features/dashboard/utils/stats';
 import { LoadingSpinner } from '@/shared/components/feedback/LoadingSpinner';
 import { Button } from '@/shared/components/ui/Button';
 import { Pagination } from '@/shared/components/ui/Pagination';
+import { useLocale } from '@/i18n/LocaleProvider';
 
 function projectMatchesQuery(
   project: { name: string; description?: string | null },
@@ -24,6 +25,7 @@ function projectMatchesQuery(
 }
 
 export function DashboardView() {
+  const { t } = useLocale();
   const {
     projects,
     pagination,
@@ -77,7 +79,7 @@ export function DashboardView() {
 
           <div className="mt-8 grid gap-3 sm:grid-cols-3">
             <StatsCard
-              label="Projects"
+              label={t('dashboard.projects')}
               value={dashboardStats.totalProjects}
               accent="blue"
               variant="glass"
@@ -98,7 +100,7 @@ export function DashboardView() {
               }
             />
             <StatsCard
-              label="Boards"
+              label={t('dashboard.boards')}
               value={dashboardStats.totalBoards}
               accent="green"
               variant="glass"
@@ -119,7 +121,7 @@ export function DashboardView() {
               }
             />
             <StatsCard
-              label="Team Members"
+              label={t('dashboard.teamMembers')}
               value={dashboardStats.totalMembers}
               accent="purple"
               variant="glass"
@@ -147,11 +149,14 @@ export function DashboardView() {
         <div className="mb-5 flex items-center justify-between gap-3">
           <div>
             <h2 className="text-lg font-semibold text-gray-900">
-              Your projects
+              {t('dashboard.yourProjects')}
             </h2>
             {hasSearch && (
               <p className="mt-0.5 text-sm text-gray-500">
-                {filteredProjects.length} of {projects.length} shown
+                {t('dashboard.shownOf', {
+                  shown: filteredProjects.length,
+                  total: projects.length,
+                })}
               </p>
             )}
           </div>
@@ -165,20 +170,20 @@ export function DashboardView() {
 
         {projects.length === 0 ? (
           <div className="rounded-xl border border-dashed border-gray-200 bg-white py-16 text-center">
-            <p className="text-gray-600">No projects yet</p>
+            <p className="text-gray-600">{t('dashboard.noProjects')}</p>
             <Button className="mt-4" onClick={() => setShowCreateModal(true)}>
-              Create your first project
+              {t('dashboard.createFirstProject')}
             </Button>
           </div>
         ) : filteredProjects.length === 0 ? (
           <div className="rounded-xl border border-dashed border-gray-200 bg-white py-16 text-center">
-            <p className="text-gray-600">No projects match your search</p>
+            <p className="text-gray-600">{t('dashboard.noProjectsMatch')}</p>
             <button
               type="button"
               onClick={() => setSearchQuery('')}
               className="mt-3 text-sm font-medium text-primary-600 hover:text-primary-700"
             >
-              Clear search
+              {t('common.clearSearch')}
             </button>
           </div>
         ) : (

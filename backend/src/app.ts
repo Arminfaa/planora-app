@@ -9,8 +9,11 @@ import { noCacheApi } from './middlewares/noCache.middleware';
 import { errorHandler, notFoundHandler } from './middlewares/error.middleware';
 import v1Routes from './routes/v1';
 
+import { localeMiddleware } from './i18n/locale.middleware';
+
 const app = express();
 
+app.use(localeMiddleware);
 app.use(
   helmet({
     crossOriginResourcePolicy: { policy: 'cross-origin' },

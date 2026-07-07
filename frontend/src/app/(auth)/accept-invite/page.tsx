@@ -9,6 +9,7 @@ import { LoadingSpinner } from '@/shared/components/feedback/LoadingSpinner';
 import { Button } from '@/shared/components/ui/Button';
 import { getApiErrorMessage } from '@/lib/api';
 import { useInvitePreview } from '@/features/projects/hooks/useProjectTeam';
+import { useLocale } from '@/i18n/LocaleProvider';
 
 export default function AcceptInvitePage() {
   const router = useRouter();
@@ -18,6 +19,7 @@ export default function AcceptInvitePage() {
   const { preview, isLoading, error } = useInvitePreview(token);
   const [actionError, setActionError] = useState('');
   const [isAccepting, setIsAccepting] = useState(false);
+  const { t } = useLocale();
 
   useEffect(() => {
     if (authLoading || !token || !preview?.valid || !isAuthenticated) return;
@@ -40,7 +42,7 @@ export default function AcceptInvitePage() {
   if (!token) {
     return (
       <div className="rounded-lg bg-red-50 px-4 py-3 text-sm text-red-700">
-        Invite token is missing.
+        {t('auth.acceptInvitePage.tokenMissing')}
       </div>
     );
   }
@@ -52,7 +54,7 @@ export default function AcceptInvitePage() {
   if (error || !preview) {
     return (
       <div className="rounded-lg bg-red-50 px-4 py-3 text-sm text-red-700">
-        {error || 'Invite not found'}
+        {error || t('auth.acceptInvitePage.notFound')}
       </div>
     );
   }
@@ -61,32 +63,39 @@ export default function AcceptInvitePage() {
     return (
       <div className="rounded-lg bg-amber-50 px-4 py-3 text-sm text-amber-800">
         {preview.accepted
-          ? 'This invite has already been used.'
-          : 'This invite has expired.'}
+          ? t('auth.acceptInvitePage.alreadyUsed')
+          : t('auth.acceptInvitePage.expired')}
       </div>
     );
   }
 
+  const roleName = (preview.roleName ?? preview.role ?? 'member').toLowerCase();
+
   if (!isAuthenticated) {
     return (
       <div className="space-y-4">
-        <h2 className="text-xl font-semibold text-gray-900">Project invite</h2>
+        <h2 className="text-xl font-semibold text-gray-900">
+          {t('auth.acceptInvitePage.title')}
+        </h2>
         <div className="rounded-lg bg-primary-50 px-4 py-3 text-sm text-primary-900">
-          You are invited to join <strong>{preview.projectName}</strong> as{' '}
-          <strong>
-            {(preview.roleName ?? preview.role ?? 'member').toLowerCase()}
-          </strong>
-          .
+          {t('invite.acceptDescription', {
+            projectName: preview.projectName ?? '',
+          })}{' '}
+          ({roleName})
         </div>
         <p className="text-sm text-gray-600">
-          Sign in with <strong>{preview.email}</strong> or create an account.
+          {t('auth.acceptInvitePage.signInWithEmail', {
+            email: preview.email ?? '',
+          })}
         </p>
         <div className="flex gap-3">
           <Link href={`/login?invite=${token}`}>
-            <Button>Sign in</Button>
+            <Button>{t('auth.acceptInvitePage.signIn')}</Button>
           </Link>
           <Link href={`/register?invite=${token}`}>
-            <Button variant="secondary">Create account</Button>
+            <Button variant="secondary">
+              {t('auth.acceptInvitePage.createAccount')}
+            </Button>
           </Link>
         </div>
       </div>
@@ -96,11 +105,11 @@ export default function AcceptInvitePage() {
   return (
     <div className="space-y-4">
       <h2 className="text-xl font-semibold text-gray-900">
-        Accepting invite...
+        {t('auth.acceptInvitePage.accepting')}
       </h2>
       {(actionError || isAccepting) && (
         <p className="text-sm text-gray-600">
-          {actionError || 'Joining project...'}
+          {actionError || t('auth.acceptInvitePage.joining')}
         </p>
       )}
       {!actionError && <LoadingSpinner />}

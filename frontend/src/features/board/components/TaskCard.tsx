@@ -5,7 +5,8 @@ import { memo, type HTMLAttributes } from 'react';
 import { useSortable } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
 import type { BoardTask } from '../types';
-import { priorityStyles } from '@/features/tasks/types';
+import { getPriorityStyles } from '@/features/tasks/types';
+import { useLocale } from '@/i18n/LocaleProvider';
 import { LabelBadges } from '@/features/labels/components/LabelBadges';
 import { normalizeTaskLabels } from '@/features/labels/types';
 import { formatDueDate, isDueDateOverdue } from '@/features/tasks/utils/dates';
@@ -52,7 +53,8 @@ export const TaskCard = memo(function TaskCard({
   canToggleComplete = false,
   canToggleChecklist = false,
 }: TaskCardProps) {
-  const style = priorityStyles[task.priority];
+  const { t } = useLocale();
+  const style = getPriorityStyles(t)[task.priority];
   const labels = normalizeTaskLabels(task.labels);
   const attachmentCount = getTaskAttachmentCount(task);
 
@@ -75,9 +77,9 @@ export const TaskCard = memo(function TaskCard({
           {dragHandleProps && (
             <button
               type="button"
-              className="-ml-0.5 mt-0.5 shrink-0 cursor-grab touch-none rounded p-1.5 text-gray-400 transition active:cursor-grabbing hover:bg-gray-100 hover:text-gray-600"
+              className="-ms-0.5 mt-0.5 shrink-0 cursor-grab touch-none rounded p-1.5 text-gray-400 transition active:cursor-grabbing hover:bg-gray-100 hover:text-gray-600"
               aria-label={`Drag ${task.title}`}
-              title="Hold to drag"
+              title={t('common.holdToDrag')}
               {...dragHandleProps}
             >
               <GripVerticalIcon className="h-4 w-4" />
@@ -138,7 +140,7 @@ export const TaskCard = memo(function TaskCard({
                     onPointerDown={stopCardPointer}
                     className="rounded p-1 text-gray-400 transition hover:bg-gray-100 hover:text-primary-600"
                     aria-label={`Edit ${task.title}`}
-                    title="Edit task"
+                    title={t('board.editTask')}
                   >
                     <EditIcon className="h-3.5 w-3.5" />
                   </button>

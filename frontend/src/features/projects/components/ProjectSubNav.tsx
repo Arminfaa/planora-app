@@ -4,6 +4,7 @@ import { Segmented } from 'antd';
 import { usePathname, useRouter } from 'next/navigation';
 import { useProjectPermissions } from '@/features/permissions/hooks/useProjectPermissions';
 import { useProjectContext } from '../context/ProjectContext';
+import { useLocale } from '@/i18n/LocaleProvider';
 
 type ProjectNavKey = 'overview' | 'gantt' | 'group' | 'team' | 'settings';
 
@@ -22,33 +23,39 @@ export function ProjectSubNav() {
   const pathname = usePathname();
   const { project, slug } = useProjectContext();
   const { can } = useProjectPermissions(project);
+  const { t } = useLocale();
 
   const base = `/dashboard/projects/${slug}`;
   const activeKey = getActiveKey(pathname, slug);
 
   const items = [
-    { key: 'overview' as const, label: 'Overview', href: base, visible: true },
+    {
+      key: 'overview' as const,
+      label: t('projects.overview'),
+      href: base,
+      visible: true,
+    },
     {
       key: 'gantt' as const,
-      label: 'Gantt',
+      label: t('projects.gantt'),
       href: `${base}/gantt`,
       visible: can('task.view'),
     },
     {
       key: 'group' as const,
-      label: 'Group',
+      label: t('projects.group'),
       href: `${base}/group`,
       visible: can('group.view'),
     },
     {
       key: 'team' as const,
-      label: 'Team',
+      label: t('projects.team'),
       href: `${base}/team`,
       visible: can('team.view'),
     },
     {
       key: 'settings' as const,
-      label: 'Settings',
+      label: t('projects.settings'),
       href: `${base}/settings`,
       visible:
         can('project.edit') ||

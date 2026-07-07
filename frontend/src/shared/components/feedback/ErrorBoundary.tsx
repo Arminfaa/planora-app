@@ -1,6 +1,7 @@
 'use client';
 
 import React, { type ErrorInfo, type ReactNode } from 'react';
+import { useLocale } from '@/i18n/LocaleProvider';
 
 interface Props {
   children: ReactNode;
@@ -10,8 +11,17 @@ interface State {
   hasError: boolean;
 }
 
-class ErrorBoundaryClass extends React.Component<Props, State> {
-  constructor(props: Props) {
+interface ErrorBoundaryInnerProps extends Props {
+  title: string;
+  message: string;
+  tryAgainLabel: string;
+}
+
+class ErrorBoundaryClass extends React.Component<
+  ErrorBoundaryInnerProps,
+  State
+> {
+  constructor(props: ErrorBoundaryInnerProps) {
     super(props);
     this.state = { hasError: false };
   }
@@ -29,17 +39,15 @@ class ErrorBoundaryClass extends React.Component<Props, State> {
       return (
         <div className="flex min-h-[200px] flex-col items-center justify-center p-8 text-center">
           <h2 className="text-lg font-semibold text-gray-900">
-            Something went wrong
+            {this.props.title}
           </h2>
-          <p className="mt-2 text-sm text-gray-600">
-            Please refresh the page and try again.
-          </p>
+          <p className="mt-2 text-sm text-gray-600">{this.props.message}</p>
           <button
             type="button"
             onClick={() => this.setState({ hasError: false })}
             className="mt-4 text-sm font-medium text-primary-600 hover:text-primary-700"
           >
-            Try again
+            {this.props.tryAgainLabel}
           </button>
         </div>
       );
@@ -50,7 +58,17 @@ class ErrorBoundaryClass extends React.Component<Props, State> {
 }
 
 export function ErrorBoundary({ children }: Props) {
-  return <ErrorBoundaryClass>{children}</ErrorBoundaryClass>;
+  const { t } = useLocale();
+
+  return (
+    <ErrorBoundaryClass
+      title={t('common.errorBoundaryTitle')}
+      message={t('common.errorBoundaryMessage')}
+      tryAgainLabel={t('common.tryAgain')}
+    >
+      {children}
+    </ErrorBoundaryClass>
+  );
 }
 
 export default ErrorBoundary;

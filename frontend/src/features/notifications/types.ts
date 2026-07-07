@@ -41,6 +41,7 @@ export interface NotificationPreferences {
   taskChanges: boolean;
   groupMessages: boolean;
   pushEnabled: boolean;
+  preferredLocale?: string;
   updatedAt: string;
 }
 

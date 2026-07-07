@@ -1,3 +1,5 @@
+import type { Translator } from '@/i18n/utils';
+
 export type TaskPriority = 'LOW' | 'MEDIUM' | 'HIGH' | 'URGENT';
 
 export interface TaskAssignee {
@@ -72,14 +74,46 @@ export const PRIORITY_OPTIONS: TaskPriority[] = [
   'URGENT',
 ];
 
+const PRIORITY_BADGES: Record<TaskPriority, string> = {
+  LOW: 'bg-gray-100 text-gray-700',
+  MEDIUM: 'bg-blue-100 text-blue-700',
+  HIGH: 'bg-orange-100 text-orange-700',
+  URGENT: 'bg-red-100 text-red-700',
+};
+
+const PRIORITY_LABEL_KEYS: Record<TaskPriority, string> = {
+  LOW: 'tasks.priorityLabels.low',
+  MEDIUM: 'tasks.priorityLabels.medium',
+  HIGH: 'tasks.priorityLabels.high',
+  URGENT: 'tasks.priorityLabels.urgent',
+};
+
+export function getPriorityStyles(
+  t: Translator,
+): Record<TaskPriority, { badge: string; label: string }> {
+  return {
+    LOW: { badge: PRIORITY_BADGES.LOW, label: t(PRIORITY_LABEL_KEYS.LOW) },
+    MEDIUM: {
+      badge: PRIORITY_BADGES.MEDIUM,
+      label: t(PRIORITY_LABEL_KEYS.MEDIUM),
+    },
+    HIGH: { badge: PRIORITY_BADGES.HIGH, label: t(PRIORITY_LABEL_KEYS.HIGH) },
+    URGENT: {
+      badge: PRIORITY_BADGES.URGENT,
+      label: t(PRIORITY_LABEL_KEYS.URGENT),
+    },
+  };
+}
+
+/** @deprecated Use getPriorityStyles(t) for translated labels */
 export const priorityStyles: Record<
   TaskPriority,
   { badge: string; label: string }
 > = {
-  LOW: { badge: 'bg-gray-100 text-gray-700', label: 'Low' },
-  MEDIUM: { badge: 'bg-blue-100 text-blue-700', label: 'Medium' },
-  HIGH: { badge: 'bg-orange-100 text-orange-700', label: 'High' },
-  URGENT: { badge: 'bg-red-100 text-red-700', label: 'Urgent' },
+  LOW: { badge: PRIORITY_BADGES.LOW, label: 'Low' },
+  MEDIUM: { badge: PRIORITY_BADGES.MEDIUM, label: 'Medium' },
+  HIGH: { badge: PRIORITY_BADGES.HIGH, label: 'High' },
+  URGENT: { badge: PRIORITY_BADGES.URGENT, label: 'Urgent' },
 };
 
 export function getTaskAssignees(task: {

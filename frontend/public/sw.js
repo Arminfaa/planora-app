@@ -1,5 +1,24 @@
 /* eslint-disable no-restricted-globals */
 
+const LOCALE_COOKIE = 'app-locale';
+
+const DEFAULT_NOTIFICATION_TITLES = {
+  en: 'Notification',
+  fa: 'اعلان',
+};
+
+function readLocaleFromCookie() {
+  const match = document.cookie.match(
+    new RegExp(`(?:^|; )${LOCALE_COOKIE}=([^;]*)`),
+  );
+  return match?.[1] === 'fa' ? 'fa' : 'en';
+}
+
+function defaultNotificationTitle() {
+  const locale = readLocaleFromCookie();
+  return DEFAULT_NOTIFICATION_TITLES[locale] ?? DEFAULT_NOTIFICATION_TITLES.en;
+}
+
 self.addEventListener('push', (event) => {
   let payload = {};
 
@@ -10,7 +29,8 @@ self.addEventListener('push', (event) => {
   }
 
   const data = payload;
-  const title = typeof data.title === 'string' ? data.title : 'Notification';
+  const title =
+    typeof data.title === 'string' ? data.title : defaultNotificationTitle();
   const body = typeof data.body === 'string' ? data.body : '';
   const href = typeof data.href === 'string' ? data.href : '/dashboard/notifications';
   const tag =

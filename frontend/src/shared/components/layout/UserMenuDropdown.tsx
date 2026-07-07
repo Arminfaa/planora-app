@@ -5,6 +5,7 @@ import type { MenuProps } from 'antd';
 import { useRouter } from 'next/navigation';
 import { useAuth } from '@/features/auth/hooks/useAuth';
 import { useNotifications } from '@/features/notifications/hooks/useNotifications';
+import { useLocale } from '@/i18n/LocaleProvider';
 
 interface UserMenuDropdownProps {
   className?: string;
@@ -17,6 +18,7 @@ export function UserMenuDropdown({
 }: UserMenuDropdownProps) {
   const { user, logout } = useAuth();
   const { unreadCount } = useNotifications();
+  const { t } = useLocale();
   const router = useRouter();
 
   if (!user) return null;
@@ -24,12 +26,12 @@ export function UserMenuDropdown({
   const displayName = user.name.split(' ')[0] || user.name;
 
   const items: MenuProps['items'] = [
-    { key: 'profile', label: 'Profile' },
+    { key: 'profile', label: t('header.profile') },
     {
       key: 'notifications',
       label: (
         <span className="flex w-full items-center justify-between gap-3">
-          <span>Notifications</span>
+          <span>{t('header.notifications')}</span>
           {unreadCount > 0 && (
             <Badge
               count={unreadCount > 99 ? '99+' : unreadCount}
@@ -41,7 +43,7 @@ export function UserMenuDropdown({
       ),
     },
     { type: 'divider' },
-    { key: 'signout', label: 'Sign out', danger: true },
+    { key: 'signout', label: t('header.signOut'), danger: true },
   ];
 
   const onClick: MenuProps['onClick'] = ({ key }) => {
@@ -68,7 +70,7 @@ export function UserMenuDropdown({
         type="button"
         className={`inline-flex items-center gap-1.5 rounded-lg px-2.5 py-1.5 text-sm font-medium text-gray-700 transition hover:bg-gray-100 ${className}`}
       >
-        {greeting ? `Hi, ${displayName}` : user.name}
+        {greeting ? t('header.greeting', { name: displayName }) : user.name}
         {unreadCount > 0 && (
           <span className="inline-flex h-5 min-w-5 items-center justify-center rounded-full bg-primary-600 px-1.5 text-[10px] font-semibold text-white">
             {unreadCount > 99 ? '99+' : unreadCount}

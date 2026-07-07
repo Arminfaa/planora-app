@@ -16,7 +16,7 @@ import {
   isTaskFiltersActive,
   taskIsVisible,
 } from '@/features/search/utils/taskFilters';
-import { priorityStyles } from '@/features/tasks/types';
+import { getPriorityStyles } from '@/features/tasks/types';
 import { LabelBadges } from '@/features/labels/components/LabelBadges';
 import { normalizeTaskLabels } from '@/features/labels/types';
 import { formatDueDate, isDueDateOverdue } from '@/features/tasks/utils/dates';
@@ -28,6 +28,7 @@ import { Button } from '@/shared/components/ui/Button';
 import { SearchInput } from '@/shared/components/ui/SearchInput';
 import { getApiErrorMessage, isForbiddenError } from '@/lib/api';
 import { exportBoardTasksToExcel } from '../utils/exportTasksToExcel';
+import { useLocale } from '@/i18n/LocaleProvider';
 
 const TaskModal = dynamic(
   () => import('./TaskModal').then((mod) => ({ default: mod.TaskModal })),
@@ -51,6 +52,8 @@ export function AllTasksView({
   projectSlug,
   boardSlug,
 }: AllTasksViewProps) {
+  const { t, locale } = useLocale();
+  const priorityStylesMap = getPriorityStyles(t);
   const [board, setBoard] = useState<Board | null>(null);
   const [tasks, setTasks] = useState<BoardTask[]>([]);
   const [isLoading, setIsLoading] = useState(true);
@@ -131,7 +134,8 @@ export function AllTasksView({
 
   const handleDeleteTask = async (task: BoardTask) => {
     if (!canDeleteTasks) return;
-    if (!confirm(`Delete task "${task.title}"?`)) return;
+    if (!confirm(t('board.deleteTaskNamedConfirm', { title: task.title })))
+      return;
 
     setActionError('');
     try {
@@ -153,7 +157,7 @@ export function AllTasksView({
   const getColumnName = (task: BoardTask) =>
     task.column?.name ??
     columns.find((column) => column.id === task.columnId)?.name ??
-    '—';
+    t('common.emDash');
 
   const getColumnColor = (task: BoardTask) =>
     task.column?.color ??
@@ -162,7 +166,7 @@ export function AllTasksView({
 
   const handleExportExcel = () => {
     if (!board || tasks.length === 0) return;
-    exportBoardTasksToExcel(tasks, board, columns);
+    exportBoardTasksToExcel(tasks, board, columns, locale);
   };
 
   if (isLoading) {
@@ -177,7 +181,7 @@ export function AllTasksView({
     return (
       <div className="mx-auto max-w-4xl px-4 py-8">
         <div className="rounded-lg bg-red-50 px-4 py-3 text-sm text-red-700">
-          {error || 'Board not found'}
+          {error || t('common.boardNotFound')}
         </div>
       </div>
     );
@@ -187,7 +191,7 @@ export function AllTasksView({
     return (
       <div className="mx-auto max-w-4xl px-4 py-8">
         <div className="rounded-lg bg-amber-50 px-4 py-3 text-sm text-amber-900">
-          You do not have permission to view tasks on this board.
+          {t('board.noViewPermission')}
         </div>
       </div>
     );
@@ -212,15 +216,25 @@ export function AllTasksView({
             d="M15 19l-7-7 7-7"
           />
         </svg>
-        Back to board
+        {t('board.backToProject')}
       </Link>
 
       <div className="flex flex-wrap items-end justify-between gap-4">
         <div>
-          <h1 className="text-2xl font-bold text-gray-900">All tasks</h1>
+          <h1 className="text-2xl font-bold text-gray-900">
+            {t('board.allTasks')}
+          </h1>
           <p className="mt-1 text-sm text-gray-500">
-            {board.name} · {tasks.length} task{tasks.length === 1 ? '' : 's'}
-            {hasActiveView && <span> · showing {filteredTasks.length}</span>}
+            {board.name} ·{' '}
+            {tasks.length === 1
+              ? t('board.taskCount', { count: tasks.length })
+              : t('board.taskCountPlural', { count: tasks.length })}
+            {hasActiveView && (
+              <span>
+                {' '}
+                · {t('board.showingCount', { count: filteredTasks.length })}
+              </span>
+            )}
           </p>
         </div>
 
@@ -230,10 +244,10 @@ export function AllTasksView({
             variant="secondary"
             onClick={handleExportExcel}
             disabled={tasks.length === 0}
-            aria-label="Export all tasks to Excel"
+            aria-label={t('board.exportAriaLabel')}
           >
             <svg
-              className="mr-2 h-4 w-4"
+              className="me-2 h-4 w-4"
               fill="none"
               viewBox="0 0 24 24"
               stroke="currentColor"
@@ -246,12 +260,12 @@ export function AllTasksView({
                 d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"
               />
             </svg>
-            Export Excel
+            {t('board.exportExcel')}
           </Button>
 
           {canCreateTasks && (
             <Button type="button" onClick={() => setShowCreateModal(true)}>
-              + New task
+              + {t('board.newTask')}
             </Button>
           )}
         </div>
@@ -262,8 +276,8 @@ export function AllTasksView({
           <SearchInput
             value={searchQuery}
             onChange={(event) => setSearchQuery(event.target.value)}
-            placeholder="Search tasks..."
-            aria-label="Search tasks"
+            placeholder={t('search.searchTasks')}
+            aria-label={t('search.searchTasks')}
             className="rounded-xl border-gray-200 bg-white shadow-sm"
           />
         </div>
@@ -273,9 +287,9 @@ export function AllTasksView({
           variant="secondary"
           onClick={() => setShowFilterModal(true)}
         >
-          Filter
+          {t('common.filter')}
           {countActiveFilters(filters) > 0 && (
-            <span className="ml-2 rounded-full bg-primary-100 px-2 py-0.5 text-xs font-semibold text-primary-700">
+            <span className="ms-2 rounded-full bg-primary-100 px-2 py-0.5 text-xs font-semibold text-primary-700">
               {countActiveFilters(filters)}
             </span>
           )}
@@ -293,13 +307,13 @@ export function AllTasksView({
           <div className="rounded-xl border border-dashed border-gray-200 bg-white py-16 text-center">
             <p className="text-gray-600">
               {tasks.length === 0
-                ? 'No tasks yet.'
-                : 'No tasks match your search or filters.'}
+                ? t('board.noTasksYet')
+                : t('board.noTasksMatch')}
             </p>
           </div>
         ) : (
           filteredTasks.map((task) => {
-            const style = priorityStyles[task.priority];
+            const style = priorityStylesMap[task.priority];
             const labels = normalizeTaskLabels(task.labels);
 
             return (
@@ -326,7 +340,7 @@ export function AllTasksView({
                     <button
                       type="button"
                       onClick={() => setViewTask(task)}
-                      className="mt-2 block text-left text-base font-semibold text-gray-900 hover:text-primary-700"
+                      className="mt-2 block text-start text-base font-semibold text-gray-900 hover:text-primary-700"
                     >
                       {task.title}
                     </button>
@@ -350,7 +364,9 @@ export function AllTasksView({
                               : undefined
                           }
                         >
-                          Due {formatDueDate(task.dueDate)}
+                          {t('tasks.duePrefix', {
+                            date: formatDueDate(task.dueDate),
+                          })}
                         </span>
                       )}
                     </div>
@@ -362,7 +378,7 @@ export function AllTasksView({
                       variant="secondary"
                       onClick={() => setViewTask(task)}
                     >
-                      View
+                      {t('common.view')}
                     </Button>
                     {canEditTasks && (
                       <Button
@@ -370,7 +386,7 @@ export function AllTasksView({
                         variant="secondary"
                         onClick={() => setEditTask(task)}
                       >
-                        Edit
+                        {t('common.edit')}
                       </Button>
                     )}
                     {canDeleteTasks && (
@@ -380,7 +396,7 @@ export function AllTasksView({
                         className="text-red-600 hover:bg-red-50"
                         onClick={() => void handleDeleteTask(task)}
                       >
-                        Delete
+                        {t('common.delete')}
                       </Button>
                     )}
                   </div>

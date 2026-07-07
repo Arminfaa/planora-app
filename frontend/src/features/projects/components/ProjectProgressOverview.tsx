@@ -270,7 +270,7 @@ export function ProjectProgressOverview({
             />
           </div>
 
-          <div className="min-w-0 flex-1 border-t border-gray-100 pt-5 lg:border-l lg:border-t-0 lg:pl-6 lg:pt-0">
+          <div className="min-w-0 flex-1 border-t border-gray-100 pt-5 lg:border-s lg:border-t-0 lg:pl-6 lg:pt-0">
             <p className="text-xs font-medium uppercase tracking-wide text-gray-400">
               Team workload
             </p>

@@ -1,5 +1,6 @@
 import type { Response } from 'express';
 import type { ApiErrorResponse, ApiSuccessResponse } from '../types';
+import { translateMessage, translateMessages } from '../i18n/translate';
 
 export class ApiResponse {
   static success<T>(
@@ -10,7 +11,7 @@ export class ApiResponse {
   ): Response<ApiSuccessResponse<T>> {
     return res.status(statusCode).json({
       success: true,
-      message,
+      message: translateMessage(message),
       data,
     });
   }
@@ -23,8 +24,8 @@ export class ApiResponse {
   ): Response<ApiErrorResponse> {
     return res.status(statusCode).json({
       success: false,
-      message,
-      errors,
+      message: translateMessage(message),
+      errors: translateMessages(errors),
     });
   }
 }

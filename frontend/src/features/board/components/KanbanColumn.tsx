@@ -99,7 +99,7 @@ export const KanbanColumn = memo(function KanbanColumn({
         {canReorder && dragHandleProps && (
           <button
             type="button"
-            className={`-ml-1 mt-0.5 shrink-0 cursor-grab touch-none rounded p-1.5 transition active:cursor-grabbing max-sm:p-2 sm:p-0.5 ${
+            className={`-ms-1 mt-0.5 shrink-0 cursor-grab touch-none rounded p-1.5 transition active:cursor-grabbing max-sm:p-2 sm:p-0.5 ${
               isGlass
                 ? 'text-white/50 hover:bg-white/10 hover:text-white/80'
                 : 'text-gray-400 hover:bg-gray-200 hover:text-gray-600'
@@ -117,7 +117,7 @@ export const KanbanColumn = memo(function KanbanColumn({
           >
             {column.name}
             <span
-              className={`ml-2 text-sm font-normal ${isGlass ? 'text-white/60' : 'text-gray-500'}`}
+              className={`ms-2 text-sm font-normal ${isGlass ? 'text-white/60' : 'text-gray-500'}`}
             >
               {tasks.length}
             </span>

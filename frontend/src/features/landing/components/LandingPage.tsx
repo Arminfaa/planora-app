@@ -4,21 +4,13 @@ import type { ReactNode } from 'react';
 import Link from 'next/link';
 import { useAuth } from '@/features/auth/hooks/useAuth';
 import { useHasMounted } from '@/shared/hooks/useHasMounted';
+import { useLocale } from '@/i18n/LocaleProvider';
 import { LandingNavbar } from './LandingNavbar';
 import { AppLogo } from '@/shared/components/ui/AppLogo';
 
-const highlights = [
-  'Project group',
-  'Custom roles',
-  'All tasks view',
-  'Live collaboration',
-];
-
 const features = [
   {
-    title: 'Project group',
-    description:
-      'Chat with your team in a thread built for work — message bubbles, avatars, file uploads, and a live activity feed for every task change.',
+    messageKey: 'projectGroup',
     icon: (
       <path
         strokeLinecap="round"
@@ -34,9 +26,7 @@ const features = [
     preview: 'group-chat' as const,
   },
   {
-    title: 'Smart notifications',
-    description:
-      'In-app alerts and browser push for task moves, assignments, and group messages — with deep links straight to the work.',
+    messageKey: 'smartNotifications',
     icon: (
       <path
         strokeLinecap="round"
@@ -52,9 +42,7 @@ const features = [
     preview: 'notifications' as const,
   },
   {
-    title: 'Custom roles & permissions',
-    description:
-      'Define owner, admin, and member defaults — or build custom roles with granular control over boards, tasks, team, and settings.',
+    messageKey: 'customRoles',
     icon: (
       <path
         strokeLinecap="round"
@@ -69,9 +57,7 @@ const features = [
     featured: false,
   },
   {
-    title: 'Kanban boards',
-    description:
-      'Drag tasks between columns, reorder work, and customize board backgrounds for a workspace that feels yours.',
+    messageKey: 'kanbanBoards',
     icon: (
       <path
         strokeLinecap="round"
@@ -85,9 +71,7 @@ const features = [
     featured: false,
   },
   {
-    title: 'All tasks view',
-    description:
-      'See every task across columns in one searchable list — filter, sort, and create work without leaving the board.',
+    messageKey: 'allTasksView',
     icon: (
       <path
         strokeLinecap="round"
@@ -102,9 +86,7 @@ const features = [
     featured: false,
   },
   {
-    title: 'Rich task cards',
-    description:
-      'Labels, checklists, comments, attachments, priorities, due dates, and assignees — everything on one card.',
+    messageKey: 'richTaskCards',
     icon: (
       <path
         strokeLinecap="round"
@@ -118,9 +100,7 @@ const features = [
     featured: false,
   },
   {
-    title: 'Real-time sync',
-    description:
-      'Boards and group chat update instantly when teammates move tasks, post messages, or edit project settings.',
+    messageKey: 'realtimeSync',
     icon: (
       <path
         strokeLinecap="round"
@@ -134,9 +114,7 @@ const features = [
     featured: false,
   },
   {
-    title: 'Search & filters',
-    description:
-      'Global project search plus board-level filters by priority, assignee, labels, and due dates.',
+    messageKey: 'searchFilters',
     icon: (
       <path
         strokeLinecap="round"
@@ -150,9 +128,7 @@ const features = [
     featured: false,
   },
   {
-    title: 'Team invites',
-    description:
-      'Invite by email with role assignment — existing users join instantly, new users get a secure invite link.',
+    messageKey: 'teamInvites',
     icon: (
       <path
         strokeLinecap="round"
@@ -165,34 +141,6 @@ const features = [
     span: 'lg:row-span-1',
     featured: false,
   },
-];
-
-const steps = [
-  {
-    step: '01',
-    title: 'Create a project',
-    description:
-      'Name your workspace, pick default or custom roles, and invite your team in one flow.',
-  },
-  {
-    step: '02',
-    title: 'Build boards & chat',
-    description:
-      'Set up Kanban columns, open the project group, and start coordinating in real time.',
-  },
-  {
-    step: '03',
-    title: 'Ship together',
-    description:
-      'Track tasks in board or list view, share files, and stay aligned from first idea to done.',
-  },
-];
-
-const stats = [
-  { value: 'Kanban', label: 'Drag-and-drop boards' },
-  { value: 'Live', label: 'Real-time updates' },
-  { value: 'Roles', label: 'Granular permissions' },
-  { value: 'Group', label: 'Project group' },
 ];
 
 function KanbanPreview({ compact = false }: { compact?: boolean }) {
@@ -470,7 +418,7 @@ function HeroNotificationPanel() {
                 d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9"
               />
             </svg>
-            <span className="absolute -right-1 -top-1 flex h-3.5 min-w-3.5 items-center justify-center rounded-full bg-red-500 px-0.5 text-[8px] font-bold text-white ring-2 ring-white">
+            <span className="absolute -end-1 -top-1 flex h-3.5 min-w-3.5 items-center justify-center rounded-full bg-red-500 px-0.5 text-[8px] font-bold text-white ring-2 ring-white">
               3
             </span>
           </div>
@@ -583,13 +531,50 @@ function FeatureIcon({ icon, accent }: { icon: ReactNode; accent: string }) {
 
 export function LandingPage() {
   const { isAuthenticated, isLoading } = useAuth();
+  const { t } = useLocale();
   const hasMounted = useHasMounted();
   const authed = hasMounted && !isLoading && isAuthenticated;
 
   const primaryHref = authed ? '/dashboard' : '/register';
-  const primaryLabel = authed ? 'Go to Dashboard' : 'Get Started Free';
+  const primaryLabel = authed
+    ? t('landing.hero.primaryAuthed')
+    : t('landing.hero.primaryGuest');
   const secondaryHref = authed ? '#features' : '/login';
-  const secondaryLabel = authed ? 'See features' : 'Sign In';
+  const secondaryLabel = authed
+    ? t('landing.hero.secondaryAuthed')
+    : t('landing.hero.secondaryGuest');
+
+  const highlights = [
+    t('landing.hero.highlights.projectGroup'),
+    t('landing.hero.highlights.customRoles'),
+    t('landing.hero.highlights.allTasksView'),
+    t('landing.hero.highlights.liveCollaboration'),
+  ];
+
+  const stats = [
+    { value: t('landing.stats.kanban'), label: t('landing.stats.kanbanLabel') },
+    { value: t('landing.stats.live'), label: t('landing.stats.liveLabel') },
+    { value: t('landing.stats.roles'), label: t('landing.stats.rolesLabel') },
+    { value: t('landing.stats.group'), label: t('landing.stats.groupLabel') },
+  ];
+
+  const steps = [
+    {
+      step: t('landing.howItWorks.step1.number'),
+      title: t('landing.howItWorks.step1.title'),
+      description: t('landing.howItWorks.step1.description'),
+    },
+    {
+      step: t('landing.howItWorks.step2.number'),
+      title: t('landing.howItWorks.step2.title'),
+      description: t('landing.howItWorks.step2.description'),
+    },
+    {
+      step: t('landing.howItWorks.step3.number'),
+      title: t('landing.howItWorks.step3.title'),
+      description: t('landing.howItWorks.step3.description'),
+    },
+  ];
 
   return (
     <div className="min-h-screen bg-white">
@@ -600,11 +585,11 @@ export function LandingPage() {
         <div className="absolute inset-0 bg-gradient-to-br from-indigo-50 via-white to-violet-50" />
         <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(ellipse_at_70%_0%,rgba(99,102,241,0.18),transparent_55%)]" />
         <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(ellipse_at_0%_90%,rgba(139,92,246,0.12),transparent_50%)]" />
-        <div className="pointer-events-none absolute left-1/2 top-24 h-72 w-72 -translate-x-1/2 rounded-full bg-primary-200/20 blur-3xl landing-float" />
+        <div className="pointer-events-none absolute start-1/2 top-24 h-72 w-72 -translate-x-1/2 rounded-full bg-primary-200/20 blur-3xl landing-float" />
 
         <div className="relative mx-auto my-auto max-w-6xl px-4 pb-10 pt-8 sm:px-6 sm:pb-12 sm:pt-10 lg:pb-16 lg:pt-14 min-[1400px]:max-w-[1380px]">
           <div className="min-[1400px]:grid min-[1400px]:grid-cols-[1fr_1.05fr] min-[1400px]:items-center min-[1400px]:gap-12">
-            <div className="mx-auto max-w-3xl text-center min-[1400px]:mx-0 min-[1400px]:max-w-none min-[1400px]:text-left">
+            <div className="mx-auto max-w-3xl text-center min-[1400px]:mx-0 min-[1400px]:max-w-none min-[1400px]:text-start">
               <div className="mb-5 flex flex-wrap items-center justify-center gap-2 min-[1400px]:justify-start">
                 {highlights.map((item) => (
                   <span
@@ -617,15 +602,13 @@ export function LandingPage() {
               </div>
 
               <h1 className="text-4xl font-bold tracking-tight text-gray-900 sm:text-5xl lg:text-[3.25rem] lg:leading-[1.1] min-[1400px]:text-[2.85rem]">
-                Plan, chat, and ship —{' '}
+                {t('landing.hero.title')}{' '}
                 <span className="bg-gradient-to-r from-primary-600 to-violet-600 bg-clip-text text-transparent">
-                  all in one workspace
+                  {t('landing.hero.titleHighlight')}
                 </span>
               </h1>
               <p className="mx-auto mt-5 max-w-2xl text-lg leading-relaxed text-gray-600 min-[1400px]:mx-0 min-[1400px]:max-w-lg min-[1400px]:text-base">
-                Kanban boards, Project group with chat bubbles and activity
-                logs, custom roles, and granular permissions — built for teams
-                that move fast and stay aligned.
+                {t('landing.hero.subtitle')}
               </p>
 
               <div className="mt-8 flex min-h-[52px] flex-wrap items-center justify-center gap-3 min-[1400px]:justify-start">
@@ -677,26 +660,29 @@ export function LandingPage() {
         <div className="mx-auto max-w-6xl px-4 sm:px-6 min-[1400px]:max-w-[1380px]">
           <div className="mx-auto max-w-2xl text-center">
             <p className="text-sm font-semibold uppercase tracking-wider text-primary-600">
-              Features
+              {t('landing.features.sectionLabel')}
             </p>
             <h2 className="mt-2 text-3xl font-bold tracking-tight text-gray-900 sm:text-4xl">
-              Everything your team needs
+              {t('landing.features.title')}
             </h2>
             <p className="mt-3 text-gray-600">
-              From boards and tasks to chat, notifications, roles, and
-              permissions — one platform that grows with your projects.
+              {t('landing.features.subtitle')}
             </p>
           </div>
 
           <div className="mt-12 grid auto-rows-auto gap-4 sm:grid-cols-2 lg:grid-cols-4 lg:items-start">
             {features.map((feature) => {
+              const title = t(`landing.features.${feature.messageKey}.title`);
+              const description = t(
+                `landing.features.${feature.messageKey}.description`,
+              );
               const hasPreview = 'preview' in feature && feature.preview;
               const isNotifications =
                 hasPreview && feature.preview === 'notifications';
 
               return (
                 <div
-                  key={feature.title}
+                  key={feature.messageKey}
                   className={`group relative overflow-hidden rounded-2xl border border-gray-100 bg-white p-5 shadow-sm transition hover:border-gray-200 hover:shadow-lg h-full ${feature.span}`}
                 >
                   {feature.featured && (
@@ -725,15 +711,13 @@ export function LandingPage() {
                                 : 'bg-indigo-100 text-indigo-700'
                             }`}
                           >
-                            {feature.badge}
+                            {t('landing.features.badgeNew')}
                           </span>
                         )}
                       </div>
-                      <h3 className="font-semibold text-gray-900">
-                        {feature.title}
-                      </h3>
+                      <h3 className="font-semibold text-gray-900">{title}</h3>
                       <p className="mt-2 text-sm leading-relaxed text-gray-600">
-                        {feature.description}
+                        {description}
                       </p>
                     </div>
                     {hasPreview && feature.preview && (
@@ -757,23 +741,22 @@ export function LandingPage() {
         <div className="mx-auto max-w-6xl px-4 sm:px-6 min-[1400px]:max-w-[1380px]">
           <div className="mx-auto max-w-2xl text-center">
             <p className="text-sm font-semibold uppercase tracking-wider text-primary-600">
-              How it works
+              {t('landing.howItWorks.sectionLabel')}
             </p>
             <h2 className="mt-2 text-3xl font-bold tracking-tight text-gray-900 sm:text-4xl">
-              Up and running in minutes
+              {t('landing.howItWorks.title')}
             </h2>
             <p className="mt-3 text-gray-600">
-              No complex setup. Create a project, configure roles, and start
-              collaborating.
+              {t('landing.howItWorks.subtitle')}
             </p>
           </div>
 
           <div className="relative mt-14 grid gap-8 md:grid-cols-3">
-            <div className="pointer-events-none absolute left-0 right-0 top-8 hidden h-0.5 bg-gradient-to-r from-transparent via-primary-200 to-transparent md:block" />
+            <div className="pointer-events-none absolute start-0 end-0 top-8 hidden h-0.5 bg-gradient-to-r from-transparent via-primary-200 to-transparent md:block" />
             {steps.map((item) => (
               <div
                 key={item.step}
-                className="relative rounded-2xl border border-gray-100 bg-white p-6 text-center shadow-sm md:text-left"
+                className="relative rounded-2xl border border-gray-100 bg-white p-6 text-center shadow-sm md:text-start"
               >
                 <span className="inline-flex h-10 w-10 items-center justify-center rounded-xl bg-primary-50 text-sm font-bold text-primary-600">
                   {item.step}
@@ -799,19 +782,21 @@ export function LandingPage() {
         <div className="relative mx-auto max-w-3xl px-4 text-center sm:px-6">
           <h2 className="text-3xl font-bold text-white sm:text-4xl">
             {authed
-              ? 'Your workspace is ready'
-              : 'Ready to organize your next project?'}
+              ? t('landing.cta.titleAuthed')
+              : t('landing.cta.titleGuest')}
           </h2>
           <p className="mx-auto mt-4 max-w-xl text-indigo-100">
             {authed
-              ? 'Jump back into your boards, group chat, and team settings.'
-              : 'Join free — set up projects, invite your team, and start shipping today.'}
+              ? t('landing.cta.subtitleAuthed')
+              : t('landing.cta.subtitleGuest')}
           </p>
           <Link
             href={authed ? '/dashboard' : '/register'}
             className="mt-8 inline-flex rounded-xl bg-white px-8 py-3.5 text-sm font-semibold text-primary-700 shadow-xl transition hover:bg-indigo-50 hover:shadow-2xl"
           >
-            {authed ? 'Open Dashboard' : 'Create free account'}
+            {authed
+              ? t('landing.cta.buttonAuthed')
+              : t('landing.cta.buttonGuest')}
           </Link>
         </div>
       </section>
@@ -822,14 +807,14 @@ export function LandingPage() {
           <div className="flex items-center gap-2">
             <AppLogo size="xs" className="rounded-md" />
             <p className="text-sm text-gray-500">
-              © All rights reserved for{' '}
+              {t('landing.footer.copyright')}{' '}
               <a
                 href="https://arminfatehi.ir/en"
                 target="_blank"
                 rel="noopener noreferrer"
                 className="font-medium text-gray-700 transition hover:text-primary-600"
               >
-                Armin Fatehi
+                {t('landing.footer.author')}
               </a>
             </p>
           </div>
@@ -838,7 +823,7 @@ export function LandingPage() {
               href="#features"
               className="text-gray-500 transition hover:text-gray-900"
             >
-              Features
+              {t('landing.footer.features')}
             </Link>
             {!authed && (
               <>
@@ -846,13 +831,13 @@ export function LandingPage() {
                   href="/login"
                   className="text-gray-500 transition hover:text-gray-900"
                 >
-                  Sign In
+                  {t('landing.footer.signIn')}
                 </Link>
                 <Link
                   href="/register"
                   className="text-gray-500 transition hover:text-gray-900"
                 >
-                  Register
+                  {t('landing.footer.register')}
                 </Link>
               </>
             )}
@@ -861,7 +846,7 @@ export function LandingPage() {
                 href="/dashboard"
                 className="text-gray-500 transition hover:text-gray-900"
               >
-                Dashboard
+                {t('landing.footer.dashboard')}
               </Link>
             )}
           </div>

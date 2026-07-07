@@ -181,6 +181,7 @@ class NotificationService {
       taskChanges: preference.taskChanges,
       groupMessages: preference.groupMessages,
       pushEnabled: preference.pushEnabled,
+      preferredLocale: preference.preferredLocale,
       updatedAt: preference.updatedAt.toISOString(),
     };
   }
@@ -207,6 +208,7 @@ class NotificationService {
       taskChanges: preference.taskChanges,
       groupMessages: preference.groupMessages,
       pushEnabled: preference.pushEnabled,
+      preferredLocale: preference.preferredLocale,
       updatedAt: preference.updatedAt.toISOString(),
     };
   }

@@ -412,6 +412,7 @@ model PushSubscription {
 
 model NotificationPreference {
   userId        String   @id @map("_id") @db.ObjectId
+  preferredLocale String  @default("en")
   taskChanges   Boolean  @default(true)
   groupMessages Boolean  @default(true)
   pushEnabled   Boolean  @default(true)

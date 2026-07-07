@@ -3,12 +3,13 @@
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import Link from 'next/link';
-import { useState } from 'react';
+import { useMemo, useState } from 'react';
 import { useAuth } from '../hooks/useAuth';
-import { loginSchema, type LoginFormData } from '../types';
+import { createLoginSchema, type LoginFormData } from '../types';
 import { Button } from '@/shared/components/ui/Button';
 import { Input } from '@/shared/components/ui/Input';
 import { getApiErrorMessage } from '@/lib/api';
+import { useLocale } from '@/i18n/LocaleProvider';
 
 interface LoginFormProps {
   inviteToken?: string | null;
@@ -20,7 +21,9 @@ export function LoginForm({
   redirectTo = null,
 }: LoginFormProps) {
   const { login } = useAuth();
+  const { t } = useLocale();
   const [error, setError] = useState('');
+  const loginSchema = useMemo(() => createLoginSchema(t), [t]);
 
   const {
     register,
@@ -46,7 +49,7 @@ export function LoginForm({
     <form onSubmit={handleSubmit(onSubmit)} className="space-y-5">
       {inviteToken && (
         <div className="rounded-lg bg-primary-50 px-4 py-3 text-sm text-primary-900">
-          Sign in to accept your project invite.
+          {t('auth.inviteSignInPrompt')}
         </div>
       )}
 
@@ -57,7 +60,7 @@ export function LoginForm({
       )}
 
       <Input
-        label="Email"
+        label={t('auth.emailLabel')}
         type="email"
         autoComplete="email"
         size="large"
@@ -66,7 +69,7 @@ export function LoginForm({
       />
 
       <Input
-        label="Password"
+        label={t('auth.passwordLabel')}
         type="password"
         autoComplete="current-password"
         size="large"
@@ -79,16 +82,16 @@ export function LoginForm({
         className="w-full !rounded-lg !bg-gray-900 !py-3 text-base font-semibold hover:!bg-gray-800 focus:ring-gray-700"
         isLoading={isSubmitting}
       >
-        Sign In
+        {t('auth.login')}
       </Button>
 
       <p className="text-center text-sm text-gray-500">
-        Don&apos;t have an account?{' '}
+        {t('auth.noAccount')}{' '}
         <Link
           href={inviteToken ? `/register?invite=${inviteToken}` : '/register'}
           className="font-medium text-gray-900 underline underline-offset-2 hover:text-primary-600"
         >
-          Register
+          {t('auth.register')}
         </Link>
       </p>
     </form>

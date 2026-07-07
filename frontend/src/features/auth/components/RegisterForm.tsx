@@ -3,13 +3,14 @@
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import Link from 'next/link';
-import { useEffect, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { useAuth } from '../hooks/useAuth';
-import { registerSchema, type RegisterFormData } from '../types';
+import { createRegisterSchema, type RegisterFormData } from '../types';
 import { useInvitePreview } from '@/features/projects/hooks/useProjectTeam';
 import { Button } from '@/shared/components/ui/Button';
 import { Input } from '@/shared/components/ui/Input';
 import { getApiErrorMessage } from '@/lib/api';
+import { useLocale } from '@/i18n/LocaleProvider';
 
 interface RegisterFormProps {
   inviteToken?: string | null;
@@ -17,7 +18,9 @@ interface RegisterFormProps {
 
 export function RegisterForm({ inviteToken = null }: RegisterFormProps) {
   const { register: registerUser } = useAuth();
+  const { t } = useLocale();
   const [error, setError] = useState('');
+  const registerSchema = useMemo(() => createRegisterSchema(t), [t]);
   const {
     preview,
     isLoading: loadingInvite,
@@ -48,21 +51,26 @@ export function RegisterForm({ inviteToken = null }: RegisterFormProps) {
     }
   };
 
+  const roleName = (
+    preview?.roleName ??
+    preview?.role ??
+    'member'
+  ).toLowerCase();
+
   return (
     <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
       {inviteToken && loadingInvite && (
         <div className="rounded-lg bg-gray-50 px-4 py-3 text-sm text-gray-600">
-          Loading invite...
+          {t('auth.loadingInvite')}
         </div>
       )}
 
       {inviteToken && preview?.valid && (
         <div className="rounded-lg bg-primary-50 px-4 py-3 text-sm text-primary-900">
-          You are joining <strong>{preview.projectName}</strong> as{' '}
-          <strong>
-            {(preview.roleName ?? preview.role ?? 'member').toLowerCase()}
-          </strong>
-          .
+          {t('auth.inviteRegisterPrompt', {
+            projectName: preview.projectName ?? '',
+            role: roleName,
+          })}
         </div>
       )}
 
@@ -79,7 +87,7 @@ export function RegisterForm({ inviteToken = null }: RegisterFormProps) {
       )}
 
       <Input
-        label="Name"
+        label={t('auth.nameLabel')}
         type="text"
         autoComplete="name"
         size="large"
@@ -88,7 +96,7 @@ export function RegisterForm({ inviteToken = null }: RegisterFormProps) {
       />
 
       <Input
-        label="Email"
+        label={t('auth.emailLabel')}
         type="email"
         autoComplete="email"
         size="large"
@@ -98,7 +106,7 @@ export function RegisterForm({ inviteToken = null }: RegisterFormProps) {
       />
 
       <Input
-        label="Password"
+        label={t('auth.passwordLabel')}
         type="password"
         autoComplete="new-password"
         size="large"
@@ -107,7 +115,7 @@ export function RegisterForm({ inviteToken = null }: RegisterFormProps) {
       />
 
       <Input
-        label="Confirm password"
+        label={t('auth.confirmPasswordLabel')}
         type="password"
         autoComplete="new-password"
         size="large"
@@ -121,16 +129,16 @@ export function RegisterForm({ inviteToken = null }: RegisterFormProps) {
         isLoading={isSubmitting}
         disabled={Boolean(inviteToken && !preview?.valid)}
       >
-        Create Account
+        {t('auth.createAccount')}
       </Button>
 
       <p className="text-center text-sm text-gray-500">
-        Already have an account?{' '}
+        {t('auth.hasAccount')}{' '}
         <Link
           href={inviteToken ? `/accept-invite?token=${inviteToken}` : '/login'}
           className="font-medium text-gray-900 underline underline-offset-2 hover:text-primary-600"
         >
-          Sign In
+          {t('auth.login')}
         </Link>
       </p>
     </form>

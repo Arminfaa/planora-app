@@ -2,9 +2,13 @@ import * as XLSX from 'xlsx';
 import { normalizeTaskLabels } from '@/features/labels/types';
 import {
   formatAssigneeNames,
-  priorityStyles,
+  getPriorityStyles,
   type TaskChecklistItem,
 } from '@/features/tasks/types';
+import type { Locale } from '@/i18n/types';
+import { createTranslator } from '@/i18n/utils';
+import { getMessages } from '@/i18n/messages';
+import { getIntlLocale } from '@/i18n/types';
 import type { Board, BoardColumn, BoardTask } from '../types';
 
 export type ExportableBoardTask = BoardTask & {
@@ -17,10 +21,13 @@ export type ExportableBoardTask = BoardTask & {
   };
 };
 
-function formatDateTime(value: string | null | undefined): string {
+function formatDateTime(
+  value: string | null | undefined,
+  locale: Locale,
+): string {
   if (!value) return '';
 
-  return new Intl.DateTimeFormat('en-US', {
+  return new Intl.DateTimeFormat(getIntlLocale(locale), {
     month: 'short',
     day: 'numeric',
     year: 'numeric',
@@ -86,6 +93,7 @@ function applyWorksheetEnhancements(
   worksheet: XLSX.WorkSheet,
   rowCount: number,
   columnCount: number,
+  locale: Locale,
 ): void {
   if (rowCount === 0 || columnCount === 0) return;
 
@@ -105,8 +113,13 @@ function applyWorksheetEnhancements(
       ySplit: 1,
       topLeftCell: 'A2',
       activeCell: 'A2',
+      rightToLeft: locale === 'fa',
     },
   ];
+
+  if (locale === 'fa') {
+    worksheet['!rtl'] = true;
+  }
 
   worksheet['!rows'] = [{ hpt: 22 }];
 }
@@ -115,29 +128,53 @@ export function exportBoardTasksToExcel(
   tasks: ExportableBoardTask[],
   board: Board,
   columns: BoardColumn[],
+  locale: Locale = 'en',
 ): void {
+  const messages = getMessages(locale);
+  const t = createTranslator(locale, messages);
+  const priorityStyles = getPriorityStyles(t);
+  const cols = {
+    index: t('export.columns.index'),
+    title: t('export.columns.title'),
+    description: t('export.columns.description'),
+    column: t('export.columns.column'),
+    priority: t('export.columns.priority'),
+    dueDate: t('export.columns.dueDate'),
+    status: t('export.columns.status'),
+    createdAt: t('export.columns.createdAt'),
+    updatedAt: t('export.columns.updatedAt'),
+    completedAt: t('export.columns.completedAt'),
+    assignees: t('export.columns.assignees'),
+    labels: t('export.columns.labels'),
+    checklistProgress: t('export.columns.checklistProgress'),
+    checklistItems: t('export.columns.checklistItems'),
+    createdBy: t('export.columns.createdBy'),
+  };
+
   const rows = tasks.map((task, index) => {
     const labels = normalizeTaskLabels(task.labels);
 
     return {
-      '#': index + 1,
-      Title: task.title,
-      Description: task.description ?? '',
-      Column: getColumnName(task, columns),
-      Priority: priorityStyles[task.priority].label,
-      'Due Date': task.dueDate ? formatDateTime(task.dueDate) : '',
-      Status: task.isCompleted ? 'Completed' : 'Not Completed',
-      'Created At': formatDateTime(task.createdAt),
-      'Updated At': formatDateTime(task.updatedAt),
-      'Completed At':
+      [cols.index]: index + 1,
+      [cols.title]: task.title,
+      [cols.description]: task.description ?? '',
+      [cols.column]: getColumnName(task, columns),
+      [cols.priority]: priorityStyles[task.priority].label,
+      [cols.dueDate]: task.dueDate ? formatDateTime(task.dueDate, locale) : '',
+      [cols.status]: task.isCompleted
+        ? t('export.statusCompleted')
+        : t('export.statusNotCompleted'),
+      [cols.createdAt]: formatDateTime(task.createdAt, locale),
+      [cols.updatedAt]: formatDateTime(task.updatedAt, locale),
+      [cols.completedAt]:
         task.isCompleted && task.updatedAt
-          ? formatDateTime(task.updatedAt)
+          ? formatDateTime(task.updatedAt, locale)
           : '',
-      Assignees: formatAssigneeNames(task),
-      Labels: labels.map((label) => label.name).join(', '),
-      'Checklist Progress': formatChecklistProgress(task.checklistItems),
-      'Checklist Items': formatChecklistItems(task.checklistItems),
-      'Created By': task.createdBy?.name ?? '',
+      [cols.assignees]: formatAssigneeNames(task),
+      [cols.labels]: labels.map((label) => label.name).join(', '),
+      [cols.checklistProgress]: formatChecklistProgress(task.checklistItems),
+      [cols.checklistItems]: formatChecklistItems(task.checklistItems),
+      [cols.createdBy]: task.createdBy?.name ?? '',
     };
   });
 
@@ -145,10 +182,10 @@ export function exportBoardTasksToExcel(
   const columnCount = rows.length > 0 ? Object.keys(rows[0]).length : 0;
 
   worksheet['!cols'] = autoFitColumnWidths(rows);
-  applyWorksheetEnhancements(worksheet, rows.length, columnCount);
+  applyWorksheetEnhancements(worksheet, rows.length, columnCount, locale);
 
   const workbook = XLSX.utils.book_new();
-  XLSX.utils.book_append_sheet(workbook, worksheet, 'Tasks');
+  XLSX.utils.book_append_sheet(workbook, worksheet, t('export.sheetName'));
 
   const dateStamp = new Date().toISOString().slice(0, 10);
   const filename = `${sanitizeFilename(board.name)}-tasks-${dateStamp}.xlsx`;

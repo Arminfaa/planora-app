@@ -26,6 +26,7 @@ export const updateNotificationPreferencesSchema = z.object({
   taskChanges: z.boolean().optional(),
   groupMessages: z.boolean().optional(),
   pushEnabled: z.boolean().optional(),
+  preferredLocale: z.enum(['en', 'fa']).optional(),
 });
 
 export const notificationIdParamSchema = z.object({

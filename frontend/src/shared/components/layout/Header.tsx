@@ -3,8 +3,10 @@
 import Link from 'next/link';
 import dynamic from 'next/dynamic';
 import { usePathname } from 'next/navigation';
+import { LocaleSwitcher } from '@/i18n/components/LocaleSwitcher';
+import { useLocale } from '@/i18n/LocaleProvider';
 import { UserMenuDropdown } from '@/shared/components/layout/UserMenuDropdown';
-import { AppLogo, APP_NAME } from '@/shared/components/ui/AppLogo';
+import { AppLogo } from '@/shared/components/ui/AppLogo';
 import { cn } from '@/lib/utils';
 
 const GlobalSearch = dynamic(
@@ -15,23 +17,26 @@ const GlobalSearch = dynamic(
   { ssr: false },
 );
 
-function getHeaderNavLinks(pathname: string) {
+function getHeaderNavLinks(
+  pathname: string,
+  t: (key: string) => string,
+): Array<{ href: string; label: string }> {
   if (pathname === '/dashboard' || pathname === '/dashboard/') {
-    return [{ href: '/', label: 'Home' }];
+    return [{ href: '/', label: t('header.home') }];
   }
 
   if (pathname.startsWith('/dashboard/profile')) {
-    return [{ href: '/dashboard', label: 'Dashboard' }];
+    return [{ href: '/dashboard', label: t('header.dashboard') }];
   }
 
   if (pathname.startsWith('/dashboard/notifications')) {
-    return [{ href: '/dashboard', label: 'Dashboard' }];
+    return [{ href: '/dashboard', label: t('header.dashboard') }];
   }
 
   if (pathname.startsWith('/dashboard/')) {
     return [
-      { href: '/dashboard', label: 'Dashboard' },
-      { href: '/', label: 'Home' },
+      { href: '/dashboard', label: t('header.dashboard') },
+      { href: '/', label: t('header.home') },
     ];
   }
 
@@ -56,7 +61,8 @@ function getHeaderContainerClass(pathname: string) {
 
 export function Header() {
   const pathname = usePathname();
-  const navLinks = getHeaderNavLinks(pathname);
+  const { t } = useLocale();
+  const navLinks = getHeaderNavLinks(pathname, t);
 
   return (
     <header className="border-b border-gray-200 bg-white">
@@ -73,14 +79,16 @@ export function Header() {
           >
             <AppLogo className="rounded-lg shadow-sm shadow-primary-500/20 transition group-hover:shadow-md group-hover:shadow-primary-500/25" />
             <span className="hidden text-lg font-semibold text-gray-900 sm:inline">
-              {APP_NAME}
+              {t('common.appName')}
             </span>
           </Link>
+
+          <LocaleSwitcher />
 
           {navLinks.length > 0 && (
             <nav
               aria-label="Breadcrumb"
-              className="flex min-w-0 items-center gap-2 border-l border-gray-200 pl-3"
+              className="flex min-w-0 items-center gap-2 border-s border-gray-200 ps-3"
             >
               {navLinks.map((link, index) => (
                 <div
@@ -108,7 +116,7 @@ export function Header() {
           <GlobalSearch />
         </div>
 
-        <div className="ml-auto flex items-center gap-3">
+        <div className="ms-auto flex items-center gap-3">
           <UserMenuDropdown />
         </div>
       </div>

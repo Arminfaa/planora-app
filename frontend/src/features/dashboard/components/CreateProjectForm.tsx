@@ -3,7 +3,7 @@
 import { useForm, Controller } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
-import { useState } from 'react';
+import { useMemo, useState } from 'react';
 import { Radio } from 'antd';
 import { Button } from '@/shared/components/ui/Button';
 import { Input } from '@/shared/components/ui/Input';
@@ -14,21 +14,13 @@ import type {
 } from '@/features/projects/types';
 import { validateCustomRoles } from '@/features/projects/utils/syncCustomRoles';
 import { CustomRolesBuilder } from './CustomRolesBuilder';
+import { useLocale } from '@/i18n/LocaleProvider';
 
-const schema = z
-  .object({
-    name: z.string().min(2, 'Name must be at least 2 characters'),
-    description: z.string().max(500).optional(),
-    permissionMode: z.enum(['DEFAULT', 'CUSTOM']),
-  })
-  .superRefine((data, ctx) => {
-    // custom roles validated separately in submit handler
-    if (data.permissionMode === 'CUSTOM' && data.name.length < 2) {
-      return;
-    }
-  });
-
-type FormData = z.infer<typeof schema>;
+type FormData = {
+  name: string;
+  description?: string;
+  permissionMode: 'DEFAULT' | 'CUSTOM';
+};
 
 export const CREATE_PROJECT_FORM_ID = 'create-project-form';
 
@@ -45,10 +37,22 @@ export function CreateProjectForm({
   variant = 'default',
   onSubmittingChange,
 }: CreateProjectFormProps) {
+  const { t } = useLocale();
+  const schema = useMemo(
+    () =>
+      z.object({
+        name: z.string().min(2, t('auth.errors.nameMinLength')),
+        description: z.string().max(500).optional(),
+        permissionMode: z.enum(['DEFAULT', 'CUSTOM']),
+      }),
+    [t],
+  );
   const [error, setError] = useState('');
   const [customRoles, setCustomRoles] = useState<
     { name: string; permissions: string[] }[]
-  >([{ name: 'Project Manager', permissions: [] }]);
+  >([
+    { name: t('dashboard.createProjectForm.projectManager'), permissions: [] },
+  ]);
   const isModal = variant === 'modal';
 
   const {
@@ -79,7 +83,12 @@ export function CreateProjectForm({
           customRoles: validRoles,
         });
         reset();
-        setCustomRoles([{ name: 'Project Manager', permissions: [] }]);
+        setCustomRoles([
+          {
+            name: t('dashboard.createProjectForm.projectManager'),
+            permissions: [],
+          },
+        ]);
         return;
       }
 
@@ -105,18 +114,20 @@ export function CreateProjectForm({
       )}
 
       <Input
-        label="Project Name"
+        label={t('dashboard.createProjectForm.nameLabel')}
         error={errors.name?.message}
         {...register('name')}
       />
       <Input
-        label="Description (optional)"
+        label={t('dashboard.createProjectForm.descriptionOptional')}
         error={errors.description?.message}
         {...register('description')}
       />
 
       <div className="space-y-2">
-        <p className="text-sm font-medium text-gray-700">Access model</p>
+        <p className="text-sm font-medium text-gray-700">
+          {t('dashboard.createProjectForm.accessModel')}
+        </p>
         <Controller
           name="permissionMode"
           control={control}
@@ -129,10 +140,10 @@ export function CreateProjectForm({
                 <Radio value="DEFAULT" className="mt-1" />
                 <span>
                   <span className="block text-sm font-medium text-gray-900">
-                    Default
+                    {t('dashboard.createProjectForm.defaultOption')}
                   </span>
                   <span className="block text-xs text-gray-500">
-                    Owner, Admin, Member
+                    {t('dashboard.createProjectForm.defaultOptionHint')}
                   </span>
                 </span>
               </label>
@@ -140,10 +151,10 @@ export function CreateProjectForm({
                 <Radio value="CUSTOM" className="mt-1" />
                 <span>
                   <span className="block text-sm font-medium text-gray-900">
-                    Custom
+                    {t('dashboard.createProjectForm.customOption')}
                   </span>
                   <span className="block text-xs text-gray-500">
-                    Define your own roles
+                    {t('dashboard.createProjectForm.customOptionHint')}
                   </span>
                 </span>
               </label>
@@ -154,11 +165,13 @@ export function CreateProjectForm({
 
       {permissionMode === 'DEFAULT' && (
         <div className="rounded-lg bg-gray-50 px-4 py-3 text-xs text-gray-600">
-          <p className="font-medium text-gray-800">Default roles</p>
+          <p className="font-medium text-gray-800">
+            {t('dashboard.createProjectForm.defaultRolesTitle')}
+          </p>
           <ul className="mt-2 list-inside list-disc space-y-1">
-            <li>Owner — full access including edit/delete project</li>
-            <li>Admin — full access except edit/delete project</li>
-            <li>Member — board tasks, columns, background</li>
+            <li>{t('permissions.defaultRoleOwner')}</li>
+            <li>{t('permissions.defaultRoleAdmin')}</li>
+            <li>{t('permissions.defaultRoleMember')}</li>
           </ul>
         </div>
       )}
@@ -172,10 +185,10 @@ export function CreateProjectForm({
   const formActions = (
     <div className="flex justify-end gap-3">
       <Button type="button" variant="secondary" onClick={onCancel}>
-        Cancel
+        {t('common.cancel')}
       </Button>
       <Button type="submit" isLoading={isSubmitting}>
-        Create Project
+        {t('dashboard.createProjectForm.submit')}
       </Button>
     </div>
   );
@@ -198,7 +211,7 @@ export function CreateProjectForm({
       className="rounded-xl border border-gray-200 bg-white p-6 shadow-sm"
     >
       <h2 className="mb-4 text-lg font-semibold text-gray-900">
-        Create Project
+        {t('dashboard.createProjectForm.title')}
       </h2>
 
       <div className="space-y-4">

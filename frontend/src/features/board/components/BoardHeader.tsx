@@ -3,6 +3,7 @@
 import { useEffect, useRef, useState } from 'react';
 import Link from 'next/link';
 import { BoardBackgroundMenu } from './BoardBackgroundMenu';
+import { useLocale } from '@/i18n/LocaleProvider';
 
 interface BoardHeaderProps {
   boardName: string;
@@ -35,6 +36,7 @@ export function BoardHeader({
   isJoined,
   lastRemoteUpdate,
 }: BoardHeaderProps) {
+  const { t } = useLocale();
   const [showBackgroundMenu, setShowBackgroundMenu] = useState(false);
   const backgroundMenuRef = useRef<HTMLDivElement>(null);
 
@@ -73,7 +75,7 @@ export function BoardHeader({
             d="M15 19l-7-7 7-7"
           />
         </svg>
-        Back to project
+        {t('board.backToProject')}
       </Link>
 
       <div className="flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
@@ -82,7 +84,10 @@ export function BoardHeader({
             {boardName}
           </h1>
           <p className="mt-1.5 text-sm text-white/60">
-            {columnsCount} columns · {totalTasks} tasks
+            {t('board.columnsAndTasks', {
+              columns: columnsCount,
+              tasks: totalTasks,
+            })}
           </p>
         </div>
 
@@ -98,10 +103,10 @@ export function BoardHeader({
               }`}
             />
             {isConnected && isJoined
-              ? 'Live'
+              ? t('board.live')
               : isConnected
-                ? 'Joining...'
-                : 'Connecting...'}
+                ? t('board.joining')
+                : t('board.connecting')}
             {lastRemoteUpdate && (
               <span className="hidden text-white/50 sm:inline">
                 · {lastRemoteUpdate.toLocaleTimeString()}
@@ -127,7 +132,7 @@ export function BoardHeader({
                   d="M4 6h16M4 10h16M4 14h16M4 18h16"
                 />
               </svg>
-              All tasks
+              {t('board.allTasks')}
             </Link>
           )}
 
@@ -137,7 +142,7 @@ export function BoardHeader({
                 type="button"
                 onClick={() => setShowBackgroundMenu((prev) => !prev)}
                 className="inline-flex items-center gap-2 rounded-xl border border-white/20 bg-white/10 px-3.5 py-2.5 text-sm font-medium text-white backdrop-blur-md transition hover:bg-white/20"
-                aria-label="Board background settings"
+                aria-label={t('board.backgroundSettings')}
               >
                 <svg
                   className="h-4 w-4"
@@ -152,7 +157,9 @@ export function BoardHeader({
                     d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"
                   />
                 </svg>
-                <span className="hidden sm:inline">Background</span>
+                <span className="hidden sm:inline">
+                  {t('board.background')}
+                </span>
               </button>
 
               {showBackgroundMenu && (

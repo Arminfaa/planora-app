@@ -211,7 +211,7 @@ export function ProjectOverviewView() {
             {can('board.create') && (
               <Button onClick={() => setShowCreateModal(true)}>
                 <svg
-                  className="mr-2 h-4 w-4"
+                  className="me-2 h-4 w-4"
                   fill="none"
                   viewBox="0 0 24 24"
                   stroke="currentColor"

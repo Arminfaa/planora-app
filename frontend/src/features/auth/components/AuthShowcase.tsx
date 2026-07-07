@@ -159,7 +159,7 @@ function AllTasksSlideMockup() {
             />
           </svg>
           <span className="text-[9px] text-gray-400">Search tasks...</span>
-          <span className="ml-auto rounded bg-primary-100 px-1.5 py-px text-[7px] font-medium text-primary-700">
+          <span className="ms-auto rounded bg-primary-100 px-1.5 py-px text-[7px] font-medium text-primary-700">
             Filter
           </span>
         </div>

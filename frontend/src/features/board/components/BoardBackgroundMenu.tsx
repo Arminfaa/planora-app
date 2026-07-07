@@ -4,6 +4,7 @@ import { useRef, useState } from 'react';
 import { boardService } from '../services/board.service';
 import { getApiErrorMessage } from '@/lib/api';
 import { AssetImage } from '@/shared/components/ui/AssetImage';
+import { useLocale } from '@/i18n/LocaleProvider';
 
 interface BoardBackgroundMenuProps {
   boardId: string;
@@ -18,6 +19,7 @@ export function BoardBackgroundMenu({
   onBackgroundChange,
   onClose,
 }: BoardBackgroundMenuProps) {
+  const { t } = useLocale();
   const inputRef = useRef<HTMLInputElement>(null);
   const [isUploading, setIsUploading] = useState(false);
   const [isRemoving, setIsRemoving] = useState(false);
@@ -39,7 +41,7 @@ export function BoardBackgroundMenu({
   };
 
   const handleRemove = async () => {
-    if (!confirm('Remove the custom board background?')) return;
+    if (!confirm(t('board.removeBackgroundConfirm'))) return;
 
     setIsRemoving(true);
     setError('');
@@ -55,11 +57,13 @@ export function BoardBackgroundMenu({
   };
 
   return (
-    <div className="absolute right-0 top-full z-50 mt-2 w-72 overflow-hidden rounded-xl border border-white/20 bg-white/95 shadow-xl backdrop-blur-md">
+    <div className="absolute end-0 top-full z-50 mt-2 w-72 overflow-hidden rounded-xl border border-white/20 bg-white/95 shadow-xl backdrop-blur-md">
       <div className="border-b border-gray-100 px-4 py-3">
-        <p className="text-sm font-semibold text-gray-900">Board background</p>
+        <p className="text-sm font-semibold text-gray-900">
+          {t('board.backgroundMenu.title')}
+        </p>
         <p className="mt-0.5 text-xs text-gray-500">
-          Upload a custom image for this board
+          {t('board.backgroundMenu.uploadHint')}
         </p>
       </div>
 
@@ -67,7 +71,7 @@ export function BoardBackgroundMenu({
         <div className="relative mx-4 mt-3 h-24 overflow-hidden rounded-lg">
           <AssetImage
             src={backgroundUrl}
-            alt="Current board background"
+            alt={t('board.currentBackgroundAlt')}
             fill
             className="object-cover"
             sizes="200px"
@@ -96,7 +100,7 @@ export function BoardBackgroundMenu({
           type="button"
           disabled={isUploading || isRemoving}
           onClick={() => inputRef.current?.click()}
-          className="flex w-full items-center gap-3 rounded-lg px-3 py-2.5 text-left text-sm text-gray-700 transition hover:bg-gray-100 disabled:opacity-50"
+          className="flex w-full items-center gap-3 rounded-lg px-3 py-2.5 text-start text-sm text-gray-700 transition hover:bg-gray-100 disabled:opacity-50"
         >
           <span className="flex h-8 w-8 items-center justify-center rounded-lg bg-primary-50 text-primary-600">
             <svg
@@ -113,7 +117,9 @@ export function BoardBackgroundMenu({
               />
             </svg>
           </span>
-          {isUploading ? 'Uploading...' : 'Upload image'}
+          {isUploading
+            ? t('common.uploading')
+            : t('board.backgroundMenu.upload')}
         </button>
 
         {backgroundUrl && (
@@ -121,7 +127,7 @@ export function BoardBackgroundMenu({
             type="button"
             disabled={isUploading || isRemoving}
             onClick={() => void handleRemove()}
-            className="flex w-full items-center gap-3 rounded-lg px-3 py-2.5 text-left text-sm text-red-600 transition hover:bg-red-50 disabled:opacity-50"
+            className="flex w-full items-center gap-3 rounded-lg px-3 py-2.5 text-start text-sm text-red-600 transition hover:bg-red-50 disabled:opacity-50"
           >
             <span className="flex h-8 w-8 items-center justify-center rounded-lg bg-red-50">
               <svg
@@ -138,7 +144,9 @@ export function BoardBackgroundMenu({
                 />
               </svg>
             </span>
-            {isRemoving ? 'Removing...' : 'Remove background'}
+            {isRemoving
+              ? t('common.removing')
+              : t('board.backgroundMenu.remove')}
           </button>
         )}
       </div>

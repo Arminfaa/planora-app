@@ -1,12 +1,17 @@
+'use client';
+
 import Link from 'next/link';
 import { AuthShowcase } from './AuthShowcase';
 import { AppLogo } from '@/shared/components/ui/AppLogo';
+import { useLocale } from '@/i18n/LocaleProvider';
 
 interface AuthPageLayoutProps {
   children: React.ReactNode;
 }
 
 export function AuthPageLayout({ children }: AuthPageLayoutProps) {
+  const { t } = useLocale();
+
   return (
     <div className="auth-page-bg relative flex min-h-screen items-center justify-center overflow-hidden px-4 py-8 sm:px-6 lg:px-8">
       <div className="auth-bg-orb auth-bg-orb-1" />
@@ -30,7 +35,7 @@ export function AuthPageLayout({ children }: AuthPageLayoutProps) {
                 href="/"
                 className="text-xl font-bold tracking-tight text-gray-900 transition hover:text-primary-600"
               >
-                ProjectHub
+                {t('auth.appBrand')}
               </Link>
             </div>
 

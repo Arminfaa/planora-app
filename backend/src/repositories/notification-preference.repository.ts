@@ -8,6 +8,14 @@ export class NotificationPreferenceRepository extends BaseRepository {
     });
   }
 
+  async findByUserIds(userIds: string[]): Promise<NotificationPreference[]> {
+    if (userIds.length === 0) return [];
+
+    return this.db.notificationPreference.findMany({
+      where: { userId: { in: userIds } },
+    });
+  }
+
   async getOrCreate(userId: string): Promise<NotificationPreference> {
     const existing = await this.findByUser(userId);
     if (existing) return existing;
@@ -22,7 +30,7 @@ export class NotificationPreferenceRepository extends BaseRepository {
     data: Partial<
       Pick<
         NotificationPreference,
-        'taskChanges' | 'groupMessages' | 'pushEnabled'
+        'taskChanges' | 'groupMessages' | 'pushEnabled' | 'preferredLocale'
       >
     >,
   ): Promise<NotificationPreference> {

@@ -109,7 +109,7 @@ export function TaskAttachmentsPreviewModal({
                     <button
                       type="button"
                       onClick={showPrevImage}
-                      className="absolute left-2 top-1/2 z-10 -translate-y-1/2 rounded-full bg-white p-1.5 text-gray-600 shadow-sm transition hover:text-gray-900"
+                      className="absolute start-2 top-1/2 z-10 -translate-y-1/2 rounded-full bg-white p-1.5 text-gray-600 shadow-sm transition hover:text-gray-900"
                       aria-label="Previous image"
                     >
                       ‹
@@ -117,7 +117,7 @@ export function TaskAttachmentsPreviewModal({
                     <button
                       type="button"
                       onClick={showNextImage}
-                      className="absolute right-2 top-1/2 z-10 -translate-y-1/2 rounded-full bg-white p-1.5 text-gray-600 shadow-sm transition hover:text-gray-900"
+                      className="absolute end-2 top-1/2 z-10 -translate-y-1/2 rounded-full bg-white p-1.5 text-gray-600 shadow-sm transition hover:text-gray-900"
                       aria-label="Next image"
                     >
                       ›

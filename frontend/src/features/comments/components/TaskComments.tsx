@@ -7,6 +7,7 @@ import { Button } from '@/shared/components/ui/Button';
 import { TextArea } from '@/shared/components/ui/TextArea';
 import { getApiErrorMessage } from '@/lib/api';
 import { useAuth } from '@/features/auth/hooks/useAuth';
+import { useLocale } from '@/i18n/LocaleProvider';
 import { formatDate } from '@/features/dashboard/utils/stats';
 
 interface TaskCommentsProps {
@@ -15,6 +16,7 @@ interface TaskCommentsProps {
 
 export function TaskComments({ taskId }: TaskCommentsProps) {
   const { user } = useAuth();
+  const { t } = useLocale();
   const [comments, setComments] = useState<TaskComment[]>([]);
   const [content, setContent] = useState('');
   const [editingId, setEditingId] = useState<string | null>(null);
@@ -76,7 +78,7 @@ export function TaskComments({ taskId }: TaskCommentsProps) {
   };
 
   const handleDelete = async (commentId: string) => {
-    if (!confirm('Delete this comment?')) return;
+    if (!confirm(t('comments.deleteConfirm'))) return;
 
     setError('');
     try {
@@ -89,7 +91,9 @@ export function TaskComments({ taskId }: TaskCommentsProps) {
 
   return (
     <div className="space-y-3">
-      <h3 className="text-sm font-semibold text-gray-900">Comments</h3>
+      <h3 className="text-sm font-semibold text-gray-900">
+        {t('comments.title')}
+      </h3>
 
       {error && (
         <div className="rounded-lg bg-red-50 px-3 py-2 text-sm text-red-700">
@@ -98,9 +102,9 @@ export function TaskComments({ taskId }: TaskCommentsProps) {
       )}
 
       {isLoading ? (
-        <p className="text-sm text-gray-500">Loading comments...</p>
+        <p className="text-sm text-gray-500">{t('common.loading')}</p>
       ) : comments.length === 0 ? (
-        <p className="text-sm text-gray-500">No comments yet.</p>
+        <p className="text-sm text-gray-500">{t('comments.noComments')}</p>
       ) : (
         <div className="max-h-48 space-y-3 overflow-y-auto pr-1">
           {comments.map((comment) => {
@@ -131,14 +135,14 @@ export function TaskComments({ taskId }: TaskCommentsProps) {
                           setEditContent(comment.content);
                         }}
                       >
-                        Edit
+                        {t('comments.edit')}
                       </button>
                       <button
                         type="button"
                         className="text-red-600 hover:text-red-700"
                         onClick={() => void handleDelete(comment.id)}
                       >
-                        Delete
+                        {t('comments.delete')}
                       </button>
                     </div>
                   )}
@@ -158,7 +162,7 @@ export function TaskComments({ taskId }: TaskCommentsProps) {
                         onClick={() => void handleUpdate(comment.id)}
                         isLoading={isSubmitting}
                       >
-                        Save
+                        {t('common.save')}
                       </Button>
                       <Button
                         type="button"
@@ -166,7 +170,7 @@ export function TaskComments({ taskId }: TaskCommentsProps) {
                         variant="secondary"
                         onClick={() => setEditingId(null)}
                       >
-                        Cancel
+                        {t('common.cancel')}
                       </Button>
                     </div>
                   </div>
@@ -184,7 +188,7 @@ export function TaskComments({ taskId }: TaskCommentsProps) {
       <div className="space-y-2">
         <TextArea
           rows={2}
-          placeholder="Write a comment..."
+          placeholder={t('comments.addComment')}
           value={content}
           onChange={(event) => setContent(event.target.value)}
         />
@@ -195,7 +199,7 @@ export function TaskComments({ taskId }: TaskCommentsProps) {
           isLoading={isSubmitting}
           disabled={!content.trim()}
         >
-          Add comment
+          {t('comments.post')}
         </Button>
       </div>
     </div>

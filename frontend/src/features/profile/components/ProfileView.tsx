@@ -1,13 +1,13 @@
 'use client';
 
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { App, Button } from 'antd';
 import { useAuth } from '@/features/auth/hooks/useAuth';
 import { authService } from '@/features/auth/services/auth.service';
 import {
-  changePasswordSchema,
+  createChangePasswordSchema,
   type ChangePasswordFormData,
 } from '@/features/auth/types';
 import { getApiErrorMessage } from '@/lib/api';
@@ -15,9 +15,11 @@ import { getAssetUrl } from '@/lib/assets';
 import { AssetImage } from '@/shared/components/ui/AssetImage';
 import { PageContainer } from '@/shared/components/layout/PageContainer';
 import { Input } from '@/shared/components/ui/Input';
+import { useLocale } from '@/i18n/LocaleProvider';
+import { getIntlLocale, type Locale } from '@/i18n/types';
 
-function formatMemberSince(value: string) {
-  return new Date(value).toLocaleString(undefined, {
+function formatMemberSince(value: string, locale: Locale) {
+  return new Date(value).toLocaleString(getIntlLocale(locale), {
     year: 'numeric',
     month: 'long',
     day: 'numeric',
@@ -38,6 +40,11 @@ function getInitials(name: string) {
 export function ProfileView() {
   const { message } = App.useApp();
   const { user, updateUser } = useAuth();
+  const { t, locale } = useLocale();
+  const changePasswordSchema = useMemo(
+    () => createChangePasswordSchema(t),
+    [t],
+  );
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const [name, setName] = useState(user?.name ?? '');
@@ -78,7 +85,7 @@ export function ProfileView() {
       const updated = await authService.updateProfile(trimmed);
       updateUser(updated);
       setName(updated.name);
-      message.success('Name updated');
+      message.success(t('profile.nameUpdated'));
     } catch (err) {
       setProfileError(getApiErrorMessage(err));
     } finally {
@@ -92,7 +99,7 @@ export function ProfileView() {
     try {
       const updated = await authService.uploadAvatar(file);
       updateUser(updated);
-      message.success('Profile photo updated');
+      message.success(t('profile.avatarUpdated'));
     } catch (err) {
       setProfileError(getApiErrorMessage(err));
     } finally {
@@ -107,7 +114,7 @@ export function ProfileView() {
     try {
       const updated = await authService.removeAvatar();
       updateUser(updated);
-      message.success('Profile photo removed');
+      message.success(t('profile.avatarRemoved'));
     } catch (err) {
       setProfileError(getApiErrorMessage(err));
     } finally {
@@ -125,8 +132,8 @@ export function ProfileView() {
         data.confirmPassword,
       );
       reset();
-      setPasswordSuccess('Password updated successfully');
-      message.success('Password updated');
+      setPasswordSuccess(t('profile.passwordUpdated'));
+      message.success(t('auth.passwordChanged'));
     } catch (err) {
       setPasswordError(getApiErrorMessage(err));
     }
@@ -136,9 +143,11 @@ export function ProfileView() {
     <PageContainer>
       <div className="mx-auto max-w-2xl space-y-8">
         <div>
-          <h1 className="text-2xl font-bold text-gray-900">Profile</h1>
+          <h1 className="text-2xl font-bold text-gray-900">
+            {t('profile.title')}
+          </h1>
           <p className="mt-1 text-sm text-gray-600">
-            Manage your account settings
+            {t('profile.manageAccount')}
           </p>
         </div>
 
@@ -183,7 +192,7 @@ export function ProfileView() {
                   loading={isUploadingAvatar}
                   onClick={() => fileInputRef.current?.click()}
                 >
-                  Change photo
+                  {t('profile.uploadAvatar')}
                 </Button>
                 {avatarUrl && (
                   <Button
@@ -191,7 +200,7 @@ export function ProfileView() {
                     loading={isRemovingAvatar}
                     onClick={() => void handleRemoveAvatar()}
                   >
-                    Remove photo
+                    {t('profile.removeAvatar')}
                   </Button>
                 )}
               </div>
@@ -202,7 +211,7 @@ export function ProfileView() {
             <div className="flex flex-col gap-3 sm:flex-row sm:items-end">
               <div className="flex-1">
                 <Input
-                  label="Full name"
+                  label={t('profile.fullName')}
                   value={name}
                   onChange={(event) => setName(event.target.value)}
                 />
@@ -213,16 +222,23 @@ export function ProfileView() {
                 disabled={!nameChanged || name.trim().length < 2}
                 onClick={() => void handleSaveName()}
               >
-                Save name
+                {t('profile.saveName')}
               </Button>
             </div>
 
-            <Input label="Email" value={user.email} readOnly disabled />
+            <Input
+              label={t('auth.emailLabel')}
+              value={user.email}
+              readOnly
+              disabled
+            />
 
             <div className="rounded-lg bg-gray-50 px-4 py-3">
-              <p className="text-sm font-medium text-gray-500">Member since</p>
+              <p className="text-sm font-medium text-gray-500">
+                {t('profile.memberSince')}
+              </p>
               <p className="mt-1 text-sm text-gray-900">
-                {formatMemberSince(user.createdAt)}
+                {formatMemberSince(user.createdAt, locale)}
               </p>
             </div>
           </div>
@@ -230,10 +246,10 @@ export function ProfileView() {
 
         <section className="rounded-xl border border-gray-200 bg-white p-6 shadow-sm">
           <h2 className="text-lg font-semibold text-gray-900">
-            Change password
+            {t('profile.changePassword')}
           </h2>
           <p className="mt-1 text-sm text-gray-600">
-            Use a strong password with at least 8 characters.
+            {t('profile.passwordHint')}
           </p>
 
           <form
@@ -253,7 +269,7 @@ export function ProfileView() {
             )}
 
             <Input
-              label="Current password"
+              label={t('profile.currentPassword')}
               type="password"
               autoComplete="current-password"
               error={errors.currentPassword?.message}
@@ -261,7 +277,7 @@ export function ProfileView() {
             />
 
             <Input
-              label="New password"
+              label={t('profile.newPassword')}
               type="password"
               autoComplete="new-password"
               error={errors.newPassword?.message}
@@ -269,7 +285,7 @@ export function ProfileView() {
             />
 
             <Input
-              label="Confirm new password"
+              label={t('profile.confirmPassword')}
               type="password"
               autoComplete="new-password"
               error={errors.confirmPassword?.message}
@@ -277,7 +293,7 @@ export function ProfileView() {
             />
 
             <Button type="primary" htmlType="submit" loading={isSubmitting}>
-              Update password
+              {t('profile.updatePassword')}
             </Button>
           </form>
         </section>

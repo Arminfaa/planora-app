@@ -1,10 +1,59 @@
 import { z } from 'zod';
+import type { Translator } from '@/i18n/utils';
 
+export function createLoginSchema(t: Translator) {
+  return z.object({
+    email: z.string().email(t('auth.errors.invalidEmail')),
+    password: z.string().min(1, t('auth.errors.passwordRequired')),
+  });
+}
+
+export function createRegisterSchema(t: Translator) {
+  return z
+    .object({
+      name: z.string().min(2, t('auth.errors.nameMinLength')),
+      email: z.string().email(t('auth.errors.invalidEmail')),
+      password: z.string().min(8, t('auth.errors.passwordMinLength')),
+      confirmPassword: z
+        .string()
+        .min(1, t('auth.errors.confirmPasswordRequired')),
+    })
+    .refine((data) => data.password === data.confirmPassword, {
+      message: t('auth.errors.passwordsDoNotMatch'),
+      path: ['confirmPassword'],
+    });
+}
+
+export function createChangePasswordSchema(t: Translator) {
+  return z
+    .object({
+      currentPassword: z
+        .string()
+        .min(1, t('auth.errors.currentPasswordRequired')),
+      newPassword: z.string().min(8, t('auth.errors.passwordMinLength')),
+      confirmPassword: z
+        .string()
+        .min(1, t('auth.errors.confirmPasswordRequired')),
+    })
+    .refine((data) => data.newPassword === data.confirmPassword, {
+      message: t('auth.errors.passwordsDoNotMatch'),
+      path: ['confirmPassword'],
+    });
+}
+
+export type LoginFormData = z.infer<ReturnType<typeof createLoginSchema>>;
+export type RegisterFormData = z.infer<ReturnType<typeof createRegisterSchema>>;
+export type ChangePasswordFormData = z.infer<
+  ReturnType<typeof createChangePasswordSchema>
+>;
+
+/** @deprecated Use createLoginSchema(t) */
 export const loginSchema = z.object({
   email: z.string().email('Invalid email address'),
   password: z.string().min(1, 'Password is required'),
 });
 
+/** @deprecated Use createRegisterSchema(t) */
 export const registerSchema = z
   .object({
     name: z.string().min(2, 'Name must be at least 2 characters'),
@@ -17,6 +66,7 @@ export const registerSchema = z
     path: ['confirmPassword'],
   });
 
+/** @deprecated Use createChangePasswordSchema(t) */
 export const changePasswordSchema = z
   .object({
     currentPassword: z.string().min(1, 'Current password is required'),
@@ -27,7 +77,3 @@ export const changePasswordSchema = z
     message: 'Passwords do not match',
     path: ['confirmPassword'],
   });
-
-export type LoginFormData = z.infer<typeof loginSchema>;
-export type RegisterFormData = z.infer<typeof registerSchema>;
-export type ChangePasswordFormData = z.infer<typeof changePasswordSchema>;

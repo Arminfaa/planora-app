@@ -7,8 +7,10 @@ import { getApiErrorMessage } from '@/lib/api';
 import { SearchInput } from '@/shared/components/ui/SearchInput';
 import { searchService } from '../services/search.service';
 import type { SearchProjectResult } from '../types';
+import { useLocale } from '@/i18n/LocaleProvider';
 
 export function GlobalSearch() {
+  const { t } = useLocale();
   const containerRef = useRef<HTMLDivElement>(null);
   const [isOpen, setIsOpen] = useState(false);
   const [query, setQuery] = useState('');
@@ -91,8 +93,8 @@ export function GlobalSearch() {
         value={query}
         onChange={(event) => setQuery(event.target.value)}
         onFocus={() => setIsOpen(true)}
-        placeholder="Search projects..."
-        aria-label="Search projects"
+        placeholder={t('dashboard.searchProjects')}
+        aria-label={t('dashboard.searchProjects')}
         className="rounded-lg border-gray-300 bg-gray-50 shadow-sm focus-within:bg-white"
       />
 
@@ -102,19 +104,23 @@ export function GlobalSearch() {
           className="absolute z-50 mt-2 max-h-[min(70vh,24rem)] w-full overflow-y-auto rounded-xl border border-gray-200 bg-white shadow-lg"
         >
           {isLoading && (
-            <p className="px-4 py-3 text-sm text-gray-500">Searching...</p>
+            <p className="px-4 py-3 text-sm text-gray-500">
+              {t('search.searching')}
+            </p>
           )}
 
           {error && <p className="px-4 py-3 text-sm text-red-600">{error}</p>}
 
           {!isLoading && !error && projects.length === 0 && (
-            <p className="px-4 py-3 text-sm text-gray-500">No projects found</p>
+            <p className="px-4 py-3 text-sm text-gray-500">
+              {t('search.noProjectsFound')}
+            </p>
           )}
 
           {!isLoading && !error && projects.length > 0 && (
             <>
               <p className="px-4 py-2 text-xs font-semibold uppercase tracking-wide text-gray-400">
-                Projects
+                {t('dashboard.projects')}
               </p>
               <ul>
                 {projects.map((project) => (
@@ -138,7 +144,10 @@ export function GlobalSearch() {
               </ul>
               {total > projects.length && (
                 <p className="border-t border-gray-100 px-4 py-2 text-xs text-gray-400">
-                  Showing {projects.length} of {total} projects
+                  {t('search.showingProjects', {
+                    shown: projects.length,
+                    total,
+                  })}
                 </p>
               )}
             </>
