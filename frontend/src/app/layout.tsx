@@ -7,11 +7,7 @@ import '@fontsource/vazir/700.css';
 import { Providers } from './providers';
 import './globals.css';
 
-const inter = Inter({
-  subsets: ['latin'],
-  variable: '--font-inter',
-  display: 'swap',
-});
+const inter = Inter({ subsets: ['latin'] });
 
 const appName =
   process.env.NEXT_PUBLIC_APP_NAME ?? 'Project Management Platform';
@@ -53,7 +49,7 @@ export default function RootLayout({
           }}
         />
       </head>
-      <body className={`${inter.variable} antialiased`}>
+      <body className={inter.className}>
         <AntdRegistry>
           <Providers>{children}</Providers>
         </AntdRegistry>
