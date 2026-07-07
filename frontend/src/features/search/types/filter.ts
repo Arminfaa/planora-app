@@ -31,6 +31,17 @@ export interface BoardAssigneeOption {
   name: string;
 }
 
+export function getDueDateFilterOptions(t: (key: string) => string) {
+  return [
+    { value: 'all' as const, label: t('search.allDueDates') },
+    { value: 'overdue' as const, label: t('search.dueOverdue') },
+    { value: 'today' as const, label: t('search.dueToday') },
+    { value: 'week' as const, label: t('search.dueThisWeek') },
+    { value: 'none' as const, label: t('search.noDueDate') },
+  ];
+}
+
+/** @deprecated Use getDueDateFilterOptions(t) for translated labels */
 export const DUE_DATE_FILTER_OPTIONS: {
   value: DueDateFilter;
   label: string;

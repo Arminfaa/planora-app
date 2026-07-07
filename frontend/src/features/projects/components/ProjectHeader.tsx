@@ -3,6 +3,7 @@
 import Link from 'next/link';
 import type { Project } from '../types';
 import { formatDate } from '@/features/dashboard/utils/stats';
+import { useLocale } from '@/i18n/LocaleProvider';
 import { SearchInput } from '@/shared/components/ui/SearchInput';
 
 interface ProjectHeaderProps {
@@ -38,6 +39,7 @@ export function ProjectHeader({
   isJoined,
   lastRemoteUpdate,
 }: ProjectHeaderProps) {
+  const { t } = useLocale();
   return (
     <header className="relative">
       <Link
@@ -57,7 +59,7 @@ export function ProjectHeader({
             d="M15 19l-7-7 7-7"
           />
         </svg>
-        Back to dashboard
+        {t('projects.backToDashboard')}
       </Link>
 
       <div className="flex flex-col gap-5 lg:flex-row lg:items-end lg:justify-between">
@@ -72,18 +74,28 @@ export function ProjectHeader({
           ) : null}
           <div className="mt-2 flex flex-wrap items-center gap-x-3 gap-y-1 text-sm text-gray-500">
             <span>
-              {boardCount} board{boardCount === 1 ? '' : 's'}
+              {boardCount === 1
+                ? t('projects.boardCountLabel', { count: boardCount })
+                : t('projects.boardCountLabelPlural', { count: boardCount })}
             </span>
             <span>·</span>
             <span>
-              {memberCount} member{memberCount === 1 ? '' : 's'}
+              {memberCount === 1
+                ? t('projects.memberCountLabel', { count: memberCount })
+                : t('projects.memberCountLabelPlural', { count: memberCount })}
             </span>
             <span>·</span>
-            <span>Updated {formatDate(project.updatedAt)}</span>
+            <span>
+              {t('projects.updatedAt', {
+                date: formatDate(project.updatedAt),
+              })}
+            </span>
             {project.owner && (
               <>
                 <span>·</span>
-                <span>Owner {project.owner.name}</span>
+                <span>
+                  {t('projects.ownerPrefix', { name: project.owner.name })}
+                </span>
               </>
             )}
           </div>
@@ -101,10 +113,10 @@ export function ProjectHeader({
               }`}
             />
             {isConnected && isJoined
-              ? 'Live'
+              ? t('board.live')
               : isConnected
-                ? 'Joining...'
-                : 'Connecting...'}
+                ? t('board.joining')
+                : t('board.connecting')}
             {lastRemoteUpdate && (
               <span className="hidden text-gray-400 sm:inline">
                 · {lastRemoteUpdate.toLocaleTimeString()}
@@ -118,7 +130,7 @@ export function ProjectHeader({
               onClick={onEditProject}
               className="inline-flex items-center rounded-xl border border-gray-200 bg-white/80 px-3.5 py-2.5 text-sm font-medium text-gray-700 shadow-sm backdrop-blur-sm transition hover:bg-white"
             >
-              Edit
+              {t('common.edit')}
             </button>
           )}
           {canDeleteProject && (
@@ -127,7 +139,7 @@ export function ProjectHeader({
               onClick={onDeleteProject}
               className="inline-flex items-center rounded-xl border border-red-200 bg-white/80 px-3.5 py-2.5 text-sm font-medium text-red-600 shadow-sm backdrop-blur-sm transition hover:bg-red-50"
             >
-              Delete
+              {t('common.delete')}
             </button>
           )}
 
@@ -135,8 +147,8 @@ export function ProjectHeader({
             <SearchInput
               value={searchQuery}
               onChange={(event) => onSearchChange(event.target.value)}
-              placeholder="Search boards..."
-              aria-label="Search boards"
+              placeholder={t('projects.searchBoards')}
+              aria-label={t('projects.searchBoardsAria')}
               className="rounded-xl border-gray-200 bg-white/80 shadow-sm backdrop-blur-sm"
             />
           </div>
@@ -160,7 +172,7 @@ export function ProjectHeader({
                   d="M12 4v16m8-8H4"
                 />
               </svg>
-              New Board
+              {t('projects.newBoard')}
             </button>
           )}
         </div>

@@ -7,8 +7,10 @@ import { useProjectTeam } from '../hooks/useProjectTeam';
 import { useProjectContext } from '../context/ProjectContext';
 import { ProjectTeamPanel } from './ProjectTeamPanel';
 import type { AddProjectMemberInput } from '../types';
+import { useLocale } from '@/i18n/LocaleProvider';
 
 export function ProjectTeamView() {
+  const { t } = useLocale();
   const { user } = useAuth();
   const { project, customRoles, setMemberCount } = useProjectContext();
   const { can } = useProjectPermissions(project);
@@ -52,7 +54,7 @@ export function ProjectTeamView() {
       <div className="mx-auto max-w-7xl px-4 py-12 sm:px-6">
         <div className="rounded-xl border border-dashed border-gray-200 bg-white py-12 text-center">
           <p className="text-sm text-gray-500">
-            You do not have permission to view the project team.
+            {t('projects.noTeamPermission')}
           </p>
         </div>
       </div>

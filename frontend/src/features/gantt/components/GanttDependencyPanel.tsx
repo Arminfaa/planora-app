@@ -3,6 +3,7 @@
 import { useMemo, useState } from 'react';
 import type { GanttDependency, GanttTask } from '../types';
 import { useGanttDependencyMutations } from '../hooks/useGanttDependencyMutations';
+import { useLocale } from '@/i18n/LocaleProvider';
 import { Button } from '@/shared/components/ui/Button';
 import { SelectField } from '@/shared/components/ui/SelectField';
 
@@ -19,6 +20,7 @@ export function GanttDependencyPanel({
   dependencies,
   canEdit,
 }: GanttDependencyPanelProps) {
+  const { t } = useLocale();
   const [fromTaskId, setFromTaskId] = useState('');
   const [toTaskId, setToTaskId] = useState('');
   const { createDependency, deleteDependency, isCreating, isDeleting } =
@@ -48,10 +50,11 @@ export function GanttDependencyPanel({
     <section className="rounded-xl border border-gray-200 bg-white p-5 shadow-sm">
       <div className="flex flex-wrap items-start justify-between gap-3">
         <div>
-          <h3 className="text-sm font-semibold text-gray-900">Dependencies</h3>
+          <h3 className="text-sm font-semibold text-gray-900">
+            {t('gantt.dependencies')}
+          </h3>
           <p className="mt-1 text-sm text-gray-500">
-            Finish-to-start links show which tasks must complete before others
-            begin.
+            {t('gantt.dependenciesHint')}
           </p>
         </div>
       </div>
@@ -59,16 +62,22 @@ export function GanttDependencyPanel({
       {canEdit && (
         <div className="mt-4 grid gap-3 md:grid-cols-[minmax(0,1fr)_minmax(0,1fr)_auto] md:items-end">
           <SelectField
-            label="Predecessor (finishes first)"
+            label={t('gantt.predecessor')}
             value={fromTaskId || undefined}
             onChange={(value) => setFromTaskId(String(value ?? ''))}
-            options={[{ value: '', label: 'Select task' }, ...taskOptions]}
+            options={[
+              { value: '', label: t('gantt.selectTask') },
+              ...taskOptions,
+            ]}
           />
           <SelectField
-            label="Successor (starts after)"
+            label={t('gantt.successor')}
             value={toTaskId || undefined}
             onChange={(value) => setToTaskId(String(value ?? ''))}
-            options={[{ value: '', label: 'Select task' }, ...taskOptions]}
+            options={[
+              { value: '', label: t('gantt.selectTask') },
+              ...taskOptions,
+            ]}
           />
           <Button
             type="button"
@@ -77,7 +86,7 @@ export function GanttDependencyPanel({
               !fromTaskId || !toTaskId || fromTaskId === toTaskId || isCreating
             }
           >
-            Add link
+            {t('gantt.addLink')}
           </Button>
         </div>
       )}
@@ -109,14 +118,16 @@ export function GanttDependencyPanel({
                   disabled={isDeleting}
                   onClick={() => void deleteDependency(dependency.id)}
                 >
-                  Remove
+                  {t('common.remove')}
                 </Button>
               )}
             </div>
           ))}
         </div>
       ) : (
-        <p className="mt-4 text-sm text-gray-500">No dependencies yet.</p>
+        <p className="mt-4 text-sm text-gray-500">
+          {t('gantt.noDependencies')}
+        </p>
       )}
     </section>
   );

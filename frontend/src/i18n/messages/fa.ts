@@ -310,6 +310,28 @@ export const faMessages = {
       activityMoved: '{user} {task} را به {column} منتقل کرد',
       uploadedWireframes: 'وایرفریم‌ها بارگذاری شد — نگاه کنید!',
       reviewAfterStandup: 'عالیه. بعد از استندآپ بررسی می‌کنم.',
+      notificationTaskMovedBody: 'رابط برد ← در حال انجام',
+      notificationNewMessageBody: 'الکس وایرفریم‌ها را بارگذاری کرد',
+      notificationTimeNow: 'اکنون',
+      notificationTimeMinutes: '{count}د',
+      demoTasks: {
+        designLanding: 'طراحی صفحه فرود',
+        apiReview: 'بررسی API',
+        boardUI: 'رابط برد',
+        authFlow: 'جریان احراز هویت',
+        customRoles: 'نقش‌های سفارشی',
+      },
+      demoLabels: {
+        design: 'طراحی',
+        backend: 'بک‌اند',
+        frontend: 'فرانت‌اند',
+        done: 'انجام‌شده',
+        new: 'جدید',
+      },
+      demoNames: {
+        alexChen: 'الکس چن',
+        sarah: 'سارا',
+      },
     },
     howItWorks: {
       sectionLabel: 'نحوه کار',
@@ -446,6 +468,32 @@ export const faMessages = {
     permissionCustom: 'سفارشی',
     noViewBoards: 'شما مجوز مشاهده بردها را ندارید.',
     loadingProgress: 'در حال بارگذاری پیشرفت...',
+    deleteBoardConfirm:
+      'برد «{name}» حذف شود؟ تمام ستون‌ها و وظایف حذف خواهند شد.',
+    newBoard: 'برد جدید',
+    createFirstBoard: 'اولین برد خود را بسازید',
+    boardCountLabel: '{count} برد',
+    boardCountLabelPlural: '{count} برد',
+    memberCountLabel: '{count} عضو',
+    memberCountLabelPlural: '{count} عضو',
+    updatedAt: 'به‌روزرسانی {date}',
+    ownerPrefix: 'مالک {name}',
+    ownerDot: 'مالک · {name}',
+    sectionsNavAria: 'بخش‌های پروژه',
+    noDescription: 'بدون توضیحات',
+    noSettingsPermission: 'شما مجوز مدیریت تنظیمات پروژه را ندارید.',
+    projectDetails: 'جزئیات پروژه',
+    projectDetailsHint: 'نام، توضیحات و حالت مجوز پروژه را به‌روزرسانی کنید.',
+    noTeamPermission: 'شما مجوز مشاهده تیم پروژه را ندارید.',
+    deleteProjectNamed:
+      'پروژه «{name}» حذف شود؟ تمام بردها، ستون‌ها و وظایف حذف خواهند شد.',
+    dangerZoneDescription:
+      'حذف این پروژه تمام بردها، وظایف و پیام‌ها را برای همیشه حذف می‌کند.',
+    teamHeader: 'تیم · {count}',
+    loadingTeam: 'در حال بارگذاری تیم...',
+    revokeInviteConfirm: 'دعوت‌نامه {email} لغو شود؟',
+    boardsCountShort: '{count} برد',
+    membersCountShort: '{count} عضو',
   },
 
   board: {
@@ -522,6 +570,29 @@ export const faMessages = {
     dragColumn: 'کشیدن برای مرتب‌سازی ستون',
     editTaskTitle: 'ویرایش وظیفه',
     duePrefix: 'سررسید {date}',
+    dropTasksHere: 'وظایف را اینجا رها کنید',
+    viewBoardNoTasks:
+      'می‌توانید این برد را ببینید، اما مجوز مشاهده وظایف را ندارید.',
+    boardDeletedRemote: 'این برد توسط کاربر دیگری حذف شد.',
+    deleteColumnNamed: 'ستون «{name}» حذف شود؟',
+    deleteColumnWithTasks:
+      'ستون «{name}» حذف شود؟ {count} وظیفه حذف خواهند شد.',
+    newColumn: 'ستون جدید',
+    columnNamePlaceholder: 'مثلاً بررسی',
+    boardNamePlaceholder: 'مثلاً برد اسپرینت',
+    unspecifiedColumn: 'نامشخص (خودکار)',
+    leaveColumnEmptyHint:
+      'ستون را خالی بگذارید تا وظیفه در «نامشخص» قرار گیرد.',
+    reorderColumn: 'مرتب‌سازی {name}',
+    editColumnNamed: 'ویرایش {name}',
+    deleteColumnNamedAria: 'حذف {name}',
+    dragTask: 'کشیدن {title}',
+    columnCount: '{count} ستون',
+    columnCountPlural: '{count} ستون',
+    createBoardDefaultColumnsHint:
+      'ستون‌های پیش‌فرض (انجام نشده، در حال انجام، انجام‌شده) به‌طور خودکار اضافه می‌شوند.',
+    createBoardModalHint:
+      'ستون‌های انجام نشده، در حال انجام و انجام‌شده به‌طور خودکار اضافه می‌شوند.',
   },
 
   export: {
@@ -599,6 +670,24 @@ export const faMessages = {
     notCompleted: 'تکمیل نشده',
     duePrefix: 'سررسید {date}',
     addChecklistPlaceholder: 'افزودن مورد چک‌لیست...',
+    deleteConfirm: 'این وظیفه حذف شود؟',
+    noParent: 'بدون والد',
+    titleRequired: 'عنوان الزامی است',
+    startBeforeDue: 'تاریخ شروع باید قبل یا مساوی تاریخ سررسید باشد',
+    descriptionOptional: 'توضیحات (اختیاری)',
+    assigneesOptional: 'مسئولان (اختیاری)',
+    dueDateOptional: 'تاریخ سررسید (اختیاری)',
+    selectAssignees: 'انتخاب مسئولان...',
+    noChecklistItems: 'هنوز موردی در چک‌لیست نیست.',
+    checklistMore: '+{count} مورد دیگر',
+    columnSubtitle: 'ستون: {name}',
+  },
+
+  validation: {
+    nameRequired: 'نام الزامی است',
+    nameMinLength: 'نام باید حداقل ۲ کاراکتر باشد',
+    invalidColor: 'رنگ نامعتبر',
+    selectRoleForInvite: 'نقشی برای عضو دعوت‌شده انتخاب کنید.',
   },
 
   gantt: {
@@ -630,6 +719,14 @@ export const faMessages = {
     month: 'ماه',
     quarter: 'فصل',
     openTask: 'باز کردن وظیفه',
+    noDatesSet: 'تاریخی تنظیم نشده',
+    expandSubtasks: 'گسترش زیروظایف',
+    collapseSubtasks: 'جمع کردن زیروظایف',
+    predecessor: 'پیش‌نیاز (اول تمام می‌شود)',
+    successor: 'جانشین (بعد شروع می‌شود)',
+    selectTask: 'انتخاب وظیفه',
+    blockedBy: 'مسدود شده توسط',
+    selectPredecessor: 'انتخاب پیش‌نیاز',
   },
 
   notifications: {
@@ -761,6 +858,17 @@ export const faMessages = {
     taskCreated: '{user} {task} را ایجاد کرد',
     taskUpdated: '{user} {task} را به‌روزرسانی کرد',
     memberJoined: '{user} به پروژه پیوست',
+    copyMessage: 'کپی پیام',
+    deleteMessageConfirm: 'این پیام حذف شود؟',
+    loadOlderMessages: 'بارگذاری پیام‌های قدیمی‌تر',
+    captionPlaceholder: 'افزودن توضیح (اختیاری)...',
+    uploadFile: 'بارگذاری فایل',
+    unknownAuthor: 'ناشناس',
+    editedSuffix: ' · ویرایش‌شده',
+    editWindowHint: 'پیام‌ها تا ۵ دقیقه پس از ارسال قابل ویرایش هستند.',
+    subtitleExtended: 'گفتگوی تیمی، اشتراک فایل و گزارش فعالیت پروژه',
+    noViewPermission: 'شما مجوز مشاهده گروه پروژه را ندارید.',
+    loadingMessages: 'در حال بارگذاری پیام‌ها...',
   },
 
   labels: {
@@ -803,8 +911,16 @@ export const faMessages = {
     uploadSuccess: 'فایل بارگذاری شد',
     uploadFailed: 'بارگذاری فایل ناموفق بود',
     removeConfirm: 'این پیوست حذف شود؟',
+    deleteConfirm: 'این پیوست حذف شود؟',
+    loadingAttachments: 'در حال بارگذاری پیوست‌ها...',
     maxSize: 'حداکثر حجم فایل: {size}',
     supportedFormats: 'فرمت‌های پشتیبانی‌شده: {formats}',
+    previousImage: 'تصویر قبلی',
+    nextImage: 'تصویر بعدی',
+    countSingular: '{count} پیوست',
+    countPlural: '{count} پیوست',
+    noAttachmentsShort: 'پیوستی وجود ندارد',
+    open: 'باز کردن',
   },
 
   search: {
@@ -833,6 +949,9 @@ export const faMessages = {
     searching: 'در حال جستجو...',
     noProjectsFound: 'پروژه‌ای یافت نشد',
     showingProjects: 'نمایش {shown} از {total} پروژه',
+    allDueDates: 'همه تاریخ‌های سررسید',
+    clearAllWithCount: 'پاک کردن همه ({count})',
+    dueToday: 'سررسید امروز',
   },
 
   permissions: {
@@ -894,5 +1013,10 @@ export const faMessages = {
     acceptButton: 'پذیرش و پیوستن',
     invalidToken: 'این لینک دعوت نامعتبر است یا منقضی شده.',
     alreadyMember: 'شما قبلاً عضو این پروژه هستید.',
+    subtitle:
+      'کاربران موجود فوراً اضافه می‌شوند. کاربران جدید لینک دعوت دریافت می‌کنند.',
+    inviteLinkLabel: 'لینک دعوت',
+    copyLinkFailed: 'کپی لینک دعوت ممکن نشد. لطفاً به‌صورت دستی کپی کنید.',
+    titleMember: 'دعوت عضو',
   },
 } satisfies MessageTree;

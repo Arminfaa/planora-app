@@ -6,6 +6,7 @@ import type { BoardTask } from '@/features/board/types';
 import { attachmentService } from '../services/attachment.service';
 import type { TaskAttachment } from '../types';
 import { formatFileSize, getFileKind } from '../utils/format';
+import { useLocale } from '@/i18n/LocaleProvider';
 import { LoadingSpinner } from '@/shared/components/feedback/LoadingSpinner';
 import { getApiErrorMessage } from '@/lib/api';
 import { getAssetUrl, isImageAttachment } from '@/lib/assets';
@@ -21,6 +22,7 @@ export function TaskAttachmentsPreviewModal({
   task,
   onClose,
 }: TaskAttachmentsPreviewModalProps) {
+  const { t } = useLocale();
   const [attachments, setAttachments] = useState<TaskAttachment[]>([]);
   const [error, setError] = useState('');
   const [isLoading, setIsLoading] = useState(true);
@@ -68,20 +70,22 @@ export function TaskAttachmentsPreviewModal({
     );
   };
 
+  const attachmentSubtitle = isLoading
+    ? t('common.loading')
+    : attachments.length === 1
+      ? t('attachments.countSingular', { count: attachments.length })
+      : t('attachments.countPlural', { count: attachments.length });
+
   return (
     <AppModal
       title={task.title}
-      subtitle={
-        isLoading
-          ? 'Loading...'
-          : `${attachments.length} attachment${attachments.length === 1 ? '' : 's'}`
-      }
+      subtitle={attachmentSubtitle}
       onClose={onClose}
       width={512}
       zIndex={1060}
       footer={
         <Button type="primary" onClick={onClose}>
-          Close
+          {t('common.close')}
         </Button>
       }
     >
@@ -97,7 +101,7 @@ export function TaskAttachmentsPreviewModal({
         </div>
       ) : attachments.length === 0 ? (
         <p className="py-12 text-center text-sm text-gray-500">
-          No attachments
+          {t('attachments.noAttachmentsShort')}
         </p>
       ) : (
         <div className="space-y-4">
@@ -110,7 +114,7 @@ export function TaskAttachmentsPreviewModal({
                       type="button"
                       onClick={showPrevImage}
                       className="absolute start-2 top-1/2 z-10 -translate-y-1/2 rounded-full bg-white p-1.5 text-gray-600 shadow-sm transition hover:text-gray-900"
-                      aria-label="Previous image"
+                      aria-label={t('attachments.previousImage')}
                     >
                       ‹
                     </button>
@@ -118,7 +122,7 @@ export function TaskAttachmentsPreviewModal({
                       type="button"
                       onClick={showNextImage}
                       className="absolute end-2 top-1/2 z-10 -translate-y-1/2 rounded-full bg-white p-1.5 text-gray-600 shadow-sm transition hover:text-gray-900"
-                      aria-label="Next image"
+                      aria-label={t('attachments.nextImage')}
                     >
                       ›
                     </button>
@@ -166,7 +170,7 @@ export function TaskAttachmentsPreviewModal({
                     rel="noreferrer"
                     className="shrink-0 text-xs font-medium text-primary-600 hover:text-primary-700"
                   >
-                    Open
+                    {t('attachments.open')}
                   </a>
                 )}
               </div>
@@ -226,7 +230,7 @@ export function TaskAttachmentsPreviewModal({
                         </p>
                       </div>
                       <span className="shrink-0 text-xs text-primary-600">
-                        Open
+                        {t('attachments.open')}
                       </span>
                     </a>
                   </li>

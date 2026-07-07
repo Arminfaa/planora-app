@@ -5,6 +5,7 @@ import type { BoardColumn } from '@/features/board/types';
 import type { TaskFilters } from '../types/filter';
 import { countActiveFilters } from '../utils/taskFilters';
 import { BoardFilterForm } from './BoardFilterForm';
+import { useLocale } from '@/i18n/LocaleProvider';
 import { AppModal } from '@/shared/components/ui/AppModal';
 
 interface BoardFilterModalProps {
@@ -20,21 +21,24 @@ export function BoardFilterModal({
   onChange,
   onClose,
 }: BoardFilterModalProps) {
+  const { t } = useLocale();
   const activeCount = countActiveFilters(filters);
 
   return (
     <AppModal
-      title="Filter tasks"
+      title={t('board.filterTasks')}
       subtitle={
         activeCount > 0
-          ? `${activeCount} active filter${activeCount !== 1 ? 's' : ''}`
+          ? activeCount === 1
+            ? t('board.activeFilters', { count: activeCount })
+            : t('board.activeFiltersPlural', { count: activeCount })
           : undefined
       }
       onClose={onClose}
       width={512}
       footer={
         <Button type="primary" onClick={onClose}>
-          Done
+          {t('common.done')}
         </Button>
       }
     >

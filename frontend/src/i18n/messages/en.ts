@@ -307,6 +307,28 @@ export const enMessages = {
       activityMoved: '{user} moved {task} to {column}',
       uploadedWireframes: 'Uploaded the wireframes — take a look!',
       reviewAfterStandup: "Looks great. I'll review after standup.",
+      notificationTaskMovedBody: 'Board UI → In Progress',
+      notificationNewMessageBody: 'Alex uploaded wireframes',
+      notificationTimeNow: 'now',
+      notificationTimeMinutes: '{count}m',
+      demoTasks: {
+        designLanding: 'Design landing',
+        apiReview: 'API review',
+        boardUI: 'Board UI',
+        authFlow: 'Auth flow',
+        customRoles: 'Custom roles',
+      },
+      demoLabels: {
+        design: 'Design',
+        backend: 'Backend',
+        frontend: 'Frontend',
+        done: 'Done',
+        new: 'New',
+      },
+      demoNames: {
+        alexChen: 'Alex Chen',
+        sarah: 'Sarah',
+      },
     },
     howItWorks: {
       sectionLabel: 'How it works',
@@ -430,6 +452,8 @@ export const enMessages = {
     rolesCustomSubtitle: 'Define what each custom role can do in this project.',
     rolesDefaultSubtitle: 'Your role and permissions in this project.',
     noRoleAssigned: 'No role assigned.',
+    saveRolesHint:
+      'Add or edit roles below, then click Save roles to apply changes.',
     saveRoles: 'Save roles',
     settingsTitle: 'Project settings',
     editProject: 'Edit project',
@@ -443,6 +467,36 @@ export const enMessages = {
     permissionCustom: 'Custom',
     noViewBoards: 'You do not have permission to view boards.',
     loadingProgress: 'Loading progress...',
+    deleteBoardConfirm:
+      'Delete board "{name}"? All columns and tasks will be removed.',
+    newBoard: 'New Board',
+    createFirstBoard: 'Create your first board',
+    boardCountLabel: '{count} board',
+    boardCountLabelPlural: '{count} boards',
+    memberCountLabel: '{count} member',
+    memberCountLabelPlural: '{count} members',
+    updatedAt: 'Updated {date}',
+    ownerPrefix: 'Owner {name}',
+    ownerDot: 'Owner · {name}',
+    sectionsNavAria: 'Project sections',
+    noDescription: 'No description',
+    noSettingsPermission:
+      'You do not have permission to manage project settings.',
+    projectDetails: 'Project details',
+    projectDetailsHint:
+      'Update the project name, description, and permission mode.',
+    noTeamPermission: 'You do not have permission to view the project team.',
+    deleteProjectNamed:
+      'Delete project "{name}"? All boards, columns, and tasks will be removed.',
+    dangerZoneDescription:
+      'Deleting this project removes all boards, tasks, and messages permanently.',
+    teamHeader: 'Team · {count}',
+    loadingTeam: 'Loading team...',
+    revokeInviteConfirm: 'Revoke invite for {email}?',
+    boardsCountShort: '{count} boards',
+    membersCountShort: '{count} members',
+    teamWorkload: 'Team workload',
+    noBoardsProgress: 'No boards yet. Create a board to track progress here.',
   },
 
   board: {
@@ -519,6 +573,29 @@ export const enMessages = {
     dragColumn: 'Drag to reorder column',
     editTaskTitle: 'Edit task',
     duePrefix: 'Due {date}',
+    dropTasksHere: 'Drop tasks here',
+    viewBoardNoTasks:
+      'You can view this board, but you do not have permission to see tasks.',
+    boardDeletedRemote: 'This board was deleted by another user.',
+    deleteColumnNamed: 'Delete column "{name}"?',
+    deleteColumnWithTasks:
+      'Delete column "{name}"? {count} task(s) will be removed.',
+    newColumn: 'New Column',
+    columnNamePlaceholder: 'e.g. Review',
+    boardNamePlaceholder: 'e.g. Sprint Board',
+    unspecifiedColumn: 'Unassigned (auto)',
+    leaveColumnEmptyHint:
+      'Leave column empty to place the task in "Unassigned".',
+    reorderColumn: 'Reorder {name}',
+    editColumnNamed: 'Edit {name}',
+    deleteColumnNamedAria: 'Delete {name}',
+    dragTask: 'Drag {title}',
+    columnCount: '{count} column',
+    columnCountPlural: '{count} columns',
+    createBoardDefaultColumnsHint:
+      'Default columns (To Do, In Progress, Done) will be added automatically.',
+    createBoardModalHint:
+      'To Do, In Progress, and Done columns are added automatically.',
   },
 
   export: {
@@ -596,6 +673,24 @@ export const enMessages = {
     notCompleted: 'Not completed',
     duePrefix: 'Due {date}',
     addChecklistPlaceholder: 'Add checklist item...',
+    deleteConfirm: 'Delete this task?',
+    noParent: 'No parent',
+    titleRequired: 'Title is required',
+    startBeforeDue: 'Start date must be before or equal to due date',
+    descriptionOptional: 'Description (optional)',
+    assigneesOptional: 'Assignees (optional)',
+    dueDateOptional: 'Due date (optional)',
+    selectAssignees: 'Select assignees...',
+    noChecklistItems: 'No checklist items yet.',
+    checklistMore: '+{count} more',
+    columnSubtitle: 'Column: {name}',
+  },
+
+  validation: {
+    nameRequired: 'Name is required',
+    nameMinLength: 'Name must be at least 2 characters',
+    invalidColor: 'Invalid color',
+    selectRoleForInvite: 'Select a role for the invited member.',
   },
 
   gantt: {
@@ -627,6 +722,21 @@ export const enMessages = {
     month: 'Month',
     quarter: 'Quarter',
     openTask: 'Open task',
+    noDatesSet: 'No dates set',
+    expandSubtasks: 'Expand subtasks',
+    collapseSubtasks: 'Collapse subtasks',
+    predecessor: 'Predecessor (finishes first)',
+    successor: 'Successor (starts after)',
+    selectTask: 'Select task',
+    blockedBy: 'Blocked by',
+    selectPredecessor: 'Select predecessor',
+    dependenciesHint:
+      'Finish-to-start links show which tasks must complete before others begin.',
+    addLink: 'Add link',
+    noDependencies: 'No dependencies yet.',
+    noPredecessors: 'No predecessors yet.',
+    dependenciesTaskHint: 'Tasks that must finish before this one can start.',
+    blocks: 'Blocks',
   },
 
   notifications: {
@@ -758,6 +868,17 @@ export const enMessages = {
     taskCreated: '{user} created {task}',
     taskUpdated: '{user} updated {task}',
     memberJoined: '{user} joined the project',
+    copyMessage: 'Copy message',
+    deleteMessageConfirm: 'Delete this message?',
+    loadOlderMessages: 'Load older messages',
+    captionPlaceholder: 'Add a caption (optional)...',
+    uploadFile: 'Upload file',
+    unknownAuthor: 'Unknown',
+    editedSuffix: ' · edited',
+    editWindowHint: 'Messages can be edited for 5 minutes after sending.',
+    subtitleExtended: 'Team chat, file sharing, and project activity log',
+    noViewPermission: 'You do not have permission to view the project group.',
+    loadingMessages: 'Loading messages...',
   },
 
   labels: {
@@ -800,8 +921,16 @@ export const enMessages = {
     uploadSuccess: 'File uploaded',
     uploadFailed: 'Failed to upload file',
     removeConfirm: 'Remove this attachment?',
+    deleteConfirm: 'Delete this attachment?',
+    loadingAttachments: 'Loading attachments...',
     maxSize: 'Max file size: {size}',
     supportedFormats: 'Supported formats: {formats}',
+    previousImage: 'Previous image',
+    nextImage: 'Next image',
+    countSingular: '{count} attachment',
+    countPlural: '{count} attachments',
+    noAttachmentsShort: 'No attachments',
+    open: 'Open',
   },
 
   search: {
@@ -830,6 +959,9 @@ export const enMessages = {
     searching: 'Searching...',
     noProjectsFound: 'No projects found',
     showingProjects: 'Showing {shown} of {total} projects',
+    allDueDates: 'All due dates',
+    clearAllWithCount: 'Clear all ({count})',
+    dueToday: 'Due today',
   },
 
   permissions: {
@@ -891,6 +1023,11 @@ export const enMessages = {
     acceptButton: 'Accept & join',
     invalidToken: 'This invite link is invalid or has expired.',
     alreadyMember: 'You are already a member of this project.',
+    subtitle:
+      'Existing users are added immediately. New users receive an invite link.',
+    inviteLinkLabel: 'Invite link',
+    copyLinkFailed: 'Could not copy the invite link. Please copy it manually.',
+    titleMember: 'Invite Member',
   },
 };
 

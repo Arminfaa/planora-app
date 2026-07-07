@@ -1,20 +1,19 @@
 'use client';
 
-import { useState } from 'react';
+import { useMemo, useState } from 'react';
 import { Controller, useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import { Button } from 'antd';
 import type { Board, UpdateBoardInput } from '../types';
+import { useLocale } from '@/i18n/LocaleProvider';
 import { Input } from '@/shared/components/ui/Input';
 import { getApiErrorMessage } from '@/lib/api';
 import { AppModal } from '@/shared/components/ui/AppModal';
 
-const schema = z.object({
-  name: z.string().min(2, 'Name must be at least 2 characters').max(100),
-});
-
-type FormData = z.infer<typeof schema>;
+type FormData = {
+  name: string;
+};
 
 const FORM_ID = 'edit-board-form';
 
@@ -29,7 +28,16 @@ export function EditBoardModal({
   onClose,
   onSubmit,
 }: EditBoardModalProps) {
+  const { t } = useLocale();
   const [error, setError] = useState('');
+
+  const schema = useMemo(
+    () =>
+      z.object({
+        name: z.string().min(2, t('validation.nameMinLength')).max(100),
+      }),
+    [t],
+  );
 
   const {
     control,
@@ -52,18 +60,18 @@ export function EditBoardModal({
 
   return (
     <AppModal
-      title="Edit Board"
+      title={t('board.modals.editBoard')}
       onClose={onClose}
       footer={
         <>
-          <Button onClick={onClose}>Cancel</Button>
+          <Button onClick={onClose}>{t('common.cancel')}</Button>
           <Button
             type="primary"
             htmlType="submit"
             form={FORM_ID}
             loading={isSubmitting}
           >
-            Save
+            {t('common.save')}
           </Button>
         </>
       }
@@ -84,7 +92,7 @@ export function EditBoardModal({
           control={control}
           render={({ field }) => (
             <Input
-              label="Board Name"
+              label={t('board.boardName')}
               error={errors.name?.message}
               {...field}
             />

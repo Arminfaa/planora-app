@@ -3,6 +3,7 @@
 import { Checkbox } from 'antd';
 import { useEffect, useState } from 'react';
 import type { TaskChecklistItem } from '@/features/tasks/types';
+import { useLocale } from '@/i18n/LocaleProvider';
 
 interface TaskChecklistPreviewProps {
   items?: TaskChecklistItem[];
@@ -17,6 +18,7 @@ export function TaskChecklistPreview({
   interactive = false,
   onToggleItem,
 }: TaskChecklistPreviewProps) {
+  const { t } = useLocale();
   const [localItems, setLocalItems] = useState(items);
 
   useEffect(() => {
@@ -76,7 +78,9 @@ export function TaskChecklistPreview({
         </li>
       ))}
       {hiddenCount > 0 && (
-        <li className="text-xs text-gray-400">+{hiddenCount} more</li>
+        <li className="text-xs text-gray-400">
+          {t('tasks.checklistMore', { count: hiddenCount })}
+        </li>
       )}
     </ul>
   );

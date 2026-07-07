@@ -3,6 +3,7 @@
 import Link from 'next/link';
 import type { ReactNode } from 'react';
 import { formatDate } from '@/features/dashboard/utils/stats';
+import { useLocale } from '@/i18n/LocaleProvider';
 import { useProjectBoardSocket } from '../hooks/useProjectBoardSocket';
 import { useProjectContext } from '../context/ProjectContext';
 import { ProjectSubNav } from './ProjectSubNav';
@@ -12,6 +13,7 @@ interface ProjectLayoutShellProps {
 }
 
 export function ProjectLayoutShell({ children }: ProjectLayoutShellProps) {
+  const { t } = useLocale();
   const { project, memberCount, boardCount } = useProjectContext();
 
   const { isConnected, isJoined, lastRemoteUpdate } = useProjectBoardSocket(
@@ -21,10 +23,10 @@ export function ProjectLayoutShell({ children }: ProjectLayoutShellProps) {
   const roleLabel =
     project.currentUserRoleName ??
     (project.currentUserRole === 'OWNER'
-      ? 'Owner'
+      ? t('team.owner')
       : project.currentUserRole === 'ADMIN'
-        ? 'Admin'
-        : 'Member');
+        ? t('team.admin')
+        : t('team.member'));
 
   return (
     <div className="flex min-h-[calc(100vh-4rem)] flex-col">
@@ -50,7 +52,7 @@ export function ProjectLayoutShell({ children }: ProjectLayoutShellProps) {
                 d="M15 19l-7-7 7-7"
               />
             </svg>
-            Back to dashboard
+            {t('projects.backToDashboard')}
           </Link>
 
           <div className="flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
@@ -65,16 +67,28 @@ export function ProjectLayoutShell({ children }: ProjectLayoutShellProps) {
               ) : null}
               <div className="mt-2 flex flex-wrap items-center gap-x-3 gap-y-1 text-sm text-gray-500">
                 <span>
-                  {boardCount} board{boardCount === 1 ? '' : 's'}
+                  {boardCount === 1
+                    ? t('projects.boardCountLabel', { count: boardCount })
+                    : t('projects.boardCountLabelPlural', {
+                        count: boardCount,
+                      })}
                 </span>
                 <span>·</span>
                 <span>
-                  {memberCount} member{memberCount === 1 ? '' : 's'}
+                  {memberCount === 1
+                    ? t('projects.memberCountLabel', { count: memberCount })
+                    : t('projects.memberCountLabelPlural', {
+                        count: memberCount,
+                      })}
                 </span>
                 <span>·</span>
                 <span>{roleLabel}</span>
                 <span>·</span>
-                <span>Updated {formatDate(project.updatedAt)}</span>
+                <span>
+                  {t('projects.updatedAt', {
+                    date: formatDate(project.updatedAt),
+                  })}
+                </span>
               </div>
             </div>
 
@@ -90,10 +104,10 @@ export function ProjectLayoutShell({ children }: ProjectLayoutShellProps) {
                   }`}
                 />
                 {isConnected && isJoined
-                  ? 'Live'
+                  ? t('board.live')
                   : isConnected
-                    ? 'Joining...'
-                    : 'Connecting...'}
+                    ? t('board.joining')
+                    : t('board.connecting')}
                 {lastRemoteUpdate && (
                   <span className="hidden text-gray-400 sm:inline">
                     · {lastRemoteUpdate.toLocaleTimeString()}

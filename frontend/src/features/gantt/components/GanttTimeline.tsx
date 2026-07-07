@@ -19,6 +19,7 @@ import {
 } from '../utils/timeline';
 import { GanttBar } from './GanttBar';
 import { GanttDependencyLayer } from './GanttDependencyLayer';
+import { useLocale } from '@/i18n/LocaleProvider';
 import { cn } from '@/lib/utils';
 
 const TASK_COLUMN_WIDTH = '16rem';
@@ -67,6 +68,7 @@ export function GanttTimeline({
   savingTaskId,
   onScheduleChange,
 }: GanttTimelineProps) {
+  const { t } = useLocale();
   const [zoom, setZoom] = useState<GanttZoom>('week');
   const [collapsedTaskIds, setCollapsedTaskIds] = useState<Set<string>>(
     () => new Set(),
@@ -222,8 +224,8 @@ export function GanttTimeline({
                               type="button"
                               aria-label={
                                 isCollapsed
-                                  ? 'Expand subtasks'
-                                  : 'Collapse subtasks'
+                                  ? t('gantt.expandSubtasks')
+                                  : t('gantt.collapseSubtasks')
                               }
                               onClick={() => toggleCollapsed(task.id)}
                               className="mt-0.5 inline-flex h-5 w-5 shrink-0 items-center justify-center rounded text-gray-500 hover:bg-gray-100 hover:text-gray-800"

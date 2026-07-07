@@ -6,6 +6,7 @@ import { getAssetUrl } from '@/lib/assets';
 import { AssetImage } from '@/shared/components/ui/AssetImage';
 import { cn } from '@/lib/utils';
 import type { BoardProgressStats, ProjectProgressStats } from '../types';
+import { useLocale } from '@/i18n/LocaleProvider';
 
 interface ProjectProgressOverviewProps {
   stats: ProjectProgressStats;
@@ -94,10 +95,23 @@ function ProgressStatRows({
   completedTasks: number;
   compact?: boolean;
 }) {
+  const { t } = useLocale();
   const items = [
-    { label: 'Total tasks', value: totalTasks, color: 'text-gray-900' },
-    { label: 'In progress', value: inProgressTasks, color: 'text-blue-600' },
-    { label: 'Completed', value: completedTasks, color: 'text-emerald-600' },
+    {
+      label: t('projects.totalTasks'),
+      value: totalTasks,
+      color: 'text-gray-900',
+    },
+    {
+      label: t('projects.inProgress'),
+      value: inProgressTasks,
+      color: 'text-blue-600',
+    },
+    {
+      label: t('projects.completed'),
+      value: completedTasks,
+      color: 'text-emerald-600',
+    },
   ];
 
   return (
@@ -134,6 +148,7 @@ function TeamWorkloadList({
   teamWorkload: ProjectProgressStats['teamWorkload'];
   compact?: boolean;
 }) {
+  const { t } = useLocale();
   if (teamWorkload.length === 0) {
     return (
       <p
@@ -143,8 +158,8 @@ function TeamWorkloadList({
         )}
       >
         {compact
-          ? 'No assigned tasks on this board yet.'
-          : 'No assigned tasks yet. Assign team members on board tasks to see workload here.'}
+          ? t('projects.noAssignedTasksBoard')
+          : t('projects.noAssignedTasks')}
       </p>
     );
   }
@@ -187,7 +202,9 @@ function TeamWorkloadList({
               className={cn('shrink-0 font-medium text-gray-500', textSize)}
             >
               {member.assignedTaskCount}{' '}
-              {member.assignedTaskCount === 1 ? 'task' : 'tasks'}
+              {member.assignedTaskCount === 1
+                ? t('projects.taskSingular')
+                : t('projects.taskPlural')}
             </span>
           </div>
         );
@@ -197,6 +214,7 @@ function TeamWorkloadList({
 }
 
 function BoardProgressCard({ board }: { board: BoardProgressStats }) {
+  const { t } = useLocale();
   return (
     <div className="rounded-xl border border-gray-200/80 bg-white p-4 shadow-sm">
       <div className="flex items-start gap-3">
@@ -216,7 +234,7 @@ function BoardProgressCard({ board }: { board: BoardProgressStats }) {
 
       <div className="mt-4 border-t border-gray-100 pt-3">
         <p className="text-[10px] font-medium uppercase tracking-wide text-gray-400">
-          Team workload
+          {t('projects.teamWorkload')}
         </p>
         <TeamWorkloadList teamWorkload={board.teamWorkload} compact />
       </div>
@@ -227,12 +245,13 @@ function BoardProgressCard({ board }: { board: BoardProgressStats }) {
 export function ProjectProgressOverview({
   stats,
 }: ProjectProgressOverviewProps) {
+  const { t } = useLocale();
   const [view, setView] = useState<ProgressView>('all');
 
   const subtitle =
     view === 'all'
-      ? 'Combined progress across every board in this project'
-      : 'Progress broken down by board';
+      ? t('projects.progressAllBoards')
+      : t('projects.progressByBoard');
 
   return (
     <div className="rounded-xl border border-white/60 bg-white/70 shadow-sm backdrop-blur-md">
@@ -240,7 +259,7 @@ export function ProjectProgressOverview({
         <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
           <div className="min-w-0">
             <h2 className="text-lg font-semibold text-gray-900">
-              Progress overview
+              {t('projects.progressOverview')}
             </h2>
             <p className="mt-0.5 text-sm text-gray-500">{subtitle}</p>
           </div>
@@ -251,8 +270,8 @@ export function ProjectProgressOverview({
               value={view}
               onChange={(value) => setView(value as ProgressView)}
               options={[
-                { label: 'All boards', value: 'all' },
-                { label: 'By board', value: 'by-board' },
+                { label: t('projects.allBoards'), value: 'all' },
+                { label: t('projects.byBoard'), value: 'by-board' },
               ]}
             />
           </div>
@@ -272,7 +291,7 @@ export function ProjectProgressOverview({
 
           <div className="min-w-0 flex-1 border-t border-gray-100 pt-5 lg:border-s lg:border-t-0 lg:pl-6 lg:pt-0">
             <p className="text-xs font-medium uppercase tracking-wide text-gray-400">
-              Team workload
+              {t('projects.teamWorkload')}
             </p>
             <TeamWorkloadList teamWorkload={stats.teamWorkload} />
           </div>
@@ -280,7 +299,7 @@ export function ProjectProgressOverview({
       ) : stats.boards.length === 0 ? (
         <div className="p-5">
           <p className="text-sm text-gray-500">
-            No boards yet. Create a board to track progress here.
+            {t('projects.noBoardsProgress')}
           </p>
         </div>
       ) : (

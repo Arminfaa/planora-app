@@ -1,12 +1,13 @@
 'use client';
 
-import { useState } from 'react';
+import { useMemo, useState } from 'react';
 import { Button } from 'antd';
 import type { BoardColumn } from '../types';
 import type { ProjectMember } from '@/features/projects/types';
 import type { CreateTaskInput } from '@/features/tasks/types';
-import { PRIORITY_OPTIONS, priorityStyles } from '@/features/tasks/types';
+import { PRIORITY_OPTIONS, getPriorityStyles } from '@/features/tasks/types';
 import { taskService } from '@/features/tasks/services/task.service';
+import { useLocale } from '@/i18n/LocaleProvider';
 import { Input } from '@/shared/components/ui/Input';
 import { TextArea } from '@/shared/components/ui/TextArea';
 import { SelectField } from '@/shared/components/ui/SelectField';
@@ -32,6 +33,7 @@ export function AllTasksCreateModal({
   onClose,
   onCreated,
 }: AllTasksCreateModalProps) {
+  const { t } = useLocale();
   const [title, setTitle] = useState('');
   const [description, setDescription] = useState('');
   const [priority, setPriority] =
@@ -42,10 +44,15 @@ export function AllTasksCreateModal({
   const [error, setError] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
 
-  const columnOptions = [
-    { value: '', label: 'نامشخص (auto)' },
-    ...columns.map((column) => ({ value: column.id, label: column.name })),
-  ];
+  const priorityStyles = getPriorityStyles(t);
+
+  const columnOptions = useMemo(
+    () => [
+      { value: '', label: t('board.unspecifiedColumn') },
+      ...columns.map((column) => ({ value: column.id, label: column.name })),
+    ],
+    [columns, t],
+  );
 
   const priorityOptions = PRIORITY_OPTIONS.map((option) => ({
     value: option,
@@ -83,20 +90,20 @@ export function AllTasksCreateModal({
 
   return (
     <AppModal
-      title="New task"
-      subtitle='Leave column empty to place the task in "نامشخص".'
+      title={t('board.newTask')}
+      subtitle={t('board.leaveColumnEmptyHint')}
       onClose={onClose}
       width={512}
       footer={
         <>
-          <Button onClick={onClose}>Cancel</Button>
+          <Button onClick={onClose}>{t('common.cancel')}</Button>
           <Button
             type="primary"
             htmlType="submit"
             form={FORM_ID}
             loading={isSubmitting}
           >
-            Create task
+            {t('board.modals.createTask')}
           </Button>
         </>
       }
@@ -110,7 +117,7 @@ export function AllTasksCreateModal({
 
         <div className="space-y-4">
           <Input
-            label="Title"
+            label={t('tasks.title')}
             value={title}
             onChange={(event) => setTitle(event.target.value)}
             autoFocus
@@ -118,21 +125,21 @@ export function AllTasksCreateModal({
           />
 
           <TextArea
-            label="Description (optional)"
+            label={t('tasks.descriptionOptional')}
             value={description}
             onChange={(event) => setDescription(event.target.value)}
             rows={3}
           />
 
           <SelectField
-            label="Column"
+            label={t('tasks.column')}
             value={columnId}
             onChange={setColumnId}
             options={columnOptions}
           />
 
           <SelectField
-            label="Priority"
+            label={t('tasks.priority')}
             value={priority}
             onChange={(value) =>
               setPriority(value as CreateTaskInput['priority'])
@@ -141,14 +148,14 @@ export function AllTasksCreateModal({
           />
 
           <DateInput
-            label="Due date (optional)"
+            label={t('tasks.dueDateOptional')}
             value={dueDate}
             onChange={setDueDate}
           />
 
           <div className="space-y-1">
             <label className="block text-sm font-medium text-gray-700">
-              Assignees (optional)
+              {t('tasks.assigneesOptional')}
             </label>
             <MemberMultiSelect
               members={members}

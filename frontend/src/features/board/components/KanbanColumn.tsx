@@ -13,6 +13,7 @@ import type { ProjectMember } from '@/features/projects/types';
 import type { CreateTaskInput } from '@/features/tasks/types';
 import { columnSortableKey } from '../utils/applyRealtimeEvent';
 import { getColumnTaskDropId } from '../utils/kanbanDndUtils';
+import { useLocale } from '@/i18n/LocaleProvider';
 import { SortableTaskCard } from './TaskCard';
 import { AddTaskForm } from './AddTaskForm';
 import { GripVerticalIcon } from './GripVerticalIcon';
@@ -66,6 +67,7 @@ export const KanbanColumn = memo(function KanbanColumn({
   highlightedTaskId = null,
   variant = 'default',
 }: KanbanColumnProps) {
+  const { t } = useLocale();
   const { setNodeRef, isOver } = useDroppable({
     id: getColumnTaskDropId(column.id),
   });
@@ -104,8 +106,8 @@ export const KanbanColumn = memo(function KanbanColumn({
                 ? 'text-white/50 hover:bg-white/10 hover:text-white/80'
                 : 'text-gray-400 hover:bg-gray-200 hover:text-gray-600'
             }`}
-            aria-label={`Reorder ${column.name}`}
-            title="Drag to reorder column"
+            aria-label={t('board.reorderColumn', { name: column.name })}
+            title={t('common.dragToReorder')}
             {...dragHandleProps}
           >
             <GripVerticalIcon className="h-4 w-4" />
@@ -134,9 +136,9 @@ export const KanbanColumn = memo(function KanbanColumn({
                     ? 'text-white/60 hover:bg-white/10 hover:text-white'
                     : 'text-gray-500 hover:bg-gray-200 hover:text-gray-900'
                 }`}
-                aria-label={`Edit ${column.name}`}
+                aria-label={t('board.editColumnNamed', { name: column.name })}
               >
-                Edit
+                {t('common.edit')}
               </button>
             )}
             {canDelete && onDelete && (
@@ -148,9 +150,11 @@ export const KanbanColumn = memo(function KanbanColumn({
                     ? 'text-red-300 hover:bg-red-500/20'
                     : 'text-red-600 hover:bg-red-50'
                 }`}
-                aria-label={`Delete ${column.name}`}
+                aria-label={t('board.deleteColumnNamedAria', {
+                  name: column.name,
+                })}
               >
-                Delete
+                {t('common.delete')}
               </button>
             )}
           </div>
@@ -211,7 +215,7 @@ export const KanbanColumn = memo(function KanbanColumn({
                 : 'border-gray-200 text-gray-400'
             } ${isOver ? (isGlass ? 'border-white/50 text-white/70' : 'border-primary-300 text-primary-500') : ''}`}
           >
-            Drop tasks here
+            {t('board.dropTasksHere')}
           </div>
         )}
       </div>

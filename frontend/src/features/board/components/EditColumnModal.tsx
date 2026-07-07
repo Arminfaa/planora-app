@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
@@ -10,16 +10,15 @@ import {
   type BoardColumn,
   type UpdateColumnInput,
 } from '../types';
+import { useLocale } from '@/i18n/LocaleProvider';
 import { Input } from '@/shared/components/ui/Input';
 import { getApiErrorMessage } from '@/lib/api';
 import { AppModal } from '@/shared/components/ui/AppModal';
 
-const schema = z.object({
-  name: z.string().min(1, 'Name is required').max(50),
-  color: z.string().regex(/^#[0-9A-Fa-f]{6}$/, 'Invalid color'),
-});
-
-type FormData = z.infer<typeof schema>;
+type FormData = {
+  name: string;
+  color: string;
+};
 
 const FORM_ID = 'edit-column-form';
 
@@ -34,7 +33,19 @@ export function EditColumnModal({
   onClose,
   onSubmit,
 }: EditColumnModalProps) {
+  const { t } = useLocale();
   const [error, setError] = useState('');
+
+  const schema = useMemo(
+    () =>
+      z.object({
+        name: z.string().min(1, t('validation.nameRequired')).max(50),
+        color: z
+          .string()
+          .regex(/^#[0-9A-Fa-f]{6}$/, t('validation.invalidColor')),
+      }),
+    [t],
+  );
 
   const {
     register,
@@ -75,18 +86,18 @@ export function EditColumnModal({
 
   return (
     <AppModal
-      title="Edit Column"
+      title={t('board.editColumn')}
       onClose={onClose}
       footer={
         <>
-          <Button onClick={onClose}>Cancel</Button>
+          <Button onClick={onClose}>{t('common.cancel')}</Button>
           <Button
             type="primary"
             htmlType="submit"
             form={FORM_ID}
             loading={isSubmitting}
           >
-            Save
+            {t('common.save')}
           </Button>
         </>
       }
@@ -103,13 +114,15 @@ export function EditColumnModal({
         className="space-y-4"
       >
         <Input
-          label="Column Name"
+          label={t('board.columnName')}
           error={errors.name?.message}
           {...register('name')}
         />
 
         <div className="space-y-1">
-          <span className="block text-sm font-medium text-gray-700">Color</span>
+          <span className="block text-sm font-medium text-gray-700">
+            {t('labels.color')}
+          </span>
           <div className="flex flex-wrap gap-2">
             {COLUMN_COLOR_OPTIONS.map((color) => (
               <button
@@ -122,7 +135,7 @@ export function EditColumnModal({
                     : 'border-transparent'
                 }`}
                 style={{ backgroundColor: color }}
-                aria-label={`Color ${color}`}
+                aria-label={`${t('labels.color')} ${color}`}
               />
             ))}
           </div>

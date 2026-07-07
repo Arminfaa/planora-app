@@ -3,6 +3,7 @@
 import { Select } from 'antd';
 import { useMemo } from 'react';
 import type { ProjectMember } from '@/features/projects/types';
+import { useLocale } from '@/i18n/LocaleProvider';
 import { cn } from '@/lib/utils';
 
 interface MemberMultiSelectProps {
@@ -19,9 +20,12 @@ export function MemberMultiSelect({
   value,
   onChange,
   disabled = false,
-  placeholder = 'Select assignees...',
+  placeholder,
   className,
 }: MemberMultiSelectProps) {
+  const { t } = useLocale();
+  const resolvedPlaceholder = placeholder ?? t('tasks.selectAssignees');
+
   const memberById = useMemo(
     () => new Map(members.map((member) => [member.id, member])),
     [members],
@@ -42,7 +46,7 @@ export function MemberMultiSelect({
       allowClear
       showSearch
       disabled={disabled}
-      placeholder={placeholder}
+      placeholder={resolvedPlaceholder}
       value={value}
       onChange={onChange}
       options={options}

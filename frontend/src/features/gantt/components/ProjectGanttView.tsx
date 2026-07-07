@@ -5,6 +5,7 @@ import { useMemo } from 'react';
 import { useBoards } from '@/features/board/hooks/useBoards';
 import { useProjectPermissions } from '@/features/permissions/hooks/useProjectPermissions';
 import { useProjectContext } from '@/features/projects/context/ProjectContext';
+import { useLocale } from '@/i18n/LocaleProvider';
 import { useGanttBoardRealtimeSync } from '../hooks/useGanttBoardRealtimeSync';
 import { useProjectGantt } from '../hooks/useProjectGantt';
 import { useUpdateGanttSchedule } from '../hooks/useUpdateGanttSchedule';
@@ -14,6 +15,7 @@ import { LoadingSpinner } from '@/shared/components/feedback/LoadingSpinner';
 import { getApiErrorMessage } from '@/lib/api';
 
 export function ProjectGanttView() {
+  const { t } = useLocale();
   const { project, slug } = useProjectContext();
   const { can } = useProjectPermissions(project);
   const canViewTasks = can('task.view');
@@ -31,9 +33,7 @@ export function ProjectGanttView() {
     return (
       <div className="mx-auto max-w-7xl px-4 py-12 sm:px-6">
         <div className="rounded-xl border border-dashed border-gray-200 bg-white py-12 text-center">
-          <p className="text-sm text-gray-500">
-            You do not have permission to view the project timeline.
-          </p>
+          <p className="text-sm text-gray-500">{t('gantt.noPermission')}</p>
         </div>
       </div>
     );
@@ -60,12 +60,12 @@ export function ProjectGanttView() {
   return (
     <div className="mx-auto w-full max-w-7xl space-y-6 px-4 py-8 sm:px-6">
       <div>
-        <h2 className="text-lg font-semibold text-gray-900">Gantt timeline</h2>
+        <h2 className="text-lg font-semibold text-gray-900">
+          {t('gantt.title')}
+        </h2>
         <p className="mt-1 text-sm text-gray-500">
-          Track scheduled work across all boards. Tasks appear here when they
-          have a start date, a due date, or both.
-          {canEditTasks &&
-            ' Drag bars, set progress, and organize subtasks with parent links.'}
+          {t('gantt.subtitle')}
+          {canEditTasks && t('gantt.subtitleEdit')}
         </p>
       </div>
 
@@ -88,10 +88,10 @@ export function ProjectGanttView() {
       {data.unscheduled.length > 0 && (
         <section className="rounded-xl border border-gray-200 bg-white p-5 shadow-sm">
           <h3 className="text-sm font-semibold text-gray-900">
-            Unscheduled tasks
+            {t('gantt.unscheduled')}
           </h3>
           <p className="mt-1 text-sm text-gray-500">
-            These tasks do not have a start date or due date yet.
+            {t('gantt.unscheduledHint')}
           </p>
           <div className="mt-4 divide-y divide-gray-100">
             {data.unscheduled.map((task) => (
@@ -110,7 +110,9 @@ export function ProjectGanttView() {
                     {task.boardName} · {task.columnName}
                   </p>
                 </div>
-                <span className="text-xs text-gray-400">No dates set</span>
+                <span className="text-xs text-gray-400">
+                  {t('gantt.noDatesSet')}
+                </span>
               </div>
             ))}
           </div>

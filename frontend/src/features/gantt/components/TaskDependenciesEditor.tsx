@@ -9,6 +9,7 @@ import { useProjectGantt } from '../hooks/useProjectGantt';
 import { Button } from '@/shared/components/ui/Button';
 import { SelectField } from '@/shared/components/ui/SelectField';
 import { LoadingSpinner } from '@/shared/components/feedback/LoadingSpinner';
+import { useLocale } from '@/i18n/LocaleProvider';
 
 interface TaskDependenciesEditorProps {
   taskId: string;
@@ -21,6 +22,7 @@ export function TaskDependenciesEditor({
   projectId,
   canEdit,
 }: TaskDependenciesEditorProps) {
+  const { t } = useLocale();
   const [predecessorId, setPredecessorId] = useState('');
   const { data: ganttData } = useProjectGantt(projectId, true);
   const { data, isLoading } = useTaskDependencies(taskId, true);
@@ -55,9 +57,11 @@ export function TaskDependenciesEditor({
   return (
     <section className="space-y-3 border-t border-gray-100 pt-5">
       <div>
-        <h3 className="text-sm font-semibold text-gray-900">Dependencies</h3>
+        <h3 className="text-sm font-semibold text-gray-900">
+          {t('gantt.dependencies')}
+        </h3>
         <p className="mt-1 text-xs text-gray-500">
-          Tasks that must finish before this one can start.
+          {t('gantt.dependenciesTaskHint')}
         </p>
       </div>
 
@@ -88,19 +92,19 @@ export function TaskDependenciesEditor({
                       disabled={isDeleting}
                       onClick={() => void deleteDependency(dependency.id)}
                     >
-                      Remove
+                      {t('common.remove')}
                     </Button>
                   )}
                 </li>
               ))}
             </ul>
           ) : (
-            <p className="text-sm text-gray-500">No predecessors yet.</p>
+            <p className="text-sm text-gray-500">{t('gantt.noPredecessors')}</p>
           )}
 
           {data?.successors.length ? (
             <div className="rounded-lg bg-gray-50 px-3 py-2 text-sm text-gray-600">
-              <p className="font-medium text-gray-800">Blocks</p>
+              <p className="font-medium text-gray-800">{t('gantt.blocks')}</p>
               <ul className="mt-1 space-y-1">
                 {data.successors.map((dependency) => (
                   <li key={dependency.id}>
@@ -120,11 +124,11 @@ export function TaskDependenciesEditor({
         <div className="flex flex-wrap items-end gap-3">
           <div className="min-w-[14rem] flex-1">
             <SelectField
-              label="Blocked by"
+              label={t('gantt.blockedBy')}
               value={predecessorId || undefined}
               onChange={(value) => setPredecessorId(String(value ?? ''))}
               options={[
-                { value: '', label: 'Select predecessor' },
+                { value: '', label: t('gantt.selectPredecessor') },
                 ...predecessorOptions,
               ]}
             />
@@ -134,7 +138,7 @@ export function TaskDependenciesEditor({
             onClick={() => void handleAddPredecessor()}
             disabled={!predecessorId || isCreating}
           >
-            Add
+            {t('common.add')}
           </Button>
         </div>
       )}

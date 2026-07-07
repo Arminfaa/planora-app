@@ -144,26 +144,45 @@ const features = [
 ];
 
 function KanbanPreview({ compact = false }: { compact?: boolean }) {
+  const { t } = useLocale();
   const columns = [
     {
-      name: 'To Do',
+      name: t('landing.preview.columns.todo'),
       color: '#6B7280',
       tasks: [
-        { title: 'Design landing', labels: ['Design'] },
-        { title: 'API review', labels: ['Backend'] },
+        {
+          title: t('landing.preview.demoTasks.designLanding'),
+          labels: [t('landing.preview.demoLabels.design')],
+        },
+        {
+          title: t('landing.preview.demoTasks.apiReview'),
+          labels: [t('landing.preview.demoLabels.backend')],
+        },
       ],
     },
     {
-      name: 'In Progress',
+      name: t('landing.preview.columns.inProgress'),
       color: '#3B82F6',
-      tasks: [{ title: 'Board UI', labels: ['Frontend'], checklist: '2/4' }],
+      tasks: [
+        {
+          title: t('landing.preview.demoTasks.boardUI'),
+          labels: [t('landing.preview.demoLabels.frontend')],
+          checklist: '2/4',
+        },
+      ],
     },
     {
-      name: 'Done',
+      name: t('landing.preview.columns.done'),
       color: '#10B981',
       tasks: [
-        { title: 'Auth flow', labels: ['Done'] },
-        { title: 'Custom roles', labels: ['New'] },
+        {
+          title: t('landing.preview.demoTasks.authFlow'),
+          labels: [t('landing.preview.demoLabels.done')],
+        },
+        {
+          title: t('landing.preview.demoTasks.customRoles'),
+          labels: [t('landing.preview.demoLabels.new')],
+        },
       ],
     },
   ];
@@ -176,12 +195,12 @@ function KanbanPreview({ compact = false }: { compact?: boolean }) {
         <div className="flex items-center justify-between">
           <div>
             <p className="text-[10px] font-medium uppercase tracking-wider text-gray-400">
-              Sprint board
+              {t('landing.preview.sprintBoard')}
             </p>
             <p
               className={`font-semibold text-gray-900 ${compact ? 'text-xs' : 'text-sm'}`}
             >
-              Product launch
+              {t('landing.preview.productLaunch')}
             </p>
           </div>
           <span className="inline-flex items-center gap-1.5 rounded-full bg-emerald-50 px-2.5 py-1 text-[10px] font-medium text-emerald-700 ring-1 ring-emerald-100">
@@ -189,7 +208,7 @@ function KanbanPreview({ compact = false }: { compact?: boolean }) {
               <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-emerald-400 opacity-75" />
               <span className="relative inline-flex h-1.5 w-1.5 rounded-full bg-emerald-500" />
             </span>
-            Live
+            {t('common.live')}
           </span>
         </div>
       </div>
@@ -265,6 +284,7 @@ function PreviewAvatar({
 }
 
 function GroupChatPreview({ compact = false }: { compact?: boolean }) {
+  const { t } = useLocale();
   return (
     <div
       className={`overflow-hidden rounded-2xl border border-gray-200/80 bg-white shadow-xl backdrop-blur-sm ${compact ? 'shadow-md' : ''}`}
@@ -275,12 +295,12 @@ function GroupChatPreview({ compact = false }: { compact?: boolean }) {
         <div className="flex items-center justify-between">
           <div>
             <p className="text-[10px] font-medium uppercase tracking-wider text-gray-400">
-              Project group
+              {t('landing.preview.projectGroup')}
             </p>
             <p
               className={`font-semibold text-gray-900 ${compact ? 'text-xs' : 'text-sm'}`}
             >
-              Product launch
+              {t('landing.preview.productLaunch')}
             </p>
           </div>
           <span className="inline-flex items-center gap-1.5 rounded-full bg-emerald-50 px-2.5 py-1 text-[10px] font-medium text-emerald-700 ring-1 ring-emerald-100">
@@ -288,7 +308,7 @@ function GroupChatPreview({ compact = false }: { compact?: boolean }) {
               <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-emerald-400 opacity-75" />
               <span className="relative inline-flex h-1.5 w-1.5 rounded-full bg-emerald-500" />
             </span>
-            Live
+            {t('common.live')}
           </span>
         </div>
       </div>
@@ -297,14 +317,19 @@ function GroupChatPreview({ compact = false }: { compact?: boolean }) {
         className={`space-y-1 bg-gray-50/40 ${compact ? 'px-2 py-0.5' : 'px-3 py-1'}`}
       >
         <div className="py-1 text-center">
-          <span className="text-[10px] font-medium text-gray-400">Today</span>
+          <span className="text-[10px] font-medium text-gray-400">
+            {t('common.today')}
+          </span>
         </div>
 
         <div className="flex flex-col items-center gap-1.5 py-1">
           <div className="max-w-[90%] rounded-full bg-gray-100 px-3 py-1.5 text-center">
             <p className="text-[10px] leading-relaxed text-gray-600">
-              Sarah moved <span className="font-medium">Board UI</span> to In
-              Progress
+              {t('landing.preview.activityMoved', {
+                user: t('landing.preview.demoNames.sarah'),
+                task: t('landing.preview.demoTasks.boardUI'),
+                column: t('landing.preview.columns.inProgress'),
+              })}
             </p>
           </div>
         </div>
@@ -313,17 +338,17 @@ function GroupChatPreview({ compact = false }: { compact?: boolean }) {
           <div className="flex max-w-[85%] gap-2">
             <div className="flex shrink-0 items-end pb-4">
               <PreviewAvatar
-                name="Alex Chen"
+                name={t('landing.preview.demoNames.alexChen')}
                 className={compact ? 'h-6 w-6 text-[9px]' : ''}
               />
             </div>
             <div className="min-w-0">
               <p className="mb-0.5 px-1 text-[10px] font-medium text-gray-400">
-                Alex Chen
+                {t('landing.preview.demoNames.alexChen')}
               </p>
               <div className="relative rounded-2xl bg-gray-100 px-3 py-2 pb-5">
                 <p className="pe-8 text-[11px] leading-relaxed text-gray-900">
-                  Uploaded the wireframes — take a look!
+                  {t('landing.preview.uploadedWireframes')}
                 </p>
                 <span className="absolute bottom-1.5 end-2.5 text-[9px] text-gray-400">
                   10:24
@@ -337,15 +362,15 @@ function GroupChatPreview({ compact = false }: { compact?: boolean }) {
           <div className="flex w-full justify-end py-0.5">
             <div className="flex max-w-[85%] flex-row-reverse gap-2">
               <div className="flex shrink-0 items-end pb-4">
-                <PreviewAvatar name="You" />
+                <PreviewAvatar name={t('common.you')} />
               </div>
               <div className="min-w-0">
                 <p className="mb-0.5 px-1 text-end text-[10px] font-medium text-gray-400">
-                  You
+                  {t('common.you')}
                 </p>
                 <div className="relative rounded-2xl bg-primary-100 px-3 py-2 pb-5">
                   <p className="pe-8 text-[11px] leading-relaxed text-gray-900">
-                    Looks great. I&apos;ll review after standup.
+                    {t('landing.preview.reviewAfterStandup')}
                   </p>
                   <span className="absolute bottom-1.5 end-2.5 text-[9px] text-gray-400">
                     10:31
@@ -361,7 +386,9 @@ function GroupChatPreview({ compact = false }: { compact?: boolean }) {
         className={`border-t border-gray-100 bg-white ${compact ? 'px-2 py-2' : 'px-3 py-2.5'}`}
       >
         <div className="rounded-lg border border-gray-200 bg-gray-50 px-3 py-2">
-          <span className="text-[11px] text-gray-400">Write a message...</span>
+          <span className="text-[11px] text-gray-400">
+            {t('landing.preview.writeMessage')}
+          </span>
         </div>
       </div>
     </div>
@@ -369,11 +396,12 @@ function GroupChatPreview({ compact = false }: { compact?: boolean }) {
 }
 
 function HeroNotificationPanel() {
+  const { t } = useLocale();
   const items = [
     {
-      title: 'Task moved',
-      body: 'Board UI → In Progress',
-      time: 'now',
+      title: t('landing.preview.taskMoved'),
+      body: t('landing.preview.notificationTaskMovedBody'),
+      time: t('landing.preview.notificationTimeNow'),
       accent: 'bg-blue-100 text-blue-600',
       icon: (
         <path
@@ -385,9 +413,9 @@ function HeroNotificationPanel() {
       ),
     },
     {
-      title: 'New message',
-      body: 'Alex uploaded wireframes',
-      time: '2m',
+      title: t('landing.preview.newMessage'),
+      body: t('landing.preview.notificationNewMessageBody'),
+      time: t('landing.preview.notificationTimeMinutes', { count: 2 }),
       accent: 'bg-indigo-100 text-indigo-600',
       icon: (
         <path
@@ -424,15 +452,15 @@ function HeroNotificationPanel() {
           </div>
           <div>
             <p className="text-[9px] font-medium uppercase tracking-wider text-gray-400">
-              Notifications
+              {t('landing.preview.notifications')}
             </p>
             <p className="text-[11px] font-semibold leading-tight text-gray-900">
-              3 unread
+              {t('landing.preview.unreadCount', { count: 3 })}
             </p>
           </div>
         </div>
         <span className="rounded-full bg-white/80 px-1.5 py-px text-[8px] font-semibold uppercase tracking-wide text-orange-700 ring-1 ring-orange-200">
-          Live
+          {t('common.live')}
         </span>
       </div>
 

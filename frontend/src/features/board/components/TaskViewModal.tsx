@@ -7,8 +7,9 @@ import { LabelBadges } from '@/features/labels/components/LabelBadges';
 import { TaskComments } from '@/features/comments/components/TaskComments';
 import { TaskAttachments } from '@/features/attachments/components/TaskAttachments';
 import { normalizeTaskLabels } from '@/features/labels/types';
-import { getTaskAssignees, priorityStyles } from '@/features/tasks/types';
+import { getTaskAssignees, getPriorityStyles } from '@/features/tasks/types';
 import { formatDueDate, isDueDateOverdue } from '@/features/tasks/utils/dates';
+import { useLocale } from '@/i18n/LocaleProvider';
 import { AppModal } from '@/shared/components/ui/AppModal';
 import { AssigneeDisplay } from './AssigneeDisplay';
 import { TaskChecklistEditor } from './TaskChecklistEditor';
@@ -33,12 +34,14 @@ export function TaskViewModal({
   canToggleChecklist = true,
   canEditChecklist = false,
 }: TaskViewModalProps) {
-  const style = priorityStyles[task.priority];
+  const { t } = useLocale();
+  const style = getPriorityStyles(t)[task.priority];
   const labels = normalizeTaskLabels(task.labels);
   const columnName =
     task.column?.name ??
     columns.find((column) => column.id === task.columnId)?.name ??
-    '—';
+    t('common.emDash');
+
   const checklistItems = task.checklistItems ?? [];
 
   return (
@@ -53,15 +56,15 @@ export function TaskViewModal({
           </span>
         </div>
       }
-      subtitle={`Column: ${columnName}`}
+      subtitle={t('tasks.columnSubtitle', { name: columnName })}
       onClose={onClose}
       width={672}
       footer={
         <>
-          <Button onClick={onClose}>Close</Button>
+          <Button onClick={onClose}>{t('common.close')}</Button>
           {onEdit && (
             <Button type="primary" onClick={onEdit}>
-              Edit
+              {t('common.edit')}
             </Button>
           )}
         </>
@@ -69,7 +72,9 @@ export function TaskViewModal({
     >
       {task.description && (
         <div className="mb-6">
-          <h3 className="text-sm font-semibold text-gray-900">Description</h3>
+          <h3 className="text-sm font-semibold text-gray-900">
+            {t('tasks.description')}
+          </h3>
           <p className="mt-1 whitespace-pre-wrap text-sm text-gray-600">
             {task.description}
           </p>
@@ -78,17 +83,21 @@ export function TaskViewModal({
 
       <div className="mb-6 grid gap-3 text-sm sm:grid-cols-2">
         <div>
-          <span className="font-medium text-gray-700">Assignees</span>
+          <span className="font-medium text-gray-700">
+            {t('tasks.assignee')}
+          </span>
           <p className="mt-0.5 text-gray-600">
             {getTaskAssignees(task).length > 0 ? (
               <AssigneeDisplay task={task} />
             ) : (
-              'Unassigned'
+              t('tasks.unassigned')
             )}
           </p>
         </div>
         <div>
-          <span className="font-medium text-gray-700">Due date</span>
+          <span className="font-medium text-gray-700">
+            {t('tasks.dueDate')}
+          </span>
           <p
             className={`mt-0.5 ${
               task.dueDate && isDueDateOverdue(task.dueDate)
@@ -96,14 +105,16 @@ export function TaskViewModal({
                 : 'text-gray-600'
             }`}
           >
-            {task.dueDate ? formatDueDate(task.dueDate) : '—'}
+            {task.dueDate ? formatDueDate(task.dueDate) : t('common.emDash')}
           </p>
         </div>
       </div>
 
       {labels.length > 0 && (
         <div className="mb-6">
-          <h3 className="text-sm font-semibold text-gray-900">Labels</h3>
+          <h3 className="text-sm font-semibold text-gray-900">
+            {t('tasks.labels')}
+          </h3>
           <LabelBadges labels={labels} className="mt-2" />
         </div>
       )}

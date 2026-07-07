@@ -18,9 +18,10 @@ import { taskService } from '@/features/tasks/services/task.service';
 import {
   getTaskAssignees,
   PRIORITY_OPTIONS,
-  priorityStyles,
+  getPriorityStyles,
 } from '@/features/tasks/types';
 import { toDateInputValue } from '@/features/tasks/utils/dates';
+import { useLocale } from '@/i18n/LocaleProvider';
 import { Input } from '@/shared/components/ui/Input';
 import { TextArea } from '@/shared/components/ui/TextArea';
 import { SelectField } from '@/shared/components/ui/SelectField';
@@ -31,29 +32,16 @@ import { MemberMultiSelect } from './MemberMultiSelect';
 import { TaskChecklistEditor } from './TaskChecklistEditor';
 import { TaskDependenciesEditor } from '@/features/gantt/components/TaskDependenciesEditor';
 
-const schema = z
-  .object({
-    title: z.string().min(1, 'Title is required').max(200),
-    description: z.string().max(2000).optional(),
-    priority: z.enum(['LOW', 'MEDIUM', 'HIGH', 'URGENT']),
-    columnId: z.string().min(1),
-    startDate: z.string().optional(),
-    dueDate: z.string().optional(),
-    progress: z.coerce.number().min(0).max(100),
-    parentTaskId: z.string().optional(),
-  })
-  .refine(
-    (data) => {
-      if (!data.startDate?.trim() || !data.dueDate?.trim()) return true;
-      return data.startDate <= data.dueDate;
-    },
-    {
-      message: 'Start date must be before or equal to due date',
-      path: ['startDate'],
-    },
-  );
-
-type FormData = z.infer<typeof schema>;
+type FormData = {
+  title: string;
+  description?: string;
+  priority: 'LOW' | 'MEDIUM' | 'HIGH' | 'URGENT';
+  columnId: string;
+  startDate?: string;
+  dueDate?: string;
+  progress: number;
+  parentTaskId?: string;
+};
 
 const FORM_ID = 'task-edit-form';
 
@@ -98,6 +86,7 @@ export function TaskModal({
   onSave,
   onDelete,
 }: TaskModalProps) {
+  const { t } = useLocale();
   const [error, setError] = useState('');
   const [isDeleting, setIsDeleting] = useState(false);
   const [assigneeIds, setAssigneeIds] = useState(() =>
@@ -107,6 +96,32 @@ export function TaskModal({
   const taskLabels = normalizeTaskLabels(task.labels);
   const checklistItems = task.checklistItems ?? [];
   const { data: ganttData } = useProjectGantt(projectId, true);
+
+  const schema = useMemo(
+    () =>
+      z
+        .object({
+          title: z.string().min(1, t('tasks.titleRequired')).max(200),
+          description: z.string().max(2000).optional(),
+          priority: z.enum(['LOW', 'MEDIUM', 'HIGH', 'URGENT']),
+          columnId: z.string().min(1),
+          startDate: z.string().optional(),
+          dueDate: z.string().optional(),
+          progress: z.coerce.number().min(0).max(100),
+          parentTaskId: z.string().optional(),
+        })
+        .refine(
+          (data) => {
+            if (!data.startDate?.trim() || !data.dueDate?.trim()) return true;
+            return data.startDate <= data.dueDate;
+          },
+          {
+            message: t('tasks.startBeforeDue'),
+            path: ['startDate'],
+          },
+        ),
+    [t],
+  );
 
   const parentTaskOptions = useMemo(
     () =>
@@ -176,7 +191,7 @@ export function TaskModal({
   };
 
   const handleDelete = async () => {
-    if (!confirm('Delete this task?')) return;
+    if (!confirm(t('tasks.deleteConfirm'))) return;
     setIsDeleting(true);
     setError('');
     try {
@@ -188,6 +203,7 @@ export function TaskModal({
     }
   };
 
+  const priorityStyles = getPriorityStyles(t);
   const priorityOptions = PRIORITY_OPTIONS.map((priority) => ({
     value: priority,
     label: priorityStyles[priority].label,
@@ -200,23 +216,23 @@ export function TaskModal({
 
   return (
     <AppModal
-      title="Edit Task"
+      title={t('board.modals.editTask')}
       onClose={onClose}
       width={672}
       footer={
         <div className="flex w-full items-center justify-between gap-3">
           <Button danger loading={isDeleting} onClick={handleDelete}>
-            Delete
+            {t('common.delete')}
           </Button>
           <div className="flex gap-2">
-            <Button onClick={onClose}>Cancel</Button>
+            <Button onClick={onClose}>{t('common.cancel')}</Button>
             <Button
               type="primary"
               htmlType="submit"
               form={FORM_ID}
               loading={isSubmitting}
             >
-              Save
+              {t('common.save')}
             </Button>
           </div>
         </div>
@@ -237,7 +253,11 @@ export function TaskModal({
           name="title"
           control={control}
           render={({ field }) => (
-            <Input label="Title" error={errors.title?.message} {...field} />
+            <Input
+              label={t('tasks.title')}
+              error={errors.title?.message}
+              {...field}
+            />
           )}
         />
 
@@ -245,7 +265,7 @@ export function TaskModal({
           name="description"
           control={control}
           render={({ field }) => (
-            <TextArea label="Description" rows={3} {...field} />
+            <TextArea label={t('tasks.description')} rows={3} {...field} />
           )}
         />
 
@@ -255,7 +275,7 @@ export function TaskModal({
             control={control}
             render={({ field }) => (
               <DateInput
-                label="Start Date"
+                label={t('tasks.startDate')}
                 error={errors.startDate?.message}
                 value={field.value ?? ''}
                 onChange={field.onChange}
@@ -269,7 +289,7 @@ export function TaskModal({
             control={control}
             render={({ field }) => (
               <DateInput
-                label="Due Date"
+                label={t('tasks.dueDate')}
                 error={errors.dueDate?.message}
                 value={field.value ?? ''}
                 onChange={field.onChange}
@@ -285,7 +305,7 @@ export function TaskModal({
             control={control}
             render={({ field }) => (
               <SelectField
-                label="Priority"
+                label={t('tasks.priority')}
                 options={priorityOptions}
                 {...field}
               />
@@ -297,11 +317,11 @@ export function TaskModal({
             control={control}
             render={({ field }) => (
               <SelectField
-                label="Parent task"
+                label={t('tasks.parentTask')}
                 value={field.value || undefined}
                 onChange={(value) => field.onChange(String(value ?? ''))}
                 options={[
-                  { value: '', label: 'No parent' },
+                  { value: '', label: t('tasks.noParent') },
                   ...parentTaskOptions,
                 ]}
               />
@@ -315,7 +335,9 @@ export function TaskModal({
           render={({ field }) => (
             <div className="space-y-2">
               <div className="flex items-center justify-between text-sm">
-                <span className="font-medium text-gray-700">Progress</span>
+                <span className="font-medium text-gray-700">
+                  {t('tasks.progress')}
+                </span>
                 <span className="text-gray-500">{field.value}%</span>
               </div>
               <Slider
@@ -330,7 +352,7 @@ export function TaskModal({
 
         <div className="space-y-1">
           <label className="block text-sm font-medium text-gray-700">
-            Assignees
+            {t('tasks.assignee')}
           </label>
           <MemberMultiSelect
             members={members}
@@ -343,7 +365,11 @@ export function TaskModal({
           name="columnId"
           control={control}
           render={({ field }) => (
-            <SelectField label="Column" options={columnOptions} {...field} />
+            <SelectField
+              label={t('tasks.column')}
+              options={columnOptions}
+              {...field}
+            />
           )}
         />
       </form>
@@ -362,7 +388,9 @@ export function TaskModal({
         />
 
         <div className="space-y-2">
-          <h3 className="text-sm font-semibold text-gray-900">Labels</h3>
+          <h3 className="text-sm font-semibold text-gray-900">
+            {t('tasks.labels')}
+          </h3>
           <LabelBadges labels={taskLabels} />
           <TaskLabelPicker
             taskId={task.id}

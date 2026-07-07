@@ -3,17 +3,16 @@
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
-import { useState } from 'react';
+import { useMemo, useState } from 'react';
+import { useLocale } from '@/i18n/LocaleProvider';
 import { Button } from '@/shared/components/ui/Button';
 import { Input } from '@/shared/components/ui/Input';
 import { getApiErrorMessage } from '@/lib/api';
 import type { CreateBoardInput } from '../types';
 
-const schema = z.object({
-  name: z.string().min(2, 'Name must be at least 2 characters').max(100),
-});
-
-type FormData = z.infer<typeof schema>;
+type FormData = {
+  name: string;
+};
 
 export const CREATE_BOARD_FORM_ID = 'create-board-form';
 
@@ -30,8 +29,17 @@ export function CreateBoardForm({
   variant = 'default',
   onSubmittingChange,
 }: CreateBoardFormProps) {
+  const { t } = useLocale();
   const [error, setError] = useState('');
   const isModal = variant === 'modal';
+
+  const schema = useMemo(
+    () =>
+      z.object({
+        name: z.string().min(2, t('validation.nameMinLength')).max(100),
+      }),
+    [t],
+  );
 
   const {
     register,
@@ -59,7 +67,7 @@ export function CreateBoardForm({
     <>
       {isModal && (
         <p className="text-sm text-gray-500">
-          To Do, In Progress, and Done columns are added automatically.
+          {t('board.createBoardModalHint')}
         </p>
       )}
 
@@ -70,8 +78,8 @@ export function CreateBoardForm({
       )}
 
       <Input
-        label="Board Name"
-        placeholder="e.g. Sprint Board"
+        label={t('board.boardName')}
+        placeholder={t('board.boardNamePlaceholder')}
         error={errors.name?.message}
         {...register('name')}
       />
@@ -95,19 +103,21 @@ export function CreateBoardForm({
       onSubmit={handleSubmit(handleFormSubmit)}
       className="rounded-xl border border-gray-200 bg-white p-6 shadow-sm"
     >
-      <h3 className="mb-1 text-lg font-semibold text-gray-900">Create Board</h3>
+      <h3 className="mb-1 text-lg font-semibold text-gray-900">
+        {t('board.modals.createBoard')}
+      </h3>
       <p className="mb-4 text-sm text-gray-500">
-        Default columns (To Do, In Progress, Done) will be added automatically.
+        {t('board.createBoardDefaultColumnsHint')}
       </p>
 
       <div className="space-y-4">
         {formFields}
         <div className="flex gap-3">
           <Button type="submit" isLoading={isSubmitting}>
-            Create Board
+            {t('board.createBoard')}
           </Button>
           <Button type="button" variant="secondary" onClick={onCancel}>
-            Cancel
+            {t('common.cancel')}
           </Button>
         </div>
       </div>

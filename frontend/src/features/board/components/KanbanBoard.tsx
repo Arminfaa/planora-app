@@ -35,6 +35,7 @@ import { applyRealtimeEvent } from '../utils/applyRealtimeEvent';
 import { AssetImage } from '@/shared/components/ui/AssetImage';
 import { LoadingSpinner } from '@/shared/components/feedback/LoadingSpinner';
 import { Button } from '@/shared/components/ui/Button';
+import { useLocale } from '@/i18n/LocaleProvider';
 
 const TaskAttachmentsPreviewModal = dynamic(
   () =>
@@ -110,6 +111,7 @@ export function KanbanBoard({
   canMoveTasks = false,
   canViewTasks = true,
 }: KanbanBoardProps) {
+  const { t } = useLocale();
   const router = useRouter();
   const pathname = usePathname();
   const searchParams = useSearchParams();
@@ -195,7 +197,7 @@ export function KanbanBoard({
 
       if (event.type === 'board:deleted') {
         setBoardDeleted(true);
-        setActionError('This board was deleted by another user.');
+        setActionError(t('board.boardDeletedRemote'));
         return;
       }
 
@@ -293,8 +295,11 @@ export function KanbanBoard({
       const taskCount = column.tasks?.length ?? 0;
       const message =
         taskCount > 0
-          ? `Delete column "${column.name}"? ${taskCount} task(s) will be removed.`
-          : `Delete column "${column.name}"?`;
+          ? t('board.deleteColumnWithTasks', {
+              name: column.name,
+              count: taskCount,
+            })
+          : t('board.deleteColumnNamed', { name: column.name });
 
       if (!confirm(message)) return;
 
@@ -308,7 +313,7 @@ export function KanbanBoard({
         }
       }
     },
-    [onRefresh],
+    [onRefresh, t],
   );
 
   const updateTaskQuery = useCallback(
@@ -484,8 +489,7 @@ export function KanbanBoard({
 
           {!canViewTasks && (
             <div className="mt-4 rounded-xl border border-amber-400/30 bg-amber-500/20 px-4 py-3 text-sm text-amber-50 backdrop-blur-sm">
-              You can view this board, but you do not have permission to see
-              tasks.
+              {t('board.viewBoardNoTasks')}
             </div>
           )}
 
@@ -556,7 +560,7 @@ export function KanbanBoard({
                       onClick={() => setShowCreateColumn(true)}
                       className="w-full border border-dashed border-white/30 bg-white/10 text-white backdrop-blur-md hover:bg-white/20"
                     >
-                      + Add Column
+                      + {t('board.addColumn')}
                     </Button>
                   </div>
                 ))}

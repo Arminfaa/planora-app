@@ -7,6 +7,7 @@ import {
   CreateBoardForm,
 } from '@/features/board/components/CreateBoardForm';
 import type { CreateBoardInput } from '@/features/board/types';
+import { useLocale } from '@/i18n/LocaleProvider';
 import { AppModal } from '@/shared/components/ui/AppModal';
 
 interface CreateBoardModalProps {
@@ -15,22 +16,23 @@ interface CreateBoardModalProps {
 }
 
 export function CreateBoardModal({ onSubmit, onClose }: CreateBoardModalProps) {
+  const { t } = useLocale();
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   return (
     <AppModal
-      title="New board"
+      title={t('projects.newBoard')}
       onClose={onClose}
       footer={
         <>
-          <Button onClick={onClose}>Cancel</Button>
+          <Button onClick={onClose}>{t('common.cancel')}</Button>
           <Button
             type="primary"
             htmlType="submit"
             form={CREATE_BOARD_FORM_ID}
             loading={isSubmitting}
           >
-            Create Board
+            {t('board.createBoard')}
           </Button>
         </>
       }

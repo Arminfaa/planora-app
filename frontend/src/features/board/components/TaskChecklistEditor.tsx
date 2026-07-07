@@ -4,6 +4,7 @@ import { useState } from 'react';
 import { Checkbox } from 'antd';
 import type { TaskChecklistItem } from '@/features/tasks/types';
 import { checklistService } from '@/features/tasks/services/checklist.service';
+import { useLocale } from '@/i18n/LocaleProvider';
 import { Button } from '@/shared/components/ui/Button';
 import { Input } from '@/shared/components/ui/Input';
 import { getApiErrorMessage } from '@/lib/api';
@@ -25,6 +26,7 @@ export function TaskChecklistEditor({
   canEdit,
   canManage = true,
 }: TaskChecklistEditorProps) {
+  const { t } = useLocale();
   const canEditItems = canEdit ?? canManage;
   const [newTitle, setNewTitle] = useState('');
   const [error, setError] = useState('');
@@ -109,7 +111,9 @@ export function TaskChecklistEditor({
 
   return (
     <div className="space-y-3">
-      <h3 className="text-sm font-semibold text-gray-900">Checklist</h3>
+      <h3 className="text-sm font-semibold text-gray-900">
+        {t('tasks.checklist')}
+      </h3>
 
       {error && (
         <div className="rounded-lg bg-red-50 px-3 py-2 text-xs text-red-700">
@@ -170,7 +174,7 @@ export function TaskChecklistEditor({
                     onClick={() => startEdit(item)}
                     className="text-xs text-gray-500 hover:text-gray-700"
                   >
-                    Edit
+                    {t('common.edit')}
                   </button>
                 )}
                 {canManage && (
@@ -180,7 +184,7 @@ export function TaskChecklistEditor({
                     onClick={() => void handleDelete(item.id)}
                     className="text-xs text-red-500 hover:text-red-700"
                   >
-                    Remove
+                    {t('common.remove')}
                   </button>
                 )}
               </div>
@@ -188,7 +192,7 @@ export function TaskChecklistEditor({
           ))}
         </ul>
       ) : (
-        <p className="text-sm text-gray-500">No checklist items yet.</p>
+        <p className="text-sm text-gray-500">{t('tasks.noChecklistItems')}</p>
       )}
 
       {canManage && (
@@ -196,7 +200,7 @@ export function TaskChecklistEditor({
           <Input
             value={newTitle}
             onChange={(event) => setNewTitle(event.target.value)}
-            placeholder="Add checklist item..."
+            placeholder={t('tasks.addChecklistPlaceholder')}
             className="min-w-0 flex-1"
             onKeyDown={(event) => {
               if (event.key === 'Enter') {
@@ -211,7 +215,7 @@ export function TaskChecklistEditor({
             onClick={() => void handleAdd()}
             isLoading={isSubmitting}
           >
-            Add
+            {t('common.add')}
           </Button>
         </div>
       )}

@@ -9,6 +9,7 @@ import {
   getMessageDateKey,
 } from '../utils/formatDateTime';
 import { useAuth } from '@/features/auth/hooks/useAuth';
+import { useLocale } from '@/i18n/LocaleProvider';
 import { Button } from '@/shared/components/ui/Button';
 import { TextArea } from '@/shared/components/ui/TextArea';
 import { getApiErrorMessage } from '@/lib/api';
@@ -139,6 +140,7 @@ function ActivityLogItem({
 }
 
 function CopyMessageButton({ text }: { text: string }) {
+  const { t } = useLocale();
   const [copied, setCopied] = useState(false);
 
   const handleCopy = async () => {
@@ -153,8 +155,8 @@ function CopyMessageButton({ text }: { text: string }) {
     <button
       type="button"
       onClick={() => void handleCopy()}
-      title={copied ? 'Copied' : 'Copy message'}
-      aria-label={copied ? 'Copied' : 'Copy message'}
+      title={copied ? t('common.copied') : t('group.copyMessage')}
+      aria-label={copied ? t('common.copied') : t('group.copyMessage')}
       className="rounded-md p-1 text-gray-400 transition hover:bg-white/70 hover:text-gray-600 sm:opacity-0 sm:group-hover/bubble:opacity-100"
     >
       {copied ? (
@@ -205,6 +207,7 @@ function GroupMessageItem({
   onEdit: (messageId: string, content: string) => Promise<void>;
   onDelete: (messageId: string) => Promise<void>;
 }) {
+  const { t } = useLocale();
   const [isEditing, setIsEditing] = useState(false);
   const [editContent, setEditContent] = useState(message.content ?? '');
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -248,7 +251,7 @@ function GroupMessageItem({
           className={`flex min-w-0 flex-1 flex-col ${isOwn ? 'items-end' : 'items-start'}`}
         >
           <p className="mb-1 px-1 text-[11px] font-medium text-gray-400">
-            {message.author?.name ?? 'Unknown'}
+            {message.author?.name ?? t('group.unknownAuthor')}
           </p>
 
           {isEditing ? (
@@ -264,7 +267,7 @@ function GroupMessageItem({
                   disabled={isSubmitting}
                   className="px-3 py-1 text-xs"
                 >
-                  Save
+                  {t('common.save')}
                 </Button>
                 <Button
                   variant="secondary"
@@ -274,7 +277,7 @@ function GroupMessageItem({
                   }}
                   className="px-3 py-1 text-xs"
                 >
-                  Cancel
+                  {t('common.cancel')}
                 </Button>
               </div>
             </div>
@@ -346,7 +349,7 @@ function GroupMessageItem({
               )}
               <span className="absolute bottom-2 end-3 text-[10px] text-gray-400">
                 {formatMessageTime(message.createdAt)}
-                {message.editedAt && ' · edited'}
+                {message.editedAt && t('group.editedSuffix')}
               </span>
             </div>
           )}
@@ -361,7 +364,7 @@ function GroupMessageItem({
                   onClick={() => setIsEditing(true)}
                   className="text-[11px] font-medium text-primary-600 hover:text-primary-700"
                 >
-                  Edit
+                  {t('common.edit')}
                 </button>
               )}
               {canDelete && (
@@ -370,7 +373,7 @@ function GroupMessageItem({
                   onClick={() => void onDelete(message.id)}
                   className="text-[11px] font-medium text-red-600 hover:text-red-700"
                 >
-                  Delete
+                  {t('common.delete')}
                 </button>
               )}
             </div>
@@ -414,6 +417,7 @@ export function ProjectGroupPanel({
   canDeleteAny,
   fullHeight = false,
 }: ProjectGroupPanelProps) {
+  const { t } = useLocale();
   const { user } = useAuth();
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [content, setContent] = useState('');
@@ -440,9 +444,7 @@ export function ProjectGroupPanel({
   if (!canView) {
     return (
       <section className="rounded-xl border border-dashed border-gray-200 bg-white py-12 text-center">
-        <p className="text-sm text-gray-500">
-          You do not have permission to view the project group.
-        </p>
+        <p className="text-sm text-gray-500">{t('group.noViewPermission')}</p>
       </section>
     );
   }
@@ -488,7 +490,7 @@ export function ProjectGroupPanel({
   };
 
   const handleDelete = async (messageId: string) => {
-    if (!confirm('Delete this message?')) return;
+    if (!confirm(t('group.deleteMessageConfirm'))) return;
     setActionError('');
     try {
       await deleteMessage(messageId);
@@ -504,9 +506,11 @@ export function ProjectGroupPanel({
       }`}
     >
       <div className="shrink-0 border-b border-gray-100 px-5 py-4">
-        <h2 className="text-lg font-semibold text-gray-900">Project group</h2>
+        <h2 className="text-lg font-semibold text-gray-900">
+          {t('group.title')}
+        </h2>
         <p className="mt-0.5 text-sm text-gray-500">
-          Team chat, file sharing, and project activity log
+          {t('group.subtitleExtended')}
         </p>
       </div>
 
@@ -527,7 +531,9 @@ export function ProjectGroupPanel({
                 disabled={isLoadingMore}
                 className="text-sm font-medium text-primary-600 hover:text-primary-700 disabled:opacity-50"
               >
-                {isLoadingMore ? 'Loading...' : 'Load older messages'}
+                {isLoadingMore
+                  ? t('common.loading')
+                  : t('group.loadOlderMessages')}
               </button>
             </div>
           )}
@@ -540,11 +546,11 @@ export function ProjectGroupPanel({
 
           {isLoading ? (
             <p className="text-center text-sm text-gray-500">
-              Loading messages...
+              {t('group.loadingMessages')}
             </p>
           ) : messages.length === 0 ? (
             <p className="text-center text-sm text-gray-500">
-              No messages yet. Start the conversation!
+              {t('group.noMessages')}
             </p>
           ) : (
             <div className="space-y-1">
@@ -575,7 +581,9 @@ export function ProjectGroupPanel({
                 value={content}
                 onChange={(e) => setContent(e.target.value)}
                 placeholder={
-                  canSend ? 'Write a message...' : 'Add a caption (optional)...'
+                  canSend
+                    ? t('group.writeMessage')
+                    : t('group.captionPlaceholder')
                 }
                 rows={2}
                 disabled={!canSend && !canUpload}
@@ -601,7 +609,7 @@ export function ProjectGroupPanel({
                       variant="secondary"
                       disabled={isSubmitting}
                       onClick={() => fileInputRef.current?.click()}
-                      title="Upload file"
+                      title={t('group.uploadFile')}
                       className="px-2 py-2"
                     >
                       <svg
@@ -626,14 +634,14 @@ export function ProjectGroupPanel({
                     onClick={() => void handleSend()}
                     className="px-5 py-2 text-sm"
                   >
-                    Send
+                    {t('group.send')}
                   </Button>
                 )}
               </div>
             </div>
             {canSend && (
               <p className="mt-2 text-xs text-gray-400">
-                Messages can be edited for 5 minutes after sending.
+                {t('group.editWindowHint')}
               </p>
             )}
           </div>

@@ -10,16 +10,14 @@ import { ProjectRolesPanel } from './ProjectRolesPanel';
 import { replaceProjectSlugInPath } from '../utils/projectPaths';
 import type { UpdateProjectInput } from '../types';
 import { getApiErrorMessage, isForbiddenError } from '@/lib/api';
+import { useLocale } from '@/i18n/LocaleProvider';
 
 export function ProjectSettingsView() {
+  const { t } = useLocale();
   const router = useRouter();
   const pathname = usePathname();
-  const {
-    project,
-    customRoles,
-    setCustomRoles,
-    applyProjectUpdate,
-  } = useProjectContext();
+  const { project, customRoles, setCustomRoles, applyProjectUpdate } =
+    useProjectContext();
   const { can } = useProjectPermissions(project);
 
   const [showEditProject, setShowEditProject] = useState(false);
@@ -39,8 +37,7 @@ export function ProjectSettingsView() {
   ) => {
     setActionError('');
     const updated = await projectService.update(projectId, data);
-    const { slugChanged, previousSlug, nextSlug } =
-      applyProjectUpdate(updated);
+    const { slugChanged, previousSlug, nextSlug } = applyProjectUpdate(updated);
 
     if (slugChanged) {
       router.replace(
@@ -50,11 +47,7 @@ export function ProjectSettingsView() {
   };
 
   const handleDeleteProject = async () => {
-    if (
-      !confirm(
-        `Delete project "${project.name}"? All boards, columns, and tasks will be removed.`,
-      )
-    ) {
+    if (!confirm(t('projects.deleteProjectNamed', { name: project.name }))) {
       return;
     }
 
@@ -74,7 +67,7 @@ export function ProjectSettingsView() {
       <div className="mx-auto max-w-7xl px-4 py-12 sm:px-6">
         <div className="rounded-xl border border-dashed border-gray-200 bg-white py-12 text-center">
           <p className="text-sm text-gray-500">
-            You do not have permission to manage project settings.
+            {t('projects.noSettingsPermission')}
           </p>
         </div>
       </div>
@@ -90,9 +83,11 @@ export function ProjectSettingsView() {
       )}
 
       <section className="rounded-xl border border-gray-200 bg-white p-6 shadow-sm">
-        <h2 className="text-lg font-semibold text-gray-900">Project details</h2>
+        <h2 className="text-lg font-semibold text-gray-900">
+          {t('projects.projectDetails')}
+        </h2>
         <p className="mt-1 text-sm text-gray-500">
-          Update the project name, description, and permission mode.
+          {t('projects.projectDetailsHint')}
         </p>
         {canEditProject && (
           <button
@@ -100,7 +95,7 @@ export function ProjectSettingsView() {
             onClick={() => setShowEditProject(true)}
             className="mt-4 inline-flex items-center rounded-xl border border-gray-200 bg-white px-4 py-2.5 text-sm font-medium text-gray-700 shadow-sm transition hover:bg-gray-50"
           >
-            Edit project
+            {t('projects.editProject')}
           </button>
         )}
       </section>
@@ -120,17 +115,18 @@ export function ProjectSettingsView() {
 
       {canDeleteProject && (
         <section className="rounded-xl border border-red-200 bg-red-50/50 p-6">
-          <h2 className="text-lg font-semibold text-red-900">Danger zone</h2>
+          <h2 className="text-lg font-semibold text-red-900">
+            {t('settings.dangerZone')}
+          </h2>
           <p className="mt-1 text-sm text-red-700">
-            Deleting this project removes all boards, tasks, and messages
-            permanently.
+            {t('projects.dangerZoneDescription')}
           </p>
           <button
             type="button"
             onClick={() => void handleDeleteProject()}
             className="mt-4 inline-flex items-center rounded-xl border border-red-300 bg-white px-4 py-2.5 text-sm font-medium text-red-700 shadow-sm transition hover:bg-red-50"
           >
-            Delete project
+            {t('settings.deleteProject')}
           </button>
         </section>
       )}

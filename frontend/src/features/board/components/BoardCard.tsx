@@ -2,6 +2,7 @@
 
 import Link from 'next/link';
 import type { Board } from '../types';
+import { useLocale } from '@/i18n/LocaleProvider';
 
 const accentColors = [
   '#6366F1',
@@ -37,6 +38,7 @@ export function BoardCard({
   onEdit,
   onDelete,
 }: BoardCardProps) {
+  const { t } = useLocale();
   const columnCount = board._count?.columns ?? 0;
   const accent = getAccentColor(board.id);
 
@@ -52,7 +54,9 @@ export function BoardCard({
             {board.name}
           </h3>
           <p className="mt-2 text-xs text-gray-500">
-            {columnCount} column{columnCount === 1 ? '' : 's'}
+            {columnCount === 1
+              ? t('board.columnCount', { count: columnCount })
+              : t('board.columnCountPlural', { count: columnCount })}
           </p>
         </Link>
 
@@ -62,9 +66,9 @@ export function BoardCard({
               type="button"
               onClick={() => onEdit(board)}
               className="rounded-lg px-2 py-1 text-xs font-medium text-gray-500 transition hover:bg-gray-100 hover:text-gray-900"
-              aria-label={`Edit ${board.name}`}
+              aria-label={t('board.editColumnNamed', { name: board.name })}
             >
-              Edit
+              {t('common.edit')}
             </button>
           )}
           {canDelete && (
@@ -72,9 +76,11 @@ export function BoardCard({
               type="button"
               onClick={() => onDelete(board)}
               className="rounded-lg px-2 py-1 text-xs font-medium text-red-600 transition hover:bg-red-50"
-              aria-label={`Delete ${board.name}`}
+              aria-label={t('board.deleteColumnNamedAria', {
+                name: board.name,
+              })}
             >
-              Delete
+              {t('common.delete')}
             </button>
           )}
         </div>

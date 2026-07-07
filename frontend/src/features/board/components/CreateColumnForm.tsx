@@ -3,21 +3,17 @@
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
-import { useState } from 'react';
+import { useMemo, useState } from 'react';
 import { COLUMN_COLOR_OPTIONS, type CreateColumnInput } from '../types';
+import { useLocale } from '@/i18n/LocaleProvider';
 import { Button } from '@/shared/components/ui/Button';
 import { Input } from '@/shared/components/ui/Input';
 import { getApiErrorMessage } from '@/lib/api';
 
-const schema = z.object({
-  name: z.string().min(1, 'Name is required').max(50),
-  color: z
-    .string()
-    .regex(/^#[0-9A-Fa-f]{6}$/, 'Invalid color')
-    .optional(),
-});
-
-type FormData = z.infer<typeof schema>;
+type FormData = {
+  name: string;
+  color?: string;
+};
 
 interface CreateColumnFormProps {
   onSubmit: (data: CreateColumnInput) => Promise<void>;
@@ -30,8 +26,21 @@ export function CreateColumnForm({
   onCancel,
   variant = 'default',
 }: CreateColumnFormProps) {
+  const { t } = useLocale();
   const [error, setError] = useState('');
   const isGlass = variant === 'glass';
+
+  const schema = useMemo(
+    () =>
+      z.object({
+        name: z.string().min(1, t('validation.nameRequired')).max(50),
+        color: z
+          .string()
+          .regex(/^#[0-9A-Fa-f]{6}$/, t('validation.invalidColor'))
+          .optional(),
+      }),
+    [t],
+  );
 
   const {
     register,
@@ -67,7 +76,9 @@ export function CreateColumnForm({
           : 'border-gray-300 bg-white'
       }`}
     >
-      <h3 className="mb-3 text-sm font-semibold text-gray-900">New Column</h3>
+      <h3 className="mb-3 text-sm font-semibold text-gray-900">
+        {t('board.newColumn')}
+      </h3>
 
       {error && (
         <div className="mb-3 rounded-lg bg-red-50 px-3 py-2 text-xs text-red-700">
@@ -77,14 +88,16 @@ export function CreateColumnForm({
 
       <div className="space-y-3">
         <Input
-          label="Name"
-          placeholder="e.g. Review"
+          label={t('common.name')}
+          placeholder={t('board.columnNamePlaceholder')}
           error={errors.name?.message}
           {...register('name')}
         />
 
         <div className="space-y-1">
-          <span className="block text-sm font-medium text-gray-700">Color</span>
+          <span className="block text-sm font-medium text-gray-700">
+            {t('labels.color')}
+          </span>
           <div className="flex flex-wrap gap-2">
             {COLUMN_COLOR_OPTIONS.map((color) => (
               <button
@@ -97,7 +110,7 @@ export function CreateColumnForm({
                     : 'border-transparent'
                 }`}
                 style={{ backgroundColor: color }}
-                aria-label={`Color ${color}`}
+                aria-label={`${t('labels.color')} ${color}`}
               />
             ))}
           </div>
@@ -105,10 +118,10 @@ export function CreateColumnForm({
 
         <div className="flex gap-2 pt-1">
           <Button type="submit" isLoading={isSubmitting} className="flex-1">
-            Add
+            {t('common.add')}
           </Button>
           <Button type="button" variant="secondary" onClick={onCancel}>
-            Cancel
+            {t('common.cancel')}
           </Button>
         </div>
       </div>

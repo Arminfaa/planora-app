@@ -4,6 +4,7 @@ import { useState } from 'react';
 import type { ProjectLabel, TaskLabel } from '../types';
 import { LABEL_COLOR_OPTIONS } from '../types';
 import { labelService } from '../services/label.service';
+import { useLocale } from '@/i18n/LocaleProvider';
 import { Button } from '@/shared/components/ui/Button';
 import { Input } from '@/shared/components/ui/Input';
 import { getApiErrorMessage } from '@/lib/api';
@@ -23,6 +24,7 @@ export function TaskLabelPicker({
   onChange,
   onCreateLabel,
 }: TaskLabelPickerProps) {
+  const { t } = useLocale();
   const [error, setError] = useState('');
   const [isBusy, setIsBusy] = useState(false);
   const [showCreate, setShowCreate] = useState(false);
@@ -101,7 +103,7 @@ export function TaskLabelPicker({
           {showCreate ? (
             <div className="rounded-lg border border-gray-200 p-3">
               <Input
-                label="New label"
+                label={t('labels.addLabel')}
                 value={newName}
                 onChange={(event) => setNewName(event.target.value)}
               />
@@ -128,7 +130,7 @@ export function TaskLabelPicker({
                   onClick={() => void handleCreate()}
                   isLoading={isBusy}
                 >
-                  Add label
+                  {t('labels.addLabel')}
                 </Button>
                 <Button
                   type="button"
@@ -136,7 +138,7 @@ export function TaskLabelPicker({
                   variant="secondary"
                   onClick={() => setShowCreate(false)}
                 >
-                  Cancel
+                  {t('common.cancel')}
                 </Button>
               </div>
             </div>
@@ -147,7 +149,7 @@ export function TaskLabelPicker({
               variant="secondary"
               onClick={() => setShowCreate(true)}
             >
-              + New label
+              + {t('labels.createLabel')}
             </Button>
           )}
         </div>

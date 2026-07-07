@@ -11,6 +11,7 @@ import { useProjectPermissions } from '@/features/permissions/hooks/useProjectPe
 import { useProjectContext } from '@/features/projects/context/ProjectContext';
 import { useProjectProgress } from '@/features/projects/hooks/useProjectProgress';
 import { ProjectProgressOverview } from '@/features/projects/components/ProjectProgressOverview';
+import { useLocale } from '@/i18n/LocaleProvider';
 import { LoadingSpinner } from '@/shared/components/feedback/LoadingSpinner';
 import { Button } from '@/shared/components/ui/Button';
 import { SearchInput } from '@/shared/components/ui/SearchInput';
@@ -23,6 +24,7 @@ function boardMatchesQuery(board: { name: string }, query: string): boolean {
 }
 
 export function ProjectOverviewView() {
+  const { t } = useLocale();
   const { project, setBoardCount } = useProjectContext();
   const { can } = useProjectPermissions(project);
   const canViewBoards = can('board.view');
@@ -85,11 +87,7 @@ export function ProjectOverviewView() {
   };
 
   const handleDeleteBoard = async (board: Board) => {
-    if (
-      !confirm(
-        `Delete board "${board.name}"? All columns and tasks will be removed.`,
-      )
-    ) {
+    if (!confirm(t('projects.deleteBoardConfirm', { name: board.name }))) {
       return;
     }
 
@@ -106,10 +104,10 @@ export function ProjectOverviewView() {
   const roleLabel =
     project.currentUserRoleName ??
     (project.currentUserRole === 'OWNER'
-      ? 'Owner'
+      ? t('team.owner')
       : project.currentUserRole === 'ADMIN'
-        ? 'Admin'
-        : 'Member');
+        ? t('team.admin')
+        : t('team.member'));
 
   return (
     <>
@@ -117,7 +115,7 @@ export function ProjectOverviewView() {
         <div className="mx-auto max-w-7xl px-4 py-6 sm:px-6">
           <div className="grid gap-3 sm:grid-cols-3">
             <StatsCard
-              label="Boards"
+              label={t('projects.boards')}
               value={boards.length}
               accent="blue"
               variant="glass"
@@ -138,7 +136,7 @@ export function ProjectOverviewView() {
               }
             />
             <StatsCard
-              label="Your role"
+              label={t('projects.yourRole')}
               value={roleLabel}
               accent="purple"
               variant="glass"
@@ -159,8 +157,12 @@ export function ProjectOverviewView() {
               }
             />
             <StatsCard
-              label="Permission mode"
-              value={project.permissionMode === 'CUSTOM' ? 'Custom' : 'Default'}
+              label={t('projects.permissionMode')}
+              value={
+                project.permissionMode === 'CUSTOM'
+                  ? t('projects.permissionCustom')
+                  : t('projects.permissionDefault')
+              }
               accent="green"
               variant="glass"
               icon={
@@ -202,8 +204,8 @@ export function ProjectOverviewView() {
               <SearchInput
                 value={searchQuery}
                 onChange={(event) => setSearchQuery(event.target.value)}
-                placeholder="Search boards..."
-                aria-label="Search boards"
+                placeholder={t('projects.searchBoards')}
+                aria-label={t('projects.searchBoardsAria')}
                 className="rounded-xl border-gray-200 bg-white shadow-sm"
               />
             </div>
@@ -223,7 +225,7 @@ export function ProjectOverviewView() {
                     d="M12 4v16m8-8H4"
                   />
                 </svg>
-                New Board
+                {t('projects.newBoard')}
               </Button>
             )}
           </div>
@@ -233,10 +235,15 @@ export function ProjectOverviewView() {
       <div className="mx-auto w-full max-w-7xl flex-1 px-4 py-8 sm:px-6">
         <section>
           <div className="mb-5">
-            <h2 className="text-lg font-semibold text-gray-900">Boards</h2>
+            <h2 className="text-lg font-semibold text-gray-900">
+              {t('projects.boards')}
+            </h2>
             {hasSearch && canViewBoards && (
               <p className="mt-0.5 text-sm text-gray-500">
-                {filteredBoards.length} of {boards.length} shown
+                {t('projects.boardsShown', {
+                  shown: filteredBoards.length,
+                  total: boards.length,
+                })}
               </p>
             )}
           </div>
@@ -244,7 +251,7 @@ export function ProjectOverviewView() {
           {!canViewBoards ? (
             <div className="rounded-xl border border-dashed border-gray-200 bg-white py-12 text-center">
               <p className="text-sm text-gray-500">
-                You do not have permission to view boards in this project.
+                {t('projects.noViewBoards')}
               </p>
             </div>
           ) : (
@@ -259,25 +266,25 @@ export function ProjectOverviewView() {
                 <LoadingSpinner />
               ) : boards.length === 0 ? (
                 <div className="rounded-xl border border-dashed border-gray-200 bg-white py-16 text-center">
-                  <p className="text-gray-600">No boards yet</p>
+                  <p className="text-gray-600">{t('projects.noBoards')}</p>
                   {can('board.create') && (
                     <Button
                       className="mt-4"
                       onClick={() => setShowCreateModal(true)}
                     >
-                      Create your first board
+                      {t('projects.createFirstBoard')}
                     </Button>
                   )}
                 </div>
               ) : filteredBoards.length === 0 ? (
                 <div className="rounded-xl border border-dashed border-gray-200 bg-white py-16 text-center">
-                  <p className="text-gray-600">No boards match your search</p>
+                  <p className="text-gray-600">{t('projects.noBoardsMatch')}</p>
                   <button
                     type="button"
                     onClick={() => setSearchQuery('')}
                     className="mt-3 text-sm font-medium text-primary-600 hover:text-primary-700"
                   >
-                    Clear search
+                    {t('common.clearSearch')}
                   </button>
                 </div>
               ) : (

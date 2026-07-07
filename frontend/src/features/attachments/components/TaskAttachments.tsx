@@ -3,11 +3,11 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { attachmentService } from '../services/attachment.service';
 import type { TaskAttachment } from '../types';
+import { useLocale } from '@/i18n/LocaleProvider';
 import { Button } from '@/shared/components/ui/Button';
 import { getApiErrorMessage } from '@/lib/api';
 import { getAssetUrl, isImageAttachment } from '@/lib/assets';
 import { AssetImage } from '@/shared/components/ui/AssetImage';
-
 import { formatFileSize } from '../utils/format';
 
 interface TaskAttachmentsProps {
@@ -15,6 +15,7 @@ interface TaskAttachmentsProps {
 }
 
 export function TaskAttachments({ taskId }: TaskAttachmentsProps) {
+  const { t } = useLocale();
   const inputRef = useRef<HTMLInputElement>(null);
   const [attachments, setAttachments] = useState<TaskAttachment[]>([]);
   const [error, setError] = useState('');
@@ -55,7 +56,7 @@ export function TaskAttachments({ taskId }: TaskAttachmentsProps) {
   };
 
   const handleDelete = async (attachmentId: string) => {
-    if (!confirm('Delete this attachment?')) return;
+    if (!confirm(t('attachments.deleteConfirm'))) return;
 
     setError('');
     try {
@@ -69,7 +70,9 @@ export function TaskAttachments({ taskId }: TaskAttachmentsProps) {
   return (
     <div className="space-y-3">
       <div className="flex items-center justify-between gap-2">
-        <h3 className="text-sm font-semibold text-gray-900">Attachments</h3>
+        <h3 className="text-sm font-semibold text-gray-900">
+          {t('attachments.title')}
+        </h3>
         <div>
           <input
             ref={inputRef}
@@ -88,7 +91,7 @@ export function TaskAttachments({ taskId }: TaskAttachmentsProps) {
             onClick={() => inputRef.current?.click()}
             isLoading={isUploading}
           >
-            Upload file
+            {t('attachments.upload')}
           </Button>
         </div>
       </div>
@@ -100,9 +103,13 @@ export function TaskAttachments({ taskId }: TaskAttachmentsProps) {
       )}
 
       {isLoading ? (
-        <p className="text-sm text-gray-500">Loading attachments...</p>
+        <p className="text-sm text-gray-500">
+          {t('attachments.loadingAttachments')}
+        </p>
       ) : attachments.length === 0 ? (
-        <p className="text-sm text-gray-500">No attachments yet.</p>
+        <p className="text-sm text-gray-500">
+          {t('attachments.noAttachments')}
+        </p>
       ) : (
         <div className="space-y-2">
           {attachments.map((attachment) => {
@@ -159,7 +166,7 @@ export function TaskAttachments({ taskId }: TaskAttachmentsProps) {
                   className="px-2 py-1 text-xs text-red-600 hover:bg-red-50"
                   onClick={() => void handleDelete(attachment.id)}
                 >
-                  Delete
+                  {t('common.delete')}
                 </Button>
               </div>
             );

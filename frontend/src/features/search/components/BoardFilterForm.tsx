@@ -3,12 +3,13 @@
 import type { BoardColumn } from '@/features/board/types';
 import {
   PRIORITY_OPTIONS,
-  priorityStyles,
+  getPriorityStyles,
   type TaskPriority,
 } from '@/features/tasks/types';
+import { useLocale } from '@/i18n/LocaleProvider';
 import { SelectField } from '@/shared/components/ui/SelectField';
 import {
-  DUE_DATE_FILTER_OPTIONS,
+  getDueDateFilterOptions,
   UNASSIGNED_ASSIGNEE,
   type TaskFilters,
   defaultTaskFilters,
@@ -33,10 +34,12 @@ export function BoardFilterForm({
   onChange,
   variant = 'default',
 }: BoardFilterFormProps) {
+  const { t } = useLocale();
   const assignees = extractBoardAssignees(columns);
   const activeCount = countActiveFilters(filters);
   const isActive = isTaskFiltersActive(filters);
   const isModal = variant === 'modal';
+  const priorityStyles = getPriorityStyles(t);
 
   const handlePriorityToggle = (priority: TaskPriority) => {
     onChange(togglePriorityFilter(filters, priority));
@@ -47,20 +50,20 @@ export function BoardFilterForm({
     : 'text-xs font-medium uppercase tracking-wide text-gray-400';
 
   const columnOptions = [
-    { value: '', label: 'All columns' },
+    { value: '', label: t('search.anyColumn') },
     ...columns.map((column) => ({ value: column.id, label: column.name })),
   ];
 
   const assigneeOptions = [
-    { value: '', label: 'All assignees' },
-    { value: UNASSIGNED_ASSIGNEE, label: 'Unassigned' },
+    { value: '', label: t('search.anyAssignee') },
+    { value: UNASSIGNED_ASSIGNEE, label: t('tasks.unassigned') },
     ...assignees.map((assignee) => ({
       value: assignee.id,
       label: assignee.name,
     })),
   ];
 
-  const dueDateOptions = DUE_DATE_FILTER_OPTIONS.map((option) => ({
+  const dueDateOptions = getDueDateFilterOptions(t).map((option) => ({
     value: option.value,
     label: option.label,
   }));
@@ -74,13 +77,15 @@ export function BoardFilterForm({
             onClick={() => onChange(defaultTaskFilters)}
             className="text-xs font-medium text-primary-600 hover:text-primary-700"
           >
-            Clear all{activeCount > 0 ? ` (${activeCount})` : ''}
+            {activeCount > 0
+              ? t('search.clearAllWithCount', { count: activeCount })
+              : t('search.clearFilters')}
           </button>
         </div>
       )}
 
       <div className="space-y-2">
-        <p className={labelClass}>Priority</p>
+        <p className={labelClass}>{t('tasks.priority')}</p>
         <div className="flex flex-wrap gap-2">
           {PRIORITY_OPTIONS.map((priority) => {
             const selected = filters.priorities.includes(priority);
@@ -106,7 +111,7 @@ export function BoardFilterForm({
       <div className="grid gap-4 sm:grid-cols-2">
         <div className="sm:col-span-2">
           <SelectField
-            label={<span className={labelClass}>Column</span>}
+            label={<span className={labelClass}>{t('tasks.column')}</span>}
             value={filters.columnId ?? ''}
             onChange={(value) =>
               onChange({
@@ -119,7 +124,7 @@ export function BoardFilterForm({
         </div>
 
         <SelectField
-          label={<span className={labelClass}>Assignee</span>}
+          label={<span className={labelClass}>{t('tasks.assignee')}</span>}
           value={filters.assigneeId ?? ''}
           onChange={(value) =>
             onChange({
@@ -131,7 +136,7 @@ export function BoardFilterForm({
         />
 
         <SelectField
-          label={<span className={labelClass}>Due date</span>}
+          label={<span className={labelClass}>{t('tasks.dueDate')}</span>}
           value={filters.dueDate}
           onChange={(value) =>
             onChange({
