@@ -487,6 +487,17 @@ export const faMessages = {
     noTeamPermission: 'شما مجوز مشاهده تیم پروژه را ندارید.',
     deleteProjectNamed:
       'پروژه «{name}» حذف شود؟ تمام بردها، ستون‌ها و وظایف حذف خواهند شد.',
+    deleteProjectModalTitle: 'حذف پروژه',
+    deleteProjectModalSimpleDescription:
+      'آیا مطمئن هستید که می‌خواهید «{name}» را حذف کنید؟ این عمل قابل بازگشت نیست.',
+    deleteProjectModalDependenciesDescription:
+      'این پروژه داده‌های وابسته دارد که برای همیشه حذف می‌شوند:',
+    deleteProjectDependencyBoard: '{count} برد',
+    deleteProjectDependencyBoards: '{count} برد',
+    deleteProjectDependencyMembers: '{count} عضو تیم',
+    deleteProjectTypeNamePrompt:
+      'برای تأیید حذف، نام پروژه «{name}» را وارد کنید.',
+    deleteProjectTypeNameLabel: 'تأیید نام پروژه',
     dangerZoneDescription:
       'حذف این پروژه تمام بردها، وظایف و پیام‌ها را برای همیشه حذف می‌کند.',
     teamHeader: 'تیم · {count}',

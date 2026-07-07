@@ -488,6 +488,17 @@ export const enMessages = {
     noTeamPermission: 'You do not have permission to view the project team.',
     deleteProjectNamed:
       'Delete project "{name}"? All boards, columns, and tasks will be removed.',
+    deleteProjectModalTitle: 'Delete project',
+    deleteProjectModalSimpleDescription:
+      'Are you sure you want to delete "{name}"? This action cannot be undone.',
+    deleteProjectModalDependenciesDescription:
+      'This project has related data that will be permanently removed:',
+    deleteProjectDependencyBoard: '{count} board',
+    deleteProjectDependencyBoards: '{count} boards',
+    deleteProjectDependencyMembers: '{count} team members',
+    deleteProjectTypeNamePrompt:
+      'Type the project name "{name}" to confirm deletion.',
+    deleteProjectTypeNameLabel: 'Project name confirmation',
     dangerZoneDescription:
       'Deleting this project removes all boards, tasks, and messages permanently.',
     teamHeader: 'Team · {count}',
