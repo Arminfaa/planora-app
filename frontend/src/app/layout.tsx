@@ -1,10 +1,17 @@
 import type { Metadata, Viewport } from 'next';
 import { Inter } from 'next/font/google';
 import { AntdRegistry } from '@ant-design/nextjs-registry';
+import '@fontsource/vazir/400.css';
+import '@fontsource/vazir/500.css';
+import '@fontsource/vazir/700.css';
 import { Providers } from './providers';
 import './globals.css';
 
-const inter = Inter({ subsets: ['latin'] });
+const inter = Inter({
+  subsets: ['latin'],
+  variable: '--font-inter',
+  display: 'swap',
+});
 
 const appName =
   process.env.NEXT_PUBLIC_APP_NAME ?? 'Project Management Platform';
@@ -39,7 +46,14 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="en" suppressHydrationWarning>
-      <body className={inter.className}>
+      <head>
+        <script
+          dangerouslySetInnerHTML={{
+            __html: `(function(){try{var m=document.cookie.match(/(?:^|; )app-locale=([^;]*)/);var locale=m?decodeURIComponent(m[1]):'en';var isFa=locale==='fa';document.documentElement.classList.add(isFa?'locale-fa':'locale-en');if(isFa){document.documentElement.setAttribute('dir','rtl');document.documentElement.setAttribute('lang','fa');}else{document.documentElement.setAttribute('dir','ltr');document.documentElement.setAttribute('lang','en');}}catch(e){}})();`,
+          }}
+        />
+      </head>
+      <body className={`${inter.variable} antialiased`}>
         <AntdRegistry>
           <Providers>{children}</Providers>
         </AntdRegistry>

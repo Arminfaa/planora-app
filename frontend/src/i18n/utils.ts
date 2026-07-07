@@ -115,4 +115,6 @@ export function applyDocumentLocale(locale: Locale): void {
 
   document.documentElement.lang = locale;
   document.documentElement.dir = locale === 'fa' ? 'rtl' : 'ltr';
+  document.documentElement.classList.toggle('locale-fa', locale === 'fa');
+  document.documentElement.classList.toggle('locale-en', locale === 'en');
 }
