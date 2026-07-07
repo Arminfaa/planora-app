@@ -6,11 +6,15 @@ import type { GanttTask, GanttZoom } from '../types';
 import {
   buildTimelineLabels,
   buildTimelineRange,
+  getDayWidth,
   getTaskScheduleBounds,
   getTimelineDayCount,
+  getTimelinePixelWidth,
 } from '../utils/timeline';
 import { GanttBar } from './GanttBar';
 import { cn } from '@/lib/utils';
+
+const TASK_COLUMN_WIDTH = '16rem';
 
 interface GanttTimelineProps {
   tasks: GanttTask[];
@@ -20,6 +24,7 @@ interface GanttTimelineProps {
   onScheduleChange: (
     taskId: string,
     schedule: { startDate: string; dueDate: string },
+    boardSlug: string,
   ) => Promise<void>;
 }
 
@@ -55,9 +60,14 @@ export function GanttTimeline({
 }: GanttTimelineProps) {
   const [zoom, setZoom] = useState<GanttZoom>('week');
   const range = useMemo(() => buildTimelineRange(tasks), [tasks]);
-  const labels = useMemo(() => buildTimelineLabels(range, zoom), [range, zoom]);
-  const groupedTasks = useMemo(() => groupTasksByBoard(tasks), [tasks]);
   const dayCount = getTimelineDayCount(range);
+  const dayWidth = getDayWidth(zoom);
+  const timelineWidth = getTimelinePixelWidth(dayCount, zoom);
+  const labels = useMemo(
+    () => buildTimelineLabels(range, zoom, dayWidth),
+    [dayWidth, range, zoom],
+  );
+  const groupedTasks = useMemo(() => groupTasksByBoard(tasks), [tasks]);
 
   if (tasks.length === 0) {
     return (
@@ -67,6 +77,8 @@ export function GanttTimeline({
       </div>
     );
   }
+
+  const gridTemplateColumns = `${TASK_COLUMN_WIDTH} ${timelineWidth}px`;
 
   return (
     <div className="overflow-hidden rounded-xl border border-gray-200 bg-white shadow-sm">
@@ -100,16 +112,24 @@ export function GanttTimeline({
       </div>
 
       <div className="overflow-x-auto">
-        <div className="min-w-[960px]">
-          <div className="grid grid-cols-[16rem_minmax(0,1fr)] border-b border-gray-100 bg-gray-50 text-xs font-medium uppercase tracking-wide text-gray-500">
-            <div className="px-4 py-3">Task</div>
+        <div
+          className="min-w-full"
+          style={{ width: `calc(${TASK_COLUMN_WIDTH} + ${timelineWidth}px)` }}
+        >
+          <div
+            className="grid border-b border-gray-100 bg-gray-50 text-xs font-medium uppercase tracking-wide text-gray-500"
+            style={{ gridTemplateColumns }}
+          >
+            <div className="sticky start-0 z-20 border-e border-gray-100 bg-gray-50 px-4 py-3">
+              Task
+            </div>
             <div className="relative px-4 py-3">
               <div className="relative h-5">
                 {labels.map((label) => (
                   <span
-                    key={`${label.label}-${label.leftPercent}`}
+                    key={`${label.label}-${label.leftPx}`}
                     className="absolute top-0 whitespace-nowrap text-[11px] normal-case text-gray-400"
-                    style={{ left: `${label.leftPercent}%` }}
+                    style={{ left: `${label.leftPx}px` }}
                   >
                     {label.label}
                   </span>
@@ -120,8 +140,11 @@ export function GanttTimeline({
 
           {groupedTasks.map((group) => (
             <div key={group.boardSlug}>
-              <div className="grid grid-cols-[16rem_minmax(0,1fr)] border-b border-gray-100 bg-gray-50/70">
-                <div className="px-4 py-2 text-sm font-semibold text-gray-800">
+              <div
+                className="grid border-b border-gray-100 bg-gray-50/70"
+                style={{ gridTemplateColumns }}
+              >
+                <div className="sticky start-0 z-20 border-e border-gray-100 bg-gray-50/70 px-4 py-2 text-sm font-semibold text-gray-800">
                   {group.boardName}
                 </div>
                 <div className="border-s border-gray-100" />
@@ -136,9 +159,10 @@ export function GanttTimeline({
                 return (
                   <div
                     key={task.id}
-                    className="grid grid-cols-[16rem_minmax(0,1fr)] border-b border-gray-100 last:border-b-0"
+                    className="grid border-b border-gray-100 last:border-b-0"
+                    style={{ gridTemplateColumns }}
                   >
-                    <div className="px-4 py-3">
+                    <div className="sticky start-0 z-20 border-e border-gray-100 bg-white px-4 py-3">
                       <Link
                         href={taskHref}
                         className="block truncate text-sm font-medium text-gray-900 hover:text-primary-700"
@@ -154,7 +178,7 @@ export function GanttTimeline({
                       <GanttBar
                         task={task}
                         range={range}
-                        totalDays={dayCount}
+                        dayWidth={dayWidth}
                         canEdit={canEdit}
                         isSaving={savingTaskId === task.id}
                         onScheduleChange={onScheduleChange}

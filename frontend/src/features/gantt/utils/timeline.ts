@@ -1,4 +1,23 @@
+import type { GanttZoom } from '../types';
+
 const DAY_MS = 24 * 60 * 60 * 1000;
+
+export const GANTT_DAY_WIDTH: Record<GanttZoom, number> = {
+  day: 48,
+  week: 28,
+  month: 12,
+};
+
+export function getDayWidth(zoom: GanttZoom): number {
+  return GANTT_DAY_WIDTH[zoom];
+}
+
+export function getTimelinePixelWidth(
+  dayCount: number,
+  zoom: GanttZoom,
+): number {
+  return dayCount * getDayWidth(zoom);
+}
 
 export function startOfDay(date: Date): Date {
   const next = new Date(date);
@@ -60,10 +79,10 @@ export function getTimelineDayCount(range: { start: Date; end: Date }): number {
   );
 }
 
-export function getBarLayout(
+export function getBarDayOffsets(
   bounds: { start: Date; end: Date },
   range: { start: Date; end: Date },
-): { leftPercent: number; widthPercent: number } {
+): { startOffset: number; spanDays: number } {
   const totalDays = getTimelineDayCount(range);
   const startOffset = Math.max(
     0,
@@ -75,18 +94,29 @@ export function getBarLayout(
   );
   const spanDays = Math.max(1, endOffset - startOffset + 1);
 
+  return { startOffset, spanDays };
+}
+
+export function getBarLayout(
+  bounds: { start: Date; end: Date },
+  range: { start: Date; end: Date },
+  dayWidth: number,
+): { leftPx: number; widthPx: number } {
+  const { startOffset, spanDays } = getBarDayOffsets(bounds, range);
+
   return {
-    leftPercent: (startOffset / totalDays) * 100,
-    widthPercent: (spanDays / totalDays) * 100,
+    leftPx: startOffset * dayWidth,
+    widthPx: Math.max(spanDays * dayWidth, 32),
   };
 }
 
 export function buildTimelineLabels(
   range: { start: Date; end: Date },
-  zoom: 'day' | 'week' | 'month',
-): Array<{ label: string; leftPercent: number }> {
+  zoom: GanttZoom,
+  dayWidth: number,
+): Array<{ label: string; leftPx: number }> {
   const totalDays = getTimelineDayCount(range);
-  const labels: Array<{ label: string; leftPercent: number }> = [];
+  const labels: Array<{ label: string; leftPx: number }> = [];
 
   if (zoom === 'month') {
     const cursor = new Date(
@@ -106,7 +136,7 @@ export function buildTimelineLabels(
           month: 'short',
           year: 'numeric',
         }),
-        leftPercent: (offset / totalDays) * 100,
+        leftPx: offset * dayWidth,
       });
       cursor.setMonth(cursor.getMonth() + 1);
     }
@@ -124,7 +154,7 @@ export function buildTimelineLabels(
               weekday: 'short',
               day: 'numeric',
             }),
-      leftPercent: (offset / totalDays) * 100,
+      leftPx: offset * dayWidth,
     });
   }
 
@@ -180,11 +210,7 @@ export function boundsToScheduleDates(bounds: { start: Date; end: Date }): {
   };
 }
 
-export function pixelsToDayDelta(
-  pixelDelta: number,
-  trackWidth: number,
-  totalDays: number,
-): number {
-  if (trackWidth <= 0 || totalDays <= 0) return 0;
-  return Math.round((pixelDelta / trackWidth) * totalDays);
+export function pixelsToDayDelta(pixelDelta: number, dayWidth: number): number {
+  if (dayWidth <= 0) return 0;
+  return Math.round(pixelDelta / dayWidth);
 }

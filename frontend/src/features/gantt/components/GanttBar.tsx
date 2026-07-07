@@ -19,12 +19,13 @@ type DragMode = 'move' | 'resize-start' | 'resize-end';
 interface GanttBarProps {
   task: GanttTask;
   range: { start: Date; end: Date };
-  totalDays: number;
+  dayWidth: number;
   canEdit: boolean;
   isSaving: boolean;
   onScheduleChange: (
     taskId: string,
     schedule: { startDate: string; dueDate: string },
+    boardSlug: string,
   ) => Promise<void>;
 }
 
@@ -39,7 +40,7 @@ function getPriorityBarClass(priority: GanttTask['priority']): string {
 export function GanttBar({
   task,
   range,
-  totalDays,
+  dayWidth,
   canEdit,
   isSaving,
   onScheduleChange,
@@ -62,7 +63,7 @@ export function GanttBar({
   if (!baseBounds) return null;
 
   const activeBounds = previewBounds ?? baseBounds;
-  const bar = getBarLayout(activeBounds, range);
+  const bar = getBarLayout(activeBounds, range, dayWidth);
 
   const setPreview = useCallback(
     (bounds: { start: Date; end: Date } | null) => {
@@ -85,9 +86,20 @@ export function GanttBar({
         nextBounds.end.getTime() === baseBounds.end.getTime();
       if (unchanged) return;
 
-      await onScheduleChange(task.id, boundsToScheduleDates(nextBounds));
+      await onScheduleChange(
+        task.id,
+        boundsToScheduleDates(nextBounds),
+        task.boardSlug,
+      );
     },
-    [baseBounds.end, baseBounds.start, onScheduleChange, setPreview, task.id],
+    [
+      baseBounds.end,
+      baseBounds.start,
+      onScheduleChange,
+      setPreview,
+      task.boardSlug,
+      task.id,
+    ],
   );
 
   useEffect(() => {
@@ -97,11 +109,9 @@ export function GanttBar({
       const dragState = dragStateRef.current;
       if (!dragState || dragState.pointerId !== event.pointerId) return;
 
-      const trackWidth = trackRef.current?.clientWidth ?? 0;
       const dayDelta = pixelsToDayDelta(
         event.clientX - dragState.startX,
-        trackWidth,
-        totalDays,
+        dayWidth,
       );
 
       let nextBounds = dragState.initialBounds;
@@ -139,7 +149,7 @@ export function GanttBar({
       window.removeEventListener('pointerup', endDrag);
       window.removeEventListener('pointercancel', cancelDrag);
     };
-  }, [finishDrag, isDragging, setPreview, totalDays]);
+  }, [dayWidth, finishDrag, isDragging, setPreview]);
 
   const handlePointerDown = (mode: DragMode) => (event: React.PointerEvent) => {
     if (!canEdit || isSaving) return;
@@ -160,7 +170,7 @@ export function GanttBar({
     <div
       ref={trackRef}
       className="relative h-8 rounded-md bg-[linear-gradient(to_right,rgba(229,231,235,0.7)_1px,transparent_1px)]"
-      style={{ backgroundSize: `${100 / totalDays}% 100%` }}
+      style={{ backgroundSize: `${dayWidth}px 100%` }}
     >
       <div
         title={task.title}
@@ -173,8 +183,8 @@ export function GanttBar({
           isDragging && 'cursor-grabbing',
         )}
         style={{
-          left: `${bar.leftPercent}%`,
-          width: `${bar.widthPercent}%`,
+          left: `${bar.leftPx}px`,
+          width: `${bar.widthPx}px`,
           minWidth: '2rem',
         }}
         onPointerDown={canEdit ? handlePointerDown('move') : undefined}

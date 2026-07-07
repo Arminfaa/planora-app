@@ -15,7 +15,10 @@ export function ProjectGanttView() {
   const canViewTasks = can('task.view');
   const canEditTasks = can('task.edit');
   const { data, isLoading, error } = useProjectGantt(project.id, canViewTasks);
-  const { updateSchedule, savingTaskId } = useUpdateGanttSchedule(project.id);
+  const { updateSchedule, savingTaskId } = useUpdateGanttSchedule(
+    project.id,
+    slug,
+  );
 
   if (!canViewTasks) {
     return (

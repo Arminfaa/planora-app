@@ -31,6 +31,6 @@ export interface GanttTimelineRange {
 }
 
 export interface GanttBarLayout {
-  leftPercent: number;
-  widthPercent: number;
+  leftPx: number;
+  widthPx: number;
 }
