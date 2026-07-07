@@ -57,11 +57,9 @@ export function t(
       ? (faMessages[key] ?? key)
       : key.replace(/^notification\./, '');
   if (locale === 'en' && key.startsWith('notification.')) {
-    // English notification keys use the key's English template from faMessages' English counterpart
-    // For notification keys, English templates are stored as keys in en notification service
-    return interpolate(getEnglishNotificationTemplate(key), vars);
+    return interpolate(getEnglishNotificationTemplate(key), vars ?? {});
   }
-  return interpolate(template, vars);
+  return interpolate(template, vars ?? {});
 }
 
 const englishNotificationTemplates: Record<string, string> = {
@@ -103,9 +101,9 @@ export function translateNotification(
   if (locale === 'fa') {
     const template = faMessages[key];
     if (template) {
-      return interpolate(template, vars);
+      return interpolate(template, vars ?? {});
     }
   }
 
-  return interpolate(getEnglishNotificationTemplate(key), vars);
+  return interpolate(getEnglishNotificationTemplate(key), vars ?? {});
 }
