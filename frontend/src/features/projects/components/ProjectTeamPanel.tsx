@@ -84,7 +84,7 @@ export function ProjectTeamPanel({
   onRemove,
   onRevokeInvite,
 }: ProjectTeamPanelProps) {
-  const { t } = useLocale();
+  const { t, locale } = useLocale();
   const [showInviteModal, setShowInviteModal] = useState(false);
   const [actionError, setActionError] = useState('');
 
@@ -235,7 +235,7 @@ export function ProjectTeamPanel({
                     <p className="font-medium text-gray-900">{invite.email}</p>
                     <p className="text-gray-500">
                       {getInviteRoleLabel(invite, t)} ·{' '}
-                      {formatDate(invite.expiresAt)}
+                      {formatDate(invite.expiresAt, locale)}
                     </p>
                   </div>
                   <Button

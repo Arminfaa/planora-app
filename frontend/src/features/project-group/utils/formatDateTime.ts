@@ -1,27 +1,39 @@
-export function formatMessageDateTime(value: string): string {
-  return new Intl.DateTimeFormat('en-US', {
+import type { Locale } from '@/i18n/types';
+import { formatLocaleDate } from '@/lib/jalali-dates';
+
+export function formatMessageDateTime(
+  value: string,
+  locale: Locale = 'en',
+): string {
+  return formatLocaleDate(value, locale, {
     month: 'short',
     day: 'numeric',
     year: 'numeric',
     hour: 'numeric',
     minute: '2-digit',
-  }).format(new Date(value));
+  });
 }
 
-export function formatMessageTime(value: string): string {
-  return new Intl.DateTimeFormat('en-US', {
+export function formatMessageTime(
+  value: string,
+  locale: Locale = 'en',
+): string {
+  return formatLocaleDate(value, locale, {
     hour: '2-digit',
     minute: '2-digit',
     hour12: false,
-  }).format(new Date(value));
+  });
 }
 
-export function formatDateSeparator(value: string): string {
-  return new Intl.DateTimeFormat('en-US', {
+export function formatDateSeparator(
+  value: string,
+  locale: Locale = 'en',
+): string {
+  return formatLocaleDate(value, locale, {
     weekday: 'long',
     month: 'long',
     day: 'numeric',
-  }).format(new Date(value));
+  });
 }
 
 export function getMessageDateKey(value: string): string {

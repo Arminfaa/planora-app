@@ -80,10 +80,12 @@ function UserAvatar({
 }
 
 function DateSeparator({ date }: { date: string }) {
+  const { locale } = useLocale();
+
   return (
     <div className="py-2 text-center">
       <span className="text-xs font-medium text-gray-400">
-        {formatDateSeparator(date)}
+        {formatDateSeparator(date, locale)}
       </span>
     </div>
   );
@@ -207,7 +209,7 @@ function GroupMessageItem({
   onEdit: (messageId: string, content: string) => Promise<void>;
   onDelete: (messageId: string) => Promise<void>;
 }) {
-  const { t } = useLocale();
+  const { t, locale } = useLocale();
   const [isEditing, setIsEditing] = useState(false);
   const [editContent, setEditContent] = useState(message.content ?? '');
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -348,7 +350,7 @@ function GroupMessageItem({
                 </div>
               )}
               <span className="absolute bottom-2 end-3 text-[10px] text-gray-400">
-                {formatMessageTime(message.createdAt)}
+                {formatMessageTime(message.createdAt, locale)}
                 {message.editedAt && t('group.editedSuffix')}
               </span>
             </div>

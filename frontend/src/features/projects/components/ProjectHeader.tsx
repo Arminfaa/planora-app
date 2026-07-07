@@ -40,7 +40,7 @@ export function ProjectHeader({
   isJoined,
   lastRemoteUpdate,
 }: ProjectHeaderProps) {
-  const { t } = useLocale();
+  const { t, locale } = useLocale();
   return (
     <header className="relative">
       <Link
@@ -76,7 +76,7 @@ export function ProjectHeader({
             <span>·</span>
             <span>
               {t('projects.updatedAt', {
-                date: formatDate(project.updatedAt),
+                date: formatDate(project.updatedAt, locale),
               })}
             </span>
             {project.owner && (

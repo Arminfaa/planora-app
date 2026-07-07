@@ -27,7 +27,7 @@ interface ProjectCardProps {
 }
 
 export function ProjectCard({ project }: ProjectCardProps) {
-  const { t } = useLocale();
+  const { t, locale } = useLocale();
   const accent = getAccentColor(project.id);
 
   return (
@@ -90,7 +90,7 @@ export function ProjectCard({ project }: ProjectCardProps) {
             </span>
           </div>
           <span className="shrink-0 text-xs text-gray-400">
-            {formatDate(project.updatedAt)}
+            {formatDate(project.updatedAt, locale)}
           </span>
         </div>
 

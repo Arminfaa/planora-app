@@ -1,13 +1,16 @@
+import type { Locale } from '@/i18n/types';
+import { formatLocaleDate } from '@/lib/jalali-dates';
+
 export function toDateInputValue(value: string | null | undefined): string {
   if (!value) return '';
   return value.slice(0, 10);
 }
 
-export function formatDueDate(value: string): string {
-  return new Intl.DateTimeFormat('en-US', {
+export function formatDueDate(value: string, locale: Locale = 'en'): string {
+  return formatLocaleDate(value, locale, {
     month: 'short',
     day: 'numeric',
-  }).format(new Date(value));
+  });
 }
 
 export function isDueDateOverdue(value: string): boolean {

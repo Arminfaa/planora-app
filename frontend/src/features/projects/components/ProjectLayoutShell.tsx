@@ -14,7 +14,7 @@ interface ProjectLayoutShellProps {
 }
 
 export function ProjectLayoutShell({ children }: ProjectLayoutShellProps) {
-  const { t } = useLocale();
+  const { t, locale } = useLocale();
   const { project, memberCount, boardCount } = useProjectContext();
 
   const { isConnected, isJoined, lastRemoteUpdate } = useProjectBoardSocket(
@@ -75,7 +75,7 @@ export function ProjectLayoutShell({ children }: ProjectLayoutShellProps) {
                 <span>·</span>
                 <span>
                   {t('projects.updatedAt', {
-                    date: formatDate(project.updatedAt),
+                    date: formatDate(project.updatedAt, locale),
                   })}
                 </span>
               </div>

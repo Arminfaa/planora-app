@@ -1,8 +1,13 @@
 'use client';
 
 import { DatePicker } from 'antd';
-import dayjs from 'dayjs';
 import type { Dayjs } from 'dayjs';
+import { useLocale } from '@/i18n/LocaleProvider';
+import {
+  apiDateToPickerValue,
+  getDateInputFormat,
+  pickerValueToApiDate,
+} from '@/lib/jalali-dates';
 import { cn } from '@/lib/utils';
 
 interface DateInputProps {
@@ -30,13 +35,13 @@ export function DateInput({
   className,
   placeholder,
 }: DateInputProps) {
+  const { locale } = useLocale();
   const inputId = id ?? name;
   const status = error ? 'error' : undefined;
-  const parsed = value ? dayjs(value, 'YYYY-MM-DD') : null;
-  const pickerValue = parsed?.isValid() ? parsed : null;
+  const pickerValue = apiDateToPickerValue(value, locale);
 
   const handleChange = (date: Dayjs | null) => {
-    onChange?.(date ? date.format('YYYY-MM-DD') : '');
+    onChange?.(pickerValueToApiDate(date));
   };
 
   return (
@@ -56,7 +61,7 @@ export function DateInput({
         value={pickerValue}
         onChange={handleChange}
         onBlur={onBlur}
-        format="YYYY-MM-DD"
+        format={getDateInputFormat(locale)}
         className={cn('w-full', className)}
         disabled={disabled}
         placeholder={placeholder}

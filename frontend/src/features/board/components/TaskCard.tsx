@@ -53,7 +53,7 @@ export const TaskCard = memo(function TaskCard({
   canToggleComplete = false,
   canToggleChecklist = false,
 }: TaskCardProps) {
-  const { t } = useLocale();
+  const { t, locale } = useLocale();
   const style = getPriorityStyles(t)[task.priority];
   const labels = normalizeTaskLabels(task.labels);
   const attachmentCount = getTaskAttachmentCount(task);
@@ -182,7 +182,7 @@ export const TaskCard = memo(function TaskCard({
                         : 'text-gray-500'
                     }`}
                   >
-                    {formatDueDate(task.dueDate)}
+                    {formatDueDate(task.dueDate, locale)}
                   </span>
                 )}
                 <AssigneeDisplay

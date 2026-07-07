@@ -16,7 +16,7 @@ interface TaskCommentsProps {
 
 export function TaskComments({ taskId }: TaskCommentsProps) {
   const { user } = useAuth();
-  const { t } = useLocale();
+  const { t, locale } = useLocale();
   const [comments, setComments] = useState<TaskComment[]>([]);
   const [content, setContent] = useState('');
   const [editingId, setEditingId] = useState<string | null>(null);
@@ -122,7 +122,7 @@ export function TaskComments({ taskId }: TaskCommentsProps) {
                       {comment.author.name}
                     </p>
                     <p className="text-xs text-gray-500">
-                      {formatDate(comment.createdAt)}
+                      {formatDate(comment.createdAt, locale)}
                     </p>
                   </div>
                   {isAuthor && !isEditing && (

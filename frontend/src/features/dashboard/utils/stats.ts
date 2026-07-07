@@ -1,4 +1,6 @@
 import type { Project } from '@/features/projects/types';
+import type { Locale } from '@/i18n/types';
+import { formatLocaleDate } from '@/lib/jalali-dates';
 
 export interface DashboardStats {
   totalProjects: number;
@@ -17,10 +19,10 @@ export function computeDashboardStats(
   };
 }
 
-export function formatDate(date: string): string {
-  return new Intl.DateTimeFormat('en-US', {
+export function formatDate(date: string, locale: Locale = 'en'): string {
+  return formatLocaleDate(date, locale, {
     month: 'short',
     day: 'numeric',
     year: 'numeric',
-  }).format(new Date(date));
+  });
 }

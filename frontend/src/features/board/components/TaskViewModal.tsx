@@ -34,7 +34,7 @@ export function TaskViewModal({
   canToggleChecklist = true,
   canEditChecklist = false,
 }: TaskViewModalProps) {
-  const { t } = useLocale();
+  const { t, locale } = useLocale();
   const style = getPriorityStyles(t)[task.priority];
   const labels = normalizeTaskLabels(task.labels);
   const columnName =
@@ -105,7 +105,7 @@ export function TaskViewModal({
                 : 'text-gray-600'
             }`}
           >
-            {task.dueDate ? formatDueDate(task.dueDate) : t('common.emDash')}
+            {task.dueDate ? formatDueDate(task.dueDate, locale) : t('common.emDash')}
           </p>
         </div>
       </div>

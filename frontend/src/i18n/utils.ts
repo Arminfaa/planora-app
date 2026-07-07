@@ -5,6 +5,7 @@ import {
   isLocale,
   type Locale,
 } from './types';
+import { formatLocaleDate } from '@/lib/jalali-dates';
 import type { Messages } from './messages/en';
 
 type MessageNode = string | { [key: string]: MessageNode };
@@ -69,12 +70,7 @@ export function formatDate(
   locale: Locale,
   options?: Intl.DateTimeFormatOptions,
 ): string {
-  const date = value instanceof Date ? value : new Date(value);
-  if (Number.isNaN(date.getTime())) {
-    return '';
-  }
-
-  return new Intl.DateTimeFormat(getIntlLocale(locale), options).format(date);
+  return formatLocaleDate(value, locale, options);
 }
 
 export function readLocaleCookie(): Locale | null {

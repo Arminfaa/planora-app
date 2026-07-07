@@ -354,7 +354,7 @@ export function AllTasksView({
                           }
                         >
                           {t('tasks.duePrefix', {
-                            date: formatDueDate(task.dueDate),
+                            date: formatDueDate(task.dueDate, locale),
                           })}
                         </span>
                       )}
