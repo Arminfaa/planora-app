@@ -1,6 +1,6 @@
 'use client';
 
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { Controller, useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
@@ -42,11 +42,16 @@ export function EditBoardModal({
   const {
     control,
     handleSubmit,
+    reset,
     formState: { errors, isSubmitting },
   } = useForm<FormData>({
     resolver: zodResolver(schema),
-    values: { name: board.name },
+    defaultValues: { name: board.name },
   });
+
+  useEffect(() => {
+    reset({ name: board.name });
+  }, [board.id, board.name, reset]);
 
   const handleFormSubmit = async (data: FormData) => {
     setError('');

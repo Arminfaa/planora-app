@@ -69,7 +69,7 @@ export function EditColumnModal({
       name: column.name,
       color: column.color ?? COLUMN_COLOR_OPTIONS[0],
     });
-  }, [column, reset]);
+  }, [column.id, column.name, column.color, reset]);
 
   const handleFormSubmit = async (data: FormData) => {
     setError('');
