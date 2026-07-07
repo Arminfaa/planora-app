@@ -3,6 +3,7 @@
 import { useState } from 'react';
 import { usePathname, useRouter } from 'next/navigation';
 import { useProjectPermissions } from '@/features/permissions/hooks/useProjectPermissions';
+import { useDeleteProject } from '../hooks/useDeleteProject';
 import { projectService } from '../services/project.service';
 import { useProjectContext } from '../context/ProjectContext';
 import { EditProjectModal } from './EditProjectModal';
@@ -18,6 +19,7 @@ export function ProjectSettingsView() {
   const pathname = usePathname();
   const { project, customRoles, setCustomRoles, applyProjectUpdate } =
     useProjectContext();
+  const { deleteProject, isDeleting } = useDeleteProject();
   const { can } = useProjectPermissions(project);
 
   const [showEditProject, setShowEditProject] = useState(false);
@@ -53,7 +55,7 @@ export function ProjectSettingsView() {
 
     setActionError('');
     try {
-      await projectService.delete(project.id);
+      await deleteProject({ projectId: project.id, slug: project.slug });
       router.push('/dashboard');
     } catch (err) {
       if (!isForbiddenError(err)) {
@@ -123,10 +125,11 @@ export function ProjectSettingsView() {
           </p>
           <button
             type="button"
+            disabled={isDeleting}
             onClick={() => void handleDeleteProject()}
-            className="mt-4 inline-flex items-center rounded-xl border border-red-300 bg-white px-4 py-2.5 text-sm font-medium text-red-700 shadow-sm transition hover:bg-red-50"
+            className="mt-4 inline-flex items-center rounded-xl border border-red-300 bg-white px-4 py-2.5 text-sm font-medium text-red-700 shadow-sm transition hover:bg-red-50 disabled:cursor-not-allowed disabled:opacity-60"
           >
-            {t('settings.deleteProject')}
+            {isDeleting ? t('common.deleting') : t('settings.deleteProject')}
           </button>
         </section>
       )}
