@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect, useMemo, useState } from 'react';
-import { useForm } from 'react-hook-form';
+import { Controller, useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import { Button } from 'antd';
@@ -48,7 +48,7 @@ export function EditColumnModal({
   );
 
   const {
-    register,
+    control,
     handleSubmit,
     watch,
     setValue,
@@ -69,7 +69,7 @@ export function EditColumnModal({
       name: column.name,
       color: column.color ?? COLUMN_COLOR_OPTIONS[0],
     });
-  }, [column.id, column.name, column.color, reset]);
+  }, [column.id, reset]);
 
   const handleFormSubmit = async (data: FormData) => {
     setError('');
@@ -113,10 +113,16 @@ export function EditColumnModal({
         onSubmit={handleSubmit(handleFormSubmit)}
         className="space-y-4"
       >
-        <Input
-          label={t('board.columnName')}
-          error={errors.name?.message}
-          {...register('name')}
+        <Controller
+          name="name"
+          control={control}
+          render={({ field }) => (
+            <Input
+              label={t('board.columnName')}
+              error={errors.name?.message}
+              {...field}
+            />
+          )}
         />
 
         <div className="space-y-1">

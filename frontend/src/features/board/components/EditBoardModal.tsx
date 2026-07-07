@@ -51,7 +51,7 @@ export function EditBoardModal({
 
   useEffect(() => {
     reset({ name: board.name });
-  }, [board.id, board.name, reset]);
+  }, [board.id, reset]);
 
   const handleFormSubmit = async (data: FormData) => {
     setError('');

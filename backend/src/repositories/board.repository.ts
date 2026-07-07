@@ -1,4 +1,5 @@
 import type { Board, Prisma } from '@prisma/client';
+import { getDefaultKanbanColumnDefinitions } from '../i18n/default-columns';
 import { enrichTasksWithAssignees } from '../utils/task-enrichment';
 import { BaseRepository } from './base.repository';
 
@@ -80,16 +81,12 @@ export class BoardRepository extends BaseRepository {
       const board = await tx.board.create({ data });
 
       await tx.column.createMany({
-        data: [
-          { name: 'To Do', boardId: board.id, position: 0, color: '#6B7280' },
-          {
-            name: 'In Progress',
-            boardId: board.id,
-            position: 1,
-            color: '#3B82F6',
-          },
-          { name: 'Done', boardId: board.id, position: 2, color: '#10B981' },
-        ],
+        data: getDefaultKanbanColumnDefinitions().map((column) => ({
+          name: column.name,
+          boardId: board.id,
+          position: column.position,
+          color: column.color,
+        })),
       });
 
       return board;
