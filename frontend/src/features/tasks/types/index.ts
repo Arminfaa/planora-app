@@ -22,6 +22,7 @@ export interface Task {
   columnId: string;
   position: number;
   priority: TaskPriority;
+  startDate: string | null;
   dueDate: string | null;
   isCompleted?: boolean;
   assigneeIds: string[];
@@ -42,6 +43,7 @@ export interface CreateTaskInput {
   title: string;
   description?: string;
   priority?: TaskPriority;
+  startDate?: string;
   dueDate?: string;
   assigneeIds?: string[];
   columnId?: string;
@@ -53,6 +55,7 @@ export interface UpdateTaskInput {
   priority?: TaskPriority;
   columnId?: string;
   position?: number;
+  startDate?: string | null;
   dueDate?: string | null;
   assigneeIds?: string[];
   isCompleted?: boolean;

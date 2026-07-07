@@ -4,6 +4,7 @@ import {
   deleteProject,
   getPermissionCatalog,
   getProject,
+  getProjectGantt,
   getProjectProgress,
   listProjects,
   updateProject,
@@ -33,6 +34,7 @@ router.get(
   validateParams(projectParamsSchema),
   getProjectProgress,
 );
+router.get('/:id/gantt', validateParams(projectParamsSchema), getProjectGantt);
 router.get('/:id', validateParams(projectParamsSchema), getProject);
 router.patch(
   '/:id',

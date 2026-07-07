@@ -5,11 +5,12 @@ import { usePathname, useRouter } from 'next/navigation';
 import { useProjectPermissions } from '@/features/permissions/hooks/useProjectPermissions';
 import { useProjectContext } from '../context/ProjectContext';
 
-type ProjectNavKey = 'overview' | 'group' | 'team' | 'settings';
+type ProjectNavKey = 'overview' | 'gantt' | 'group' | 'team' | 'settings';
 
 function getActiveKey(pathname: string, slug: string): ProjectNavKey {
   const base = `/dashboard/projects/${slug}`;
   if (pathname === base || pathname === `${base}/`) return 'overview';
+  if (pathname.startsWith(`${base}/gantt`)) return 'gantt';
   if (pathname.startsWith(`${base}/group`)) return 'group';
   if (pathname.startsWith(`${base}/team`)) return 'team';
   if (pathname.startsWith(`${base}/settings`)) return 'settings';
@@ -27,6 +28,12 @@ export function ProjectSubNav() {
 
   const items = [
     { key: 'overview' as const, label: 'Overview', href: base, visible: true },
+    {
+      key: 'gantt' as const,
+      label: 'Gantt',
+      href: `${base}/gantt`,
+      visible: can('task.view'),
+    },
     {
       key: 'group' as const,
       label: 'Group',

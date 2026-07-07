@@ -24,6 +24,7 @@ export const createTaskSchema = z.object({
     .transform((v) => (v ? sanitizeString(v) : undefined)),
   position: z.coerce.number().int().min(0).optional(),
   priority: z.nativeEnum(TaskPriority).optional(),
+  startDate: z.coerce.date().optional(),
   dueDate: z.coerce.date().optional(),
   assigneeIds: z.array(objectIdSchema).optional(),
 });
@@ -32,12 +33,22 @@ export const createBoardTaskSchema = createTaskSchema.extend({
   columnId: objectIdSchema.optional(),
 });
 
-export const updateTaskSchema = createTaskSchema.partial().extend({
-  columnId: objectIdSchema.optional(),
-  assigneeIds: z.array(objectIdSchema).optional(),
-  dueDate: z.coerce.date().nullable().optional(),
-  isCompleted: z.boolean().optional(),
-});
+export const updateTaskSchema = createTaskSchema
+  .partial()
+  .extend({
+    columnId: objectIdSchema.optional(),
+    assigneeIds: z.array(objectIdSchema).optional(),
+    startDate: z.coerce.date().nullable().optional(),
+    dueDate: z.coerce.date().nullable().optional(),
+    isCompleted: z.boolean().optional(),
+  })
+  .refine(
+    (data) => {
+      if (!data.startDate || !data.dueDate) return true;
+      return data.startDate.getTime() <= data.dueDate.getTime();
+    },
+    { message: 'Start date must be before or equal to due date' },
+  );
 
 export const taskListQuerySchema = paginationSchema;
 

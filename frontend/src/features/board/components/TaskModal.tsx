@@ -29,13 +29,25 @@ import { AppModal } from '@/shared/components/ui/AppModal';
 import { MemberMultiSelect } from './MemberMultiSelect';
 import { TaskChecklistEditor } from './TaskChecklistEditor';
 
-const schema = z.object({
-  title: z.string().min(1, 'Title is required').max(200),
-  description: z.string().max(2000).optional(),
-  priority: z.enum(['LOW', 'MEDIUM', 'HIGH', 'URGENT']),
-  columnId: z.string().min(1),
-  dueDate: z.string().optional(),
-});
+const schema = z
+  .object({
+    title: z.string().min(1, 'Title is required').max(200),
+    description: z.string().max(2000).optional(),
+    priority: z.enum(['LOW', 'MEDIUM', 'HIGH', 'URGENT']),
+    columnId: z.string().min(1),
+    startDate: z.string().optional(),
+    dueDate: z.string().optional(),
+  })
+  .refine(
+    (data) => {
+      if (!data.startDate?.trim() || !data.dueDate?.trim()) return true;
+      return data.startDate <= data.dueDate;
+    },
+    {
+      message: 'Start date must be before or equal to due date',
+      path: ['startDate'],
+    },
+  );
 
 type FormData = z.infer<typeof schema>;
 
@@ -47,6 +59,7 @@ function getTaskFormValues(task: BoardTask): FormData {
     description: task.description ?? '',
     priority: task.priority,
     columnId: task.columnId,
+    startDate: toDateInputValue(task.startDate),
     dueDate: toDateInputValue(task.dueDate),
   };
 }
@@ -104,7 +117,11 @@ export function TaskModal({
   const onSubmit = async (data: FormData) => {
     setError('');
     try {
+      const nextStartDate = data.startDate?.trim() ? data.startDate : null;
       const nextDueDate = data.dueDate?.trim() ? data.dueDate : null;
+      const currentStartDate = task.startDate
+        ? toDateInputValue(task.startDate)
+        : null;
       const currentDueDate = task.dueDate
         ? toDateInputValue(task.dueDate)
         : null;
@@ -117,6 +134,8 @@ export function TaskModal({
         description: data.description || undefined,
         priority: data.priority,
         columnId: data.columnId !== task.columnId ? data.columnId : undefined,
+        startDate:
+          nextStartDate !== currentStartDate ? nextStartDate : undefined,
         dueDate: nextDueDate !== currentDueDate ? nextDueDate : undefined,
         assigneeIds: !arraysEqual(assigneeIds, currentAssigneeIds)
           ? assigneeIds
@@ -204,13 +223,15 @@ export function TaskModal({
 
         <div className="grid gap-4 sm:grid-cols-2">
           <Controller
-            name="priority"
+            name="startDate"
             control={control}
             render={({ field }) => (
-              <SelectField
-                label="Priority"
-                options={priorityOptions}
-                {...field}
+              <DateInput
+                label="Start Date"
+                error={errors.startDate?.message}
+                value={field.value ?? ''}
+                onChange={field.onChange}
+                onBlur={field.onBlur}
               />
             )}
           />
@@ -225,6 +246,20 @@ export function TaskModal({
                 value={field.value ?? ''}
                 onChange={field.onChange}
                 onBlur={field.onBlur}
+              />
+            )}
+          />
+        </div>
+
+        <div className="grid gap-4 sm:grid-cols-2">
+          <Controller
+            name="priority"
+            control={control}
+            render={({ field }) => (
+              <SelectField
+                label="Priority"
+                options={priorityOptions}
+                {...field}
               />
             )}
           />

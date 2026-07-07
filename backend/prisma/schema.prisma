@@ -177,6 +177,7 @@ model Board {
 
   project Project  @relation(fields: [projectId], references: [id])
   columns Column[]
+  tasks   Task[]
 
   @@unique([projectId, slug])
   @@map("boards")
@@ -208,6 +209,7 @@ model Task {
   boardId     String       @db.ObjectId
   position    Int          @default(0)
   priority     TaskPriority @default(MEDIUM)
+  startDate    DateTime?
   dueDate      DateTime?
   isCompleted  Boolean      @default(false)
   assigneeIds  String[]     @db.ObjectId
@@ -216,6 +218,7 @@ model Task {
   updatedAt   DateTime     @updatedAt
 
   column         Column              @relation(fields: [columnId], references: [id])
+  board          Board               @relation(fields: [boardId], references: [id])
   createdBy      User                @relation("TaskCreator", fields: [createdById], references: [id])
   labels         TaskLabel[]
   comments       Comment[]

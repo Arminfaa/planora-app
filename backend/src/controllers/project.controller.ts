@@ -8,6 +8,7 @@ import type {
   CreateProjectInput,
   UpdateProjectInput,
 } from '../validators/project.validator';
+import { taskService } from '../services/task.service';
 import type { PaginationQuery } from '../utils/pagination';
 
 export const getPermissionCatalog = asyncHandler(
@@ -42,6 +43,16 @@ export const getProjectProgress = asyncHandler(
       getParam(req.params, 'id'),
     );
     ApiResponse.success(res, stats, 'Project progress retrieved');
+  },
+);
+
+export const getProjectGantt = asyncHandler(
+  async (req: AuthenticatedRequest, res: Response) => {
+    const gantt = await taskService.listGanttByProject(
+      req.user!.userId,
+      getParam(req.params, 'id'),
+    );
+    ApiResponse.success(res, gantt, 'Project gantt retrieved');
   },
 );
 

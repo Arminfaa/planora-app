@@ -6,6 +6,8 @@ import { columnRepository } from '../repositories/column.repository';
 import { projectMemberRepository } from '../repositories/project-member.repository';
 import { taskRepository } from '../repositories/task.repository';
 import { projectAccessService } from './project-access.service';
+import { projectMemberService } from './project-member.service';
+import { serializeGanttTask } from '../utils/gantt-serializer';
 import type {
   CreateBoardTaskInput,
   CreateTaskInput,
@@ -187,6 +189,7 @@ export class TaskService {
       boardId,
       position: input.position,
       priority: input.priority,
+      startDate: input.startDate,
       dueDate: input.dueDate,
       assigneeIds: input.assigneeIds,
       createdById: userId,
@@ -222,6 +225,7 @@ export class TaskService {
       boardId,
       position: input.position,
       priority: input.priority,
+      startDate: input.startDate,
       dueDate: input.dueDate,
       assigneeIds: input.assigneeIds,
       createdById: userId,
@@ -297,6 +301,27 @@ export class TaskService {
       'task.delete',
     );
     await taskRepository.delete(taskId);
+  }
+
+  async listGanttByProject(userId: string, projectIdOrSlug: string) {
+    const projectId =
+      await projectMemberService.resolveProjectId(projectIdOrSlug);
+    await projectAccessService.ensurePermission(userId, projectId, 'task.view');
+
+    const tasks = await taskRepository.findGanttByProject(projectId);
+    const scheduled: ReturnType<typeof serializeGanttTask>[] = [];
+    const unscheduled: ReturnType<typeof serializeGanttTask>[] = [];
+
+    for (const task of tasks) {
+      const item = serializeGanttTask(task);
+      if (item.startDate || item.dueDate) {
+        scheduled.push(item);
+      } else {
+        unscheduled.push(item);
+      }
+    }
+
+    return { scheduled, unscheduled };
   }
 }
 

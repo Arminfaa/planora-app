@@ -82,6 +82,27 @@ export class TaskRepository extends BaseRepository {
     return this.enrichMany(tasks);
   }
 
+  async findGanttByProject(projectId: string) {
+    const tasks = await this.db.task.findMany({
+      where: { column: { board: { projectId } } },
+      orderBy: [
+        { board: { position: 'asc' } },
+        { column: { position: 'asc' } },
+        { position: 'asc' },
+      ],
+      include: {
+        ...taskInclude,
+        column: {
+          select: { id: true, name: true, color: true, position: true },
+        },
+        board: {
+          select: { id: true, name: true, slug: true, position: true },
+        },
+      },
+    });
+    return this.enrichMany(tasks);
+  }
+
   async create(data: {
     title: string;
     slug: string;
@@ -90,6 +111,7 @@ export class TaskRepository extends BaseRepository {
     boardId: string;
     position?: number;
     priority?: Prisma.TaskCreateInput['priority'];
+    startDate?: Date;
     dueDate?: Date;
     assigneeIds?: string[];
     createdById: string;

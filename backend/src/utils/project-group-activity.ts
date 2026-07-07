@@ -12,6 +12,7 @@ const FIELD_LABELS: Record<string, string> = {
   description: 'description',
   priority: 'priority',
   dueDate: 'due date',
+  startDate: 'start date',
   assigneeIds: 'assignees',
   columnId: 'column',
   position: 'position',
@@ -33,7 +34,7 @@ function formatAssignees(task: {
 
 function formatValue(field: string, value: unknown): string | null {
   if (value === null || value === undefined) return null;
-  if (field === 'dueDate') {
+  if (field === 'dueDate' || field === 'startDate') {
     return new Date(value as string | Date).toLocaleDateString();
   }
   if (field === 'assigneeIds' && Array.isArray(value)) {
@@ -51,6 +52,7 @@ export function buildTaskActivityChanges(
     description?: string | null;
     priority: string;
     dueDate?: Date | null;
+    startDate?: Date | null;
     assigneeIds: string[];
     assignees?: Array<{ name: string }>;
     columnId: string;
@@ -63,6 +65,7 @@ export function buildTaskActivityChanges(
     description?: string | null;
     priority: string;
     dueDate?: Date | null;
+    startDate?: Date | null;
     assigneeIds: string[];
     assignees?: Array<{ name: string }>;
     columnId: string;
@@ -74,6 +77,7 @@ export function buildTaskActivityChanges(
     'title',
     'description',
     'priority',
+    'startDate',
     'dueDate',
     'assigneeIds',
     'columnId',

@@ -11,6 +11,8 @@ export const queryKeys = {
     boards: (projectId: string) => ['projects', projectId, 'boards'] as const,
     progress: (projectId: string) =>
       ['projects', projectId, 'progress'] as const,
+    gantt: (projectIdOrSlug: string) =>
+      ['projects', projectIdOrSlug, 'gantt'] as const,
   },
   boards: {
     bySlug: (projectSlug: string, boardSlug: string) =>
@@ -39,6 +41,7 @@ export const STALE_TIME = {
   boards: 60_000,
   boardDetail: 30_000,
   progress: 30_000,
+  gantt: 30_000,
   searchAssignees: 300_000,
   invitePreview: 60_000,
   notificationsList: 30_000,
