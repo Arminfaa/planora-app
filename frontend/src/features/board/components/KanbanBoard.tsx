@@ -353,9 +353,7 @@ export function KanbanBoard({
   const columnTask = editingTask
     ? findTaskById(columns, editingTask.id)
     : undefined;
-  const modalTask = editingTask
-    ? { ...(columnTask ?? {}), ...editingTask }
-    : null;
+  const modalTask = editingTask ? (columnTask ?? editingTask) : null;
   const highlightedTaskId = attachmentPreviewTask?.id ?? modalTask?.id ?? null;
 
   const closeTask = useCallback(() => {
