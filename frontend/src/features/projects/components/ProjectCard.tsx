@@ -1,6 +1,9 @@
+'use client';
+
 import Link from 'next/link';
 import type { Project } from '../types';
 import { formatDate } from '@/features/dashboard/utils/stats';
+import { useLocale } from '@/i18n/LocaleProvider';
 
 const accentColors = [
   '#6366F1',
@@ -24,6 +27,7 @@ interface ProjectCardProps {
 }
 
 export function ProjectCard({ project }: ProjectCardProps) {
+  const { t } = useLocale();
   const accent = getAccentColor(project.id);
 
   return (
@@ -41,7 +45,9 @@ export function ProjectCard({ project }: ProjectCardProps) {
             {project.description}
           </p>
         ) : (
-          <p className="mt-2 text-sm text-gray-400">No description</p>
+          <p className="mt-2 text-sm text-gray-400">
+            {t('projects.noDescription')}
+          </p>
         )}
 
         <div className="mt-4 flex items-center justify-between gap-2">
@@ -60,7 +66,9 @@ export function ProjectCard({ project }: ProjectCardProps) {
                   d="M9 17V7m0 10a2 2 0 01-2 2H5a2 2 0 01-2-2V7a2 2 0 012-2h2a2 2 0 012 2m0 10a2 2 0 002 2h2a2 2 0 002-2M9 7a2 2 0 012-2h2a2 2 0 012 2m0 10V7"
                 />
               </svg>
-              {project._count?.boards ?? 0} boards
+              {t('projects.boardsCountShort', {
+                count: project._count?.boards ?? 0,
+              })}
             </span>
             <span className="inline-flex items-center gap-1">
               <svg
@@ -76,7 +84,9 @@ export function ProjectCard({ project }: ProjectCardProps) {
                   d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z"
                 />
               </svg>
-              {project._count?.members ?? 0} members
+              {t('projects.membersCountShort', {
+                count: project._count?.members ?? 0,
+              })}
             </span>
           </div>
           <span className="shrink-0 text-xs text-gray-400">
@@ -86,7 +96,7 @@ export function ProjectCard({ project }: ProjectCardProps) {
 
         {project.owner && (
           <p className="mt-3 truncate text-xs text-gray-400">
-            Owner · {project.owner.name}
+            {t('projects.ownerDot', { name: project.owner.name })}
           </p>
         )}
       </div>

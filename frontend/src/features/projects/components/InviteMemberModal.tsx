@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useMemo, useState } from 'react';
 import { useForm, Controller } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
@@ -14,15 +14,14 @@ import type {
 import { Input } from '@/shared/components/ui/Input';
 import { SelectField } from '@/shared/components/ui/SelectField';
 import { getApiErrorMessage } from '@/lib/api';
+import { useLocale } from '@/i18n/LocaleProvider';
 import { AppModal } from '@/shared/components/ui/AppModal';
 
-const schema = z.object({
-  email: z.string().email('Invalid email address'),
-  role: z.enum(['ADMIN', 'MEMBER']).optional(),
-  roleDefinitionId: z.string().optional(),
-});
-
-type FormData = z.infer<typeof schema>;
+type FormData = {
+  email: string;
+  role?: 'ADMIN' | 'MEMBER';
+  roleDefinitionId?: string;
+};
 
 const FORM_ID = 'invite-member-form';
 
@@ -45,9 +44,20 @@ export function InviteMemberModal({
   onClose,
   onSubmit,
 }: InviteMemberModalProps) {
+  const { t } = useLocale();
   const [error, setError] = useState('');
   const [inviteUrl, setInviteUrl] = useState('');
   const [copied, setCopied] = useState(false);
+
+  const schema = useMemo(
+    () =>
+      z.object({
+        email: z.string().email(t('auth.errors.invalidEmail')),
+        role: z.enum(['ADMIN', 'MEMBER']).optional(),
+        roleDefinitionId: z.string().optional(),
+      }),
+    [t],
+  );
 
   const {
     register,
@@ -72,7 +82,7 @@ export function InviteMemberModal({
 
       if (permissionMode === 'CUSTOM') {
         if (!data.roleDefinitionId) {
-          setError('Select a role for the invited member.');
+          setError(t('validation.selectRoleForInvite'));
           return;
         }
         input.roleDefinitionId = data.roleDefinitionId;
@@ -119,7 +129,7 @@ export function InviteMemberModal({
         document.body.removeChild(textarea);
         setCopied(true);
       } catch {
-        setError('Could not copy the invite link. Please copy it manually.');
+        setError(t('invite.copyLinkFailed'));
       }
     }
   };
@@ -130,33 +140,33 @@ export function InviteMemberModal({
   }));
 
   const defaultRoleOptions = [
-    { value: 'MEMBER', label: 'Member' },
-    { value: 'ADMIN', label: 'Admin' },
+    { value: 'MEMBER', label: t('team.member') },
+    { value: 'ADMIN', label: t('team.admin') },
   ];
 
   return (
     <AppModal
-      title="Invite Member"
-      subtitle="Existing users are added immediately. New users receive an invite link."
+      title={t('invite.titleMember')}
+      subtitle={t('invite.subtitle')}
       onClose={onClose}
       footer={
         inviteUrl ? (
           <>
-            <Button onClick={onClose}>Done</Button>
+            <Button onClick={onClose}>{t('common.done')}</Button>
             <Button type="primary" onClick={handleCopy}>
-              {copied ? 'Copied' : 'Copy link'}
+              {copied ? t('common.copied') : t('invite.copyLink')}
             </Button>
           </>
         ) : (
           <>
-            <Button onClick={onClose}>Cancel</Button>
+            <Button onClick={onClose}>{t('common.cancel')}</Button>
             <Button
               type="primary"
               htmlType="submit"
               form={FORM_ID}
               loading={isSubmitting}
             >
-              Send invite
+              {t('invite.sendInvite')}
             </Button>
           </>
         )
@@ -171,9 +181,13 @@ export function InviteMemberModal({
       {inviteUrl ? (
         <div className="space-y-4">
           <div className="rounded-lg bg-green-50 px-4 py-3 text-sm text-green-800">
-            Invite link created. Share it with the invited user.
+            {t('invite.linkCreated')}
           </div>
-          <Input label="Invite link" value={inviteUrl} readOnly />
+          <Input
+            label={t('invite.inviteLinkLabel')}
+            value={inviteUrl}
+            readOnly
+          />
         </div>
       ) : (
         <form
@@ -182,9 +196,9 @@ export function InviteMemberModal({
           className="space-y-4"
         >
           <Input
-            label="Email"
+            label={t('common.email')}
             type="email"
-            placeholder="teammate@example.com"
+            placeholder={t('invite.emailPlaceholder')}
             error={errors.email?.message}
             {...register('email')}
           />
@@ -194,7 +208,7 @@ export function InviteMemberModal({
               control={control}
               render={({ field }) => (
                 <SelectField
-                  label="Role"
+                  label={t('team.role')}
                   options={customRoleOptions}
                   {...field}
                 />
@@ -206,7 +220,7 @@ export function InviteMemberModal({
               control={control}
               render={({ field }) => (
                 <SelectField
-                  label="Role"
+                  label={t('team.role')}
                   options={defaultRoleOptions}
                   {...field}
                 />

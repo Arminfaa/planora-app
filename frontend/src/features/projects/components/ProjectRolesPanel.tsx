@@ -16,6 +16,7 @@ import { Button } from '@/shared/components/ui/Button';
 import { LoadingSpinner } from '@/shared/components/feedback/LoadingSpinner';
 import { getApiErrorMessage } from '@/lib/api';
 import { queryKeys, STALE_TIME } from '@/lib/query-keys';
+import { useLocale } from '@/i18n/LocaleProvider';
 
 interface CurrentUserRoleInfo {
   id?: string | null;
@@ -36,6 +37,7 @@ export function ProjectRolesPanel({
   currentUserRole,
   onRolesChange,
 }: ProjectRolesPanelProps) {
+  const { t } = useLocale();
   const queryClient = useQueryClient();
   const [originalRoles, setOriginalRoles] = useState<ProjectRoleDefinition[]>(
     [],
@@ -86,7 +88,7 @@ export function ProjectRolesPanel({
       await queryClient.invalidateQueries({
         queryKey: queryKeys.projects.roles(projectId),
       });
-      setSuccess('Roles updated successfully.');
+      setSuccess(t('projects.rolesUpdated'));
     } catch (err) {
       setError(getApiErrorMessage(err));
     } finally {
@@ -105,12 +107,12 @@ export function ProjectRolesPanel({
       <div className="flex flex-wrap items-center justify-between gap-3 border-b border-gray-100 px-5 py-4">
         <div>
           <h2 className="text-base font-semibold text-gray-900">
-            Roles & Permissions
+            {t('projects.rolesTitle')}
           </h2>
           <p className="mt-0.5 text-sm text-gray-500">
             {canManage
-              ? 'Define what each custom role can do in this project.'
-              : 'Your role and permissions in this project.'}
+              ? t('projects.rolesCustomSubtitle')
+              : t('projects.rolesDefaultSubtitle')}
           </p>
         </div>
       </div>
@@ -118,7 +120,7 @@ export function ProjectRolesPanel({
       <div className="p-5">
         {canManage && (
           <p className="mb-4 text-sm text-gray-500">
-            Add or edit roles below, then click Save roles to apply changes.
+            {t('projects.saveRolesHint')}
           </p>
         )}
         {error && (

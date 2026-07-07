@@ -1027,7 +1027,7 @@ export const enMessages = {
       'Existing users are added immediately. New users receive an invite link.',
     inviteLinkLabel: 'Invite link',
     copyLinkFailed: 'Could not copy the invite link. Please copy it manually.',
-    titleMember: 'Invite Member',
+    linkCreated: 'Invite link created. Share it with the invited user.',
   },
 };
 

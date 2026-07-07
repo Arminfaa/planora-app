@@ -1018,5 +1018,7 @@ export const faMessages = {
     inviteLinkLabel: 'لینک دعوت',
     copyLinkFailed: 'کپی لینک دعوت ممکن نشد. لطفاً به‌صورت دستی کپی کنید.',
     titleMember: 'دعوت عضو',
+    linkCreated:
+      'لینک دعوت ایجاد شد. آن را با کاربر دعوت‌شده به اشتراک بگذارید.',
   },
 } satisfies MessageTree;

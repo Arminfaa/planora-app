@@ -14,6 +14,7 @@ import { Button } from '@/shared/components/ui/Button';
 import { SelectField } from '@/shared/components/ui/SelectField';
 import { formatDate } from '@/features/dashboard/utils/stats';
 import { getApiErrorMessage } from '@/lib/api';
+import { useLocale } from '@/i18n/LocaleProvider';
 
 interface ProjectTeamPanelProps {
   members: ProjectMember[];
@@ -42,22 +43,28 @@ interface ProjectTeamPanelProps {
   onRevokeInvite: (inviteId: string) => Promise<void>;
 }
 
-const roleLabels: Record<ProjectRole, string> = {
-  OWNER: 'Owner',
-  ADMIN: 'Admin',
-  MEMBER: 'Member',
+const roleLabelKeys: Record<ProjectRole, string> = {
+  OWNER: 'team.owner',
+  ADMIN: 'team.admin',
+  MEMBER: 'team.member',
 };
 
-function getMemberRoleLabel(member: ProjectMember): string {
+function getMemberRoleLabel(
+  member: ProjectMember,
+  t: (key: string) => string,
+): string {
   if (member.roleName) return member.roleName;
-  if (member.role) return roleLabels[member.role];
-  return 'Member';
+  if (member.role) return t(roleLabelKeys[member.role]);
+  return t('team.member');
 }
 
-function getInviteRoleLabel(invite: ProjectInvite): string {
+function getInviteRoleLabel(
+  invite: ProjectInvite,
+  t: (key: string) => string,
+): string {
   if (invite.roleName) return invite.roleName;
-  if (invite.role) return roleLabels[invite.role];
-  return 'Member';
+  if (invite.role) return t(roleLabelKeys[invite.role]);
+  return t('team.member');
 }
 
 export function ProjectTeamPanel({
@@ -77,6 +84,7 @@ export function ProjectTeamPanel({
   onRemove,
   onRevokeInvite,
 }: ProjectTeamPanelProps) {
+  const { t } = useLocale();
   const [showInviteModal, setShowInviteModal] = useState(false);
   const [actionError, setActionError] = useState('');
 
@@ -93,7 +101,7 @@ export function ProjectTeamPanel({
   };
 
   const handleRemove = async (member: ProjectMember) => {
-    if (!confirm(`Remove ${member.name} from this project?`)) return;
+    if (!confirm(t('team.removeMemberConfirm', { name: member.name }))) return;
     setActionError('');
     try {
       await onRemove(member.id);
@@ -103,7 +111,8 @@ export function ProjectTeamPanel({
   };
 
   const handleRevoke = async (invite: ProjectInvite) => {
-    if (!confirm(`Revoke invite for ${invite.email}?`)) return;
+    if (!confirm(t('projects.revokeInviteConfirm', { email: invite.email })))
+      return;
     setActionError('');
     try {
       await onRevokeInvite(invite.id);
@@ -116,7 +125,7 @@ export function ProjectTeamPanel({
     <div className="rounded-xl border border-gray-200/80 bg-white shadow-sm">
       <div className="flex flex-wrap items-center justify-between gap-3 border-b border-gray-100 px-5 py-4">
         <h2 className="text-base font-semibold text-gray-900">
-          Team · {members.length}
+          {t('projects.teamHeader', { count: members.length })}
         </h2>
         {canInvite && (
           <Button
@@ -125,7 +134,7 @@ export function ProjectTeamPanel({
             className="px-3 py-1.5 text-xs"
             onClick={() => setShowInviteModal(true)}
           >
-            Invite member
+            {t('team.inviteMember')}
           </Button>
         )}
       </div>
@@ -138,7 +147,7 @@ export function ProjectTeamPanel({
         )}
 
         {isLoading ? (
-          <p className="text-sm text-gray-500">Loading team...</p>
+          <p className="text-sm text-gray-500">{t('projects.loadingTeam')}</p>
         ) : (
           <div className="divide-y divide-gray-100">
             {members.map((member) => {
@@ -181,8 +190,8 @@ export function ProjectTeamPanel({
                             })
                           }
                           options={[
-                            { value: 'MEMBER', label: 'Member' },
-                            { value: 'ADMIN', label: 'Admin' },
+                            { value: 'MEMBER', label: t('team.member') },
+                            { value: 'ADMIN', label: t('team.admin') },
                           ]}
                           size="medium"
                           className="min-w-[7rem]"
@@ -190,7 +199,7 @@ export function ProjectTeamPanel({
                       )
                     ) : (
                       <span className="rounded-full bg-gray-100 px-2.5 py-0.5 text-xs font-medium text-gray-700">
-                        {getMemberRoleLabel(member)}
+                        {getMemberRoleLabel(member, t)}
                       </span>
                     )}
 
@@ -201,7 +210,7 @@ export function ProjectTeamPanel({
                         onClick={() => void handleRemove(member)}
                         className="text-red-600 hover:bg-red-50 hover:text-red-700"
                       >
-                        Remove
+                        {t('team.removeMember')}
                       </Button>
                     )}
                   </div>
@@ -214,7 +223,7 @@ export function ProjectTeamPanel({
         {canManageInvites && invites.length > 0 && (
           <div className="mt-5 border-t border-gray-100 pt-4">
             <h3 className="mb-2 text-xs font-medium uppercase tracking-wide text-gray-400">
-              Pending invites
+              {t('team.pendingInvites')}
             </h3>
             <div className="divide-y divide-gray-100">
               {invites.map((invite) => (
@@ -225,7 +234,7 @@ export function ProjectTeamPanel({
                   <div>
                     <p className="font-medium text-gray-900">{invite.email}</p>
                     <p className="text-gray-500">
-                      {getInviteRoleLabel(invite)} · expires{' '}
+                      {getInviteRoleLabel(invite, t)} ·{' '}
                       {formatDate(invite.expiresAt)}
                     </p>
                   </div>
@@ -235,7 +244,7 @@ export function ProjectTeamPanel({
                     onClick={() => void handleRevoke(invite)}
                     className="text-red-600 hover:bg-red-50"
                   >
-                    Revoke
+                    {t('invite.revoke')}
                   </Button>
                 </div>
               ))}
