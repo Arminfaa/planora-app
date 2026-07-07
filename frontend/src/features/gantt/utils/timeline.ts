@@ -130,3 +130,61 @@ export function buildTimelineLabels(
 
   return labels;
 }
+
+export function formatDateForApi(date: Date): string {
+  const year = date.getFullYear();
+  const month = String(date.getMonth() + 1).padStart(2, '0');
+  const day = String(date.getDate()).padStart(2, '0');
+  return `${year}-${month}-${day}`;
+}
+
+export function moveBoundsByDays(
+  bounds: { start: Date; end: Date },
+  dayDelta: number,
+): { start: Date; end: Date } {
+  return {
+    start: addDays(bounds.start, dayDelta),
+    end: addDays(bounds.end, dayDelta),
+  };
+}
+
+export function resizeBoundsStart(
+  bounds: { start: Date; end: Date },
+  dayDelta: number,
+): { start: Date; end: Date } {
+  const nextStart = addDays(bounds.start, dayDelta);
+  if (nextStart.getTime() > bounds.end.getTime()) {
+    return { start: bounds.end, end: bounds.end };
+  }
+  return { start: nextStart, end: bounds.end };
+}
+
+export function resizeBoundsEnd(
+  bounds: { start: Date; end: Date },
+  dayDelta: number,
+): { start: Date; end: Date } {
+  const nextEnd = addDays(bounds.end, dayDelta);
+  if (nextEnd.getTime() < bounds.start.getTime()) {
+    return { start: bounds.start, end: bounds.start };
+  }
+  return { start: bounds.start, end: nextEnd };
+}
+
+export function boundsToScheduleDates(bounds: { start: Date; end: Date }): {
+  startDate: string;
+  dueDate: string;
+} {
+  return {
+    startDate: formatDateForApi(bounds.start),
+    dueDate: formatDateForApi(bounds.end),
+  };
+}
+
+export function pixelsToDayDelta(
+  pixelDelta: number,
+  trackWidth: number,
+  totalDays: number,
+): number {
+  if (trackWidth <= 0 || totalDays <= 0) return 0;
+  return Math.round((pixelDelta / trackWidth) * totalDays);
+}

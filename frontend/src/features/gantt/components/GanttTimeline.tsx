@@ -6,16 +6,21 @@ import type { GanttTask, GanttZoom } from '../types';
 import {
   buildTimelineLabels,
   buildTimelineRange,
-  getBarLayout,
   getTaskScheduleBounds,
   getTimelineDayCount,
 } from '../utils/timeline';
-import { priorityStyles } from '@/features/tasks/types';
+import { GanttBar } from './GanttBar';
 import { cn } from '@/lib/utils';
 
 interface GanttTimelineProps {
   tasks: GanttTask[];
   projectSlug: string;
+  canEdit: boolean;
+  savingTaskId: string | null;
+  onScheduleChange: (
+    taskId: string,
+    schedule: { startDate: string; dueDate: string },
+  ) => Promise<void>;
 }
 
 function groupTasksByBoard(tasks: GanttTask[]) {
@@ -41,7 +46,13 @@ function groupTasksByBoard(tasks: GanttTask[]) {
   return Array.from(groups.values());
 }
 
-export function GanttTimeline({ tasks, projectSlug }: GanttTimelineProps) {
+export function GanttTimeline({
+  tasks,
+  projectSlug,
+  canEdit,
+  savingTaskId,
+  onScheduleChange,
+}: GanttTimelineProps) {
   const [zoom, setZoom] = useState<GanttZoom>('week');
   const range = useMemo(() => buildTimelineRange(tasks), [tasks]);
   const labels = useMemo(() => buildTimelineLabels(range, zoom), [range, zoom]);
@@ -62,6 +73,12 @@ export function GanttTimeline({ tasks, projectSlug }: GanttTimelineProps) {
       <div className="flex flex-wrap items-center justify-between gap-3 border-b border-gray-100 px-4 py-3">
         <p className="text-sm text-gray-600">
           {tasks.length} scheduled task{tasks.length === 1 ? '' : 's'}
+          {canEdit && (
+            <span className="text-gray-400">
+              {' '}
+              · Drag bars to move, edges to resize
+            </span>
+          )}
         </p>
         <div className="flex items-center gap-2">
           {(['day', 'week', 'month'] as const).map((option) => (
@@ -114,7 +131,6 @@ export function GanttTimeline({ tasks, projectSlug }: GanttTimelineProps) {
                 const bounds = getTaskScheduleBounds(task);
                 if (!bounds) return null;
 
-                const bar = getBarLayout(bounds, range);
                 const taskHref = `/dashboard/projects/${projectSlug}/boards/${task.boardSlug}?task=${task.slug}`;
 
                 return (
@@ -135,39 +151,14 @@ export function GanttTimeline({ tasks, projectSlug }: GanttTimelineProps) {
                     </div>
 
                     <div className="relative border-s border-gray-100 px-4 py-3">
-                      <div
-                        className="relative h-8 rounded-md bg-[linear-gradient(to_right,rgba(229,231,235,0.7)_1px,transparent_1px)]"
-                        style={{
-                          backgroundSize: `${100 / dayCount}% 100%`,
-                        }}
-                      >
-                        <Link
-                          href={taskHref}
-                          title={task.title}
-                          className={cn(
-                            'absolute top-1/2 flex h-6 -translate-y-1/2 items-center rounded-md px-2 text-[11px] font-medium text-white shadow-sm transition hover:opacity-90',
-                            priorityStyles[task.priority].badge.includes('red')
-                              ? 'bg-red-500'
-                              : priorityStyles[task.priority].badge.includes(
-                                    'orange',
-                                  )
-                                ? 'bg-orange-500'
-                                : priorityStyles[task.priority].badge.includes(
-                                      'blue',
-                                    )
-                                  ? 'bg-blue-500'
-                                  : 'bg-gray-500',
-                            task.isCompleted && 'opacity-60 line-through',
-                          )}
-                          style={{
-                            left: `${bar.leftPercent}%`,
-                            width: `${bar.widthPercent}%`,
-                            minWidth: '2rem',
-                          }}
-                        >
-                          <span className="truncate">{task.title}</span>
-                        </Link>
-                      </div>
+                      <GanttBar
+                        task={task}
+                        range={range}
+                        totalDays={dayCount}
+                        canEdit={canEdit}
+                        isSaving={savingTaskId === task.id}
+                        onScheduleChange={onScheduleChange}
+                      />
                     </div>
                   </div>
                 );

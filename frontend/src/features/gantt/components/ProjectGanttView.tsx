@@ -4,6 +4,7 @@ import Link from 'next/link';
 import { useProjectPermissions } from '@/features/permissions/hooks/useProjectPermissions';
 import { useProjectContext } from '@/features/projects/context/ProjectContext';
 import { useProjectGantt } from '../hooks/useProjectGantt';
+import { useUpdateGanttSchedule } from '../hooks/useUpdateGanttSchedule';
 import { GanttTimeline } from './GanttTimeline';
 import { LoadingSpinner } from '@/shared/components/feedback/LoadingSpinner';
 import { getApiErrorMessage } from '@/lib/api';
@@ -12,7 +13,9 @@ export function ProjectGanttView() {
   const { project, slug } = useProjectContext();
   const { can } = useProjectPermissions(project);
   const canViewTasks = can('task.view');
+  const canEditTasks = can('task.edit');
   const { data, isLoading, error } = useProjectGantt(project.id, canViewTasks);
+  const { updateSchedule, savingTaskId } = useUpdateGanttSchedule(project.id);
 
   if (!canViewTasks) {
     return (
@@ -51,10 +54,17 @@ export function ProjectGanttView() {
         <p className="mt-1 text-sm text-gray-500">
           Track scheduled work across all boards. Tasks appear here when they
           have a start date, a due date, or both.
+          {canEditTasks && ' Drag and resize bars to update dates.'}
         </p>
       </div>
 
-      <GanttTimeline tasks={data.scheduled} projectSlug={slug} />
+      <GanttTimeline
+        tasks={data.scheduled}
+        projectSlug={slug}
+        canEdit={canEditTasks}
+        savingTaskId={savingTaskId}
+        onScheduleChange={updateSchedule}
+      />
 
       {data.unscheduled.length > 0 && (
         <section className="rounded-xl border border-gray-200 bg-white p-5 shadow-sm">
