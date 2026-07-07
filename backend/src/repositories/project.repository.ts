@@ -68,6 +68,35 @@ export class ProjectRepository extends BaseRepository {
       });
       const boardIds = boards.map((board) => board.id);
 
+      const tasks = boardIds.length
+        ? await tx.task.findMany({
+            where: { boardId: { in: boardIds } },
+            select: { id: true },
+          })
+        : [];
+      const taskIds = tasks.map((task) => task.id);
+
+      if (taskIds.length) {
+        await tx.taskDependency.deleteMany({
+          where: {
+            OR: [{ fromTaskId: { in: taskIds } }, { toTaskId: { in: taskIds } }],
+          },
+        });
+        await tx.taskLabel.deleteMany({ where: { taskId: { in: taskIds } } });
+        await tx.comment.deleteMany({ where: { taskId: { in: taskIds } } });
+        await tx.attachment.deleteMany({ where: { taskId: { in: taskIds } } });
+        await tx.taskChecklistItem.deleteMany({
+          where: { taskId: { in: taskIds } },
+        });
+        await tx.task.updateMany({
+          where: { boardId: { in: boardIds } },
+          data: { parentTaskId: null },
+        });
+        await tx.task.deleteMany({ where: { id: { in: taskIds } } });
+      }
+
+      await tx.taskDependency.deleteMany({ where: { projectId: id } });
+
       const columns = boardIds.length
         ? await tx.column.findMany({
             where: { boardId: { in: boardIds } },
@@ -75,21 +104,6 @@ export class ProjectRepository extends BaseRepository {
           })
         : [];
       const columnIds = columns.map((column) => column.id);
-
-      const tasks = columnIds.length
-        ? await tx.task.findMany({
-            where: { columnId: { in: columnIds } },
-            select: { id: true },
-          })
-        : [];
-      const taskIds = tasks.map((task) => task.id);
-
-      if (taskIds.length) {
-        await tx.taskLabel.deleteMany({ where: { taskId: { in: taskIds } } });
-        await tx.comment.deleteMany({ where: { taskId: { in: taskIds } } });
-        await tx.attachment.deleteMany({ where: { taskId: { in: taskIds } } });
-        await tx.task.deleteMany({ where: { id: { in: taskIds } } });
-      }
 
       if (columnIds.length) {
         await tx.column.deleteMany({ where: { id: { in: columnIds } } });
@@ -99,6 +113,8 @@ export class ProjectRepository extends BaseRepository {
         await tx.board.deleteMany({ where: { id: { in: boardIds } } });
       }
 
+      await tx.projectGroupMessage.deleteMany({ where: { projectId: id } });
+      await tx.notification.deleteMany({ where: { projectId: id } });
       await tx.label.deleteMany({ where: { projectId: id } });
       await tx.projectInvite.deleteMany({ where: { projectId: id } });
       await tx.projectRoleDefinition.deleteMany({ where: { projectId: id } });

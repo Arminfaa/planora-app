@@ -6,6 +6,7 @@ import { useProjectPermissions } from '@/features/permissions/hooks/useProjectPe
 import { useDeleteProject } from '../hooks/useDeleteProject';
 import { projectService } from '../services/project.service';
 import { useProjectContext } from '../context/ProjectContext';
+import { DeleteProjectModal } from './DeleteProjectModal';
 import { EditProjectModal } from './EditProjectModal';
 import { ProjectRolesPanel } from './ProjectRolesPanel';
 import { replaceProjectSlugInPath } from '../utils/projectPaths';
@@ -17,12 +18,19 @@ export function ProjectSettingsView() {
   const { t } = useLocale();
   const router = useRouter();
   const pathname = usePathname();
-  const { project, customRoles, setCustomRoles, applyProjectUpdate } =
-    useProjectContext();
+  const {
+    project,
+    customRoles,
+    setCustomRoles,
+    applyProjectUpdate,
+    boardCount,
+    memberCount,
+  } = useProjectContext();
   const { deleteProject, isDeleting } = useDeleteProject();
   const { can } = useProjectPermissions(project);
 
   const [showEditProject, setShowEditProject] = useState(false);
+  const [showDeleteProject, setShowDeleteProject] = useState(false);
   const [actionError, setActionError] = useState('');
 
   const canEditProject = can('project.edit');
@@ -49,13 +57,10 @@ export function ProjectSettingsView() {
   };
 
   const handleDeleteProject = async () => {
-    if (!confirm(t('projects.deleteProjectNamed', { name: project.name }))) {
-      return;
-    }
-
     setActionError('');
     try {
       await deleteProject({ projectId: project.id, slug: project.slug });
+      setShowDeleteProject(false);
       router.push('/dashboard');
     } catch (err) {
       if (!isForbiddenError(err)) {
@@ -126,12 +131,24 @@ export function ProjectSettingsView() {
           <button
             type="button"
             disabled={isDeleting}
-            onClick={() => void handleDeleteProject()}
+            onClick={() => setShowDeleteProject(true)}
             className="mt-4 inline-flex items-center rounded-xl border border-red-300 bg-white px-4 py-2.5 text-sm font-medium text-red-700 shadow-sm transition hover:bg-red-50 disabled:cursor-not-allowed disabled:opacity-60"
           >
             {isDeleting ? t('common.deleting') : t('settings.deleteProject')}
           </button>
         </section>
+      )}
+
+      {showDeleteProject && (
+        <DeleteProjectModal
+          project={project}
+          boardCount={boardCount}
+          memberCount={memberCount}
+          open={showDeleteProject}
+          isDeleting={isDeleting}
+          onClose={() => setShowDeleteProject(false)}
+          onConfirm={handleDeleteProject}
+        />
       )}
 
       {showEditProject && (
