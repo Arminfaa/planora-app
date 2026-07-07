@@ -51,6 +51,7 @@ export function useUpdateGanttSchedule(
               : task,
           ),
           unscheduled: previousGantt.unscheduled,
+          dependencies: previousGantt.dependencies,
         });
       }
 

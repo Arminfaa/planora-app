@@ -2,8 +2,9 @@
 
 import { useEffect, useMemo } from 'react';
 import { useQueryClient } from '@tanstack/react-query';
-import { subscribeToBoard } from '@/lib/socket';
+import { subscribeToBoard, subscribeToProject } from '@/lib/socket';
 import { applyGanttBoardSocketEvent } from '../utils/applyGanttBoardSocketEvent';
+import { applyGanttProjectSocketEvent } from '../utils/applyGanttProjectSocketEvent';
 
 export function useGanttBoardRealtimeSync(
   projectId: string | null,
@@ -15,13 +16,30 @@ export function useGanttBoardRealtimeSync(
   const boardIdsKey = useMemo(() => boardIds.join(','), [boardIds]);
 
   useEffect(() => {
-    if (!enabled || !projectId || !projectSlug || boardIds.length === 0) {
+    if (!enabled || !projectId || !projectSlug) {
       return;
     }
 
-    const unsubscribes = boardIds.map((boardId) =>
-      subscribeToBoard(boardId, (event) => {
-        applyGanttBoardSocketEvent(queryClient, projectId, projectSlug, event);
+    const unsubscribes: Array<() => void> = [];
+
+    if (boardIds.length > 0) {
+      unsubscribes.push(
+        ...boardIds.map((boardId) =>
+          subscribeToBoard(boardId, (event) => {
+            applyGanttBoardSocketEvent(
+              queryClient,
+              projectId,
+              projectSlug,
+              event,
+            );
+          }),
+        ),
+      );
+    }
+
+    unsubscribes.push(
+      subscribeToProject(projectId, (event) => {
+        applyGanttProjectSocketEvent(queryClient, projectId, event);
       }),
     );
 

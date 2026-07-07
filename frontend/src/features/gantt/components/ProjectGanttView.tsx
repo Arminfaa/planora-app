@@ -8,6 +8,7 @@ import { useProjectContext } from '@/features/projects/context/ProjectContext';
 import { useGanttBoardRealtimeSync } from '../hooks/useGanttBoardRealtimeSync';
 import { useProjectGantt } from '../hooks/useProjectGantt';
 import { useUpdateGanttSchedule } from '../hooks/useUpdateGanttSchedule';
+import { GanttDependencyPanel } from './GanttDependencyPanel';
 import { GanttTimeline } from './GanttTimeline';
 import { LoadingSpinner } from '@/shared/components/feedback/LoadingSpinner';
 import { getApiErrorMessage } from '@/lib/api';
@@ -63,16 +64,25 @@ export function ProjectGanttView() {
         <p className="mt-1 text-sm text-gray-500">
           Track scheduled work across all boards. Tasks appear here when they
           have a start date, a due date, or both.
-          {canEditTasks && ' Drag and resize bars to update dates.'}
+          {canEditTasks &&
+            ' Drag and resize bars to update dates. Add dependencies below.'}
         </p>
       </div>
 
       <GanttTimeline
         tasks={data.scheduled}
+        dependencies={data.dependencies}
         projectSlug={slug}
         canEdit={canEditTasks}
         savingTaskId={savingTaskId}
         onScheduleChange={updateSchedule}
+      />
+
+      <GanttDependencyPanel
+        projectId={project.id}
+        tasks={[...data.scheduled, ...data.unscheduled]}
+        dependencies={data.dependencies}
+        canEdit={canEditTasks}
       />
 
       {data.unscheduled.length > 0 && (

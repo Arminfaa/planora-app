@@ -60,6 +60,7 @@ export function patchGanttTaskFromBoardTask(
       return {
         scheduled,
         unscheduled: unscheduled.filter((item) => item.id !== task.id),
+        dependencies: prev.dependencies,
       };
     }
 
@@ -75,6 +76,7 @@ export function patchGanttTaskFromBoardTask(
     return {
       scheduled: scheduled.filter((item) => item.id !== task.id),
       unscheduled,
+      dependencies: prev.dependencies,
     };
   });
 
@@ -94,6 +96,10 @@ export function removeGanttTaskFromCache(
     return {
       scheduled: prev.scheduled.filter((task) => task.id !== taskId),
       unscheduled: prev.unscheduled.filter((task) => task.id !== taskId),
+      dependencies: prev.dependencies.filter(
+        (dependency) =>
+          dependency.fromTaskId !== taskId && dependency.toTaskId !== taskId,
+      ),
     };
   });
 }

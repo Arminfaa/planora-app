@@ -16,7 +16,7 @@ export function useProjectGantt(
   });
 
   return {
-    data: query.data ?? { scheduled: [], unscheduled: [] },
+    data: query.data ?? { scheduled: [], unscheduled: [], dependencies: [] },
     isLoading: query.isLoading,
     error: query.error,
     refetch: query.refetch,

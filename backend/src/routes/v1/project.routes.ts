@@ -1,5 +1,10 @@
 import { Router } from 'express';
 import {
+  createProjectDependency,
+  deleteProjectDependency,
+  listProjectDependencies,
+} from '../../controllers/task-dependency.controller';
+import {
   createProject,
   deleteProject,
   getPermissionCatalog,
@@ -9,6 +14,11 @@ import {
   listProjects,
   updateProject,
 } from '../../controllers/project.controller';
+import {
+  createTaskDependencySchema,
+  projectDependencyIdParamsSchema,
+  projectDependencyParamsSchema,
+} from '../../validators/task-dependency.validator';
 import { authenticate } from '../../middlewares/auth.middleware';
 import {
   validateBody,
@@ -35,6 +45,22 @@ router.get(
   getProjectProgress,
 );
 router.get('/:id/gantt', validateParams(projectParamsSchema), getProjectGantt);
+router.get(
+  '/:id/dependencies',
+  validateParams(projectDependencyParamsSchema),
+  listProjectDependencies,
+);
+router.post(
+  '/:id/dependencies',
+  validateParams(projectDependencyParamsSchema),
+  validateBody(createTaskDependencySchema),
+  createProjectDependency,
+);
+router.delete(
+  '/:id/dependencies/:dependencyId',
+  validateParams(projectDependencyIdParamsSchema),
+  deleteProjectDependency,
+);
 router.get('/:id', validateParams(projectParamsSchema), getProject);
 router.patch(
   '/:id',

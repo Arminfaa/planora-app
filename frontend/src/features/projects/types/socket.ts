@@ -4,7 +4,9 @@ export type ProjectEventType =
   | 'board:deleted'
   | 'group:message:created'
   | 'group:message:updated'
-  | 'group:message:deleted';
+  | 'group:message:deleted'
+  | 'task:dependency:created'
+  | 'task:dependency:deleted';
 
 export interface ProjectSocketEvent {
   projectId: string;

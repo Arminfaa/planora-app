@@ -29,6 +29,10 @@ export const queryKeys = {
     list: (page = 1, limit = 50) =>
       ['notifications', 'list', page, limit] as const,
   },
+  tasks: {
+    dependencies: (taskId: string) =>
+      ['tasks', taskId, 'dependencies'] as const,
+  },
 } as const;
 
 export const STALE_TIME = {

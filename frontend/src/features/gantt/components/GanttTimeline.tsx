@@ -2,7 +2,11 @@
 
 import Link from 'next/link';
 import { useMemo, useState } from 'react';
-import type { GanttTask, GanttZoom } from '../types';
+import type { GanttDependency, GanttTask, GanttZoom } from '../types';
+import {
+  buildGanttTaskRowLayouts,
+  getTimelineBodyHeight,
+} from '../utils/dependencyLayout';
 import {
   buildTimelineLabels,
   buildTimelineRange,
@@ -12,12 +16,14 @@ import {
   getTimelinePixelWidth,
 } from '../utils/timeline';
 import { GanttBar } from './GanttBar';
+import { GanttDependencyLayer } from './GanttDependencyLayer';
 import { cn } from '@/lib/utils';
 
 const TASK_COLUMN_WIDTH = '16rem';
 
 interface GanttTimelineProps {
   tasks: GanttTask[];
+  dependencies: GanttDependency[];
   projectSlug: string;
   canEdit: boolean;
   savingTaskId: string | null;
@@ -53,6 +59,7 @@ function groupTasksByBoard(tasks: GanttTask[]) {
 
 export function GanttTimeline({
   tasks,
+  dependencies,
   projectSlug,
   canEdit,
   savingTaskId,
@@ -68,6 +75,14 @@ export function GanttTimeline({
     [dayWidth, range, zoom],
   );
   const groupedTasks = useMemo(() => groupTasksByBoard(tasks), [tasks]);
+  const rowLayouts = useMemo(
+    () => buildGanttTaskRowLayouts(groupedTasks, range, dayWidth),
+    [groupedTasks, range, dayWidth],
+  );
+  const bodyHeight = useMemo(
+    () => getTimelineBodyHeight(groupedTasks),
+    [groupedTasks],
+  );
 
   if (tasks.length === 0) {
     return (
@@ -85,6 +100,13 @@ export function GanttTimeline({
       <div className="flex flex-wrap items-center justify-between gap-3 border-b border-gray-100 px-4 py-3">
         <p className="text-sm text-gray-600">
           {tasks.length} scheduled task{tasks.length === 1 ? '' : 's'}
+          {dependencies.length > 0 && (
+            <span className="text-gray-400">
+              {' '}
+              · {dependencies.length} dependenc
+              {dependencies.length === 1 ? 'y' : 'ies'}
+            </span>
+          )}
           {canEdit && (
             <span className="text-gray-400">
               {' '}
@@ -113,7 +135,7 @@ export function GanttTimeline({
 
       <div className="overflow-x-auto">
         <div
-          className="min-w-full"
+          className="relative min-w-full"
           style={{ width: `calc(${TASK_COLUMN_WIDTH} + ${timelineWidth}px)` }}
         >
           <div
@@ -138,57 +160,75 @@ export function GanttTimeline({
             </div>
           </div>
 
-          {groupedTasks.map((group) => (
-            <div key={group.boardSlug}>
-              <div
-                className="grid border-b border-gray-100 bg-gray-50/70"
-                style={{ gridTemplateColumns }}
-              >
-                <div className="sticky start-0 z-20 border-e border-gray-100 bg-gray-50/70 px-4 py-2 text-sm font-semibold text-gray-800">
-                  {group.boardName}
-                </div>
-                <div className="border-s border-gray-100" />
-              </div>
-
-              {group.tasks.map((task) => {
-                const bounds = getTaskScheduleBounds(task);
-                if (!bounds) return null;
-
-                const taskHref = `/dashboard/projects/${projectSlug}/boards/${task.boardSlug}?task=${task.slug}`;
-
-                return (
-                  <div
-                    key={task.id}
-                    className="grid border-b border-gray-100 last:border-b-0"
-                    style={{ gridTemplateColumns }}
-                  >
-                    <div className="sticky start-0 z-20 border-e border-gray-100 bg-white px-4 py-3">
-                      <Link
-                        href={taskHref}
-                        className="block truncate text-sm font-medium text-gray-900 hover:text-primary-700"
-                      >
-                        {task.title}
-                      </Link>
-                      <p className="mt-0.5 truncate text-xs text-gray-500">
-                        {task.columnName}
-                      </p>
-                    </div>
-
-                    <div className="relative border-s border-gray-100 px-4 py-3">
-                      <GanttBar
-                        task={task}
-                        range={range}
-                        dayWidth={dayWidth}
-                        canEdit={canEdit}
-                        isSaving={savingTaskId === task.id}
-                        onScheduleChange={onScheduleChange}
-                      />
-                    </div>
+          <div className="relative">
+            {groupedTasks.map((group) => (
+              <div key={group.boardSlug}>
+                <div
+                  className="grid border-b border-gray-100 bg-gray-50/70"
+                  style={{ gridTemplateColumns }}
+                >
+                  <div className="sticky start-0 z-20 border-e border-gray-100 bg-gray-50/70 px-4 py-2 text-sm font-semibold text-gray-800">
+                    {group.boardName}
                   </div>
-                );
-              })}
+                  <div className="border-s border-gray-100" />
+                </div>
+
+                {group.tasks.map((task) => {
+                  const bounds = getTaskScheduleBounds(task);
+                  if (!bounds) return null;
+
+                  const taskHref = `/dashboard/projects/${projectSlug}/boards/${task.boardSlug}?task=${task.slug}`;
+
+                  return (
+                    <div
+                      key={task.id}
+                      className="grid border-b border-gray-100 last:border-b-0"
+                      style={{ gridTemplateColumns }}
+                    >
+                      <div className="sticky start-0 z-20 border-e border-gray-100 bg-white px-4 py-3">
+                        <Link
+                          href={taskHref}
+                          className="block truncate text-sm font-medium text-gray-900 hover:text-primary-700"
+                        >
+                          {task.title}
+                        </Link>
+                        <p className="mt-0.5 truncate text-xs text-gray-500">
+                          {task.columnName}
+                        </p>
+                      </div>
+
+                      <div className="relative border-s border-gray-100 px-4 py-3">
+                        <GanttBar
+                          task={task}
+                          range={range}
+                          dayWidth={dayWidth}
+                          canEdit={canEdit}
+                          isSaving={savingTaskId === task.id}
+                          onScheduleChange={onScheduleChange}
+                        />
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            ))}
+
+            <div
+              className="pointer-events-none absolute top-0 z-10"
+              style={{
+                left: TASK_COLUMN_WIDTH,
+                width: `${timelineWidth}px`,
+                height: `${bodyHeight}px`,
+              }}
+            >
+              <GanttDependencyLayer
+                dependencies={dependencies}
+                layouts={rowLayouts}
+                width={timelineWidth}
+                height={bodyHeight}
+              />
             </div>
-          ))}
+          </div>
         </div>
       </div>
     </div>

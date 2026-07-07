@@ -1,0 +1,143 @@
+'use client';
+
+import { useMemo, useState } from 'react';
+import {
+  useGanttDependencyMutations,
+  useTaskDependencies,
+} from '../hooks/useGanttDependencyMutations';
+import { useProjectGantt } from '../hooks/useProjectGantt';
+import { Button } from '@/shared/components/ui/Button';
+import { SelectField } from '@/shared/components/ui/SelectField';
+import { LoadingSpinner } from '@/shared/components/feedback/LoadingSpinner';
+
+interface TaskDependenciesEditorProps {
+  taskId: string;
+  projectId: string;
+  canEdit: boolean;
+}
+
+export function TaskDependenciesEditor({
+  taskId,
+  projectId,
+  canEdit,
+}: TaskDependenciesEditorProps) {
+  const [predecessorId, setPredecessorId] = useState('');
+  const { data: ganttData } = useProjectGantt(projectId, true);
+  const { data, isLoading } = useTaskDependencies(taskId, true);
+  const { createDependency, deleteDependency, isCreating, isDeleting } =
+    useGanttDependencyMutations(projectId, taskId);
+
+  const candidateTasks = useMemo(
+    () => [...ganttData.scheduled, ...ganttData.unscheduled],
+    [ganttData.scheduled, ganttData.unscheduled],
+  );
+
+  const predecessorOptions = useMemo(
+    () =>
+      candidateTasks
+        .filter((candidate) => candidate.id !== taskId)
+        .map((candidate) => ({
+          value: candidate.id,
+          label: `${candidate.title} (${candidate.boardName})`,
+        })),
+    [candidateTasks, taskId],
+  );
+
+  const handleAddPredecessor = async () => {
+    if (!predecessorId) return;
+    await createDependency({
+      fromTaskId: predecessorId,
+      toTaskId: taskId,
+    });
+    setPredecessorId('');
+  };
+
+  return (
+    <section className="space-y-3 border-t border-gray-100 pt-5">
+      <div>
+        <h3 className="text-sm font-semibold text-gray-900">Dependencies</h3>
+        <p className="mt-1 text-xs text-gray-500">
+          Tasks that must finish before this one can start.
+        </p>
+      </div>
+
+      {isLoading ? (
+        <LoadingSpinner />
+      ) : (
+        <>
+          {data?.predecessors.length ? (
+            <ul className="space-y-2">
+              {data.predecessors.map((dependency) => (
+                <li
+                  key={dependency.id}
+                  className="flex items-center justify-between gap-3 rounded-lg border border-gray-100 px-3 py-2 text-sm"
+                >
+                  <span>
+                    <span className="font-medium text-gray-900">
+                      {dependency.fromTaskTitle}
+                    </span>
+                    <span className="block text-xs text-gray-500">
+                      {dependency.fromBoardName}
+                    </span>
+                  </span>
+                  {canEdit && (
+                    <Button
+                      type="button"
+                      variant="ghost"
+                      className="text-red-600 hover:text-red-700"
+                      disabled={isDeleting}
+                      onClick={() => void deleteDependency(dependency.id)}
+                    >
+                      Remove
+                    </Button>
+                  )}
+                </li>
+              ))}
+            </ul>
+          ) : (
+            <p className="text-sm text-gray-500">No predecessors yet.</p>
+          )}
+
+          {data?.successors.length ? (
+            <div className="rounded-lg bg-gray-50 px-3 py-2 text-sm text-gray-600">
+              <p className="font-medium text-gray-800">Blocks</p>
+              <ul className="mt-1 space-y-1">
+                {data.successors.map((dependency) => (
+                  <li key={dependency.id}>
+                    {dependency.toTaskTitle}{' '}
+                    <span className="text-xs text-gray-500">
+                      ({dependency.toBoardName})
+                    </span>
+                  </li>
+                ))}
+              </ul>
+            </div>
+          ) : null}
+        </>
+      )}
+
+      {canEdit && (
+        <div className="flex flex-wrap items-end gap-3">
+          <div className="min-w-[14rem] flex-1">
+            <SelectField
+              label="Blocked by"
+              value={predecessorId || undefined}
+              onChange={(value) => setPredecessorId(String(value ?? ''))}
+              options={[
+                { value: '', label: 'Select predecessor' },
+                ...predecessorOptions,
+              ]}
+            />
+          </div>
+          <Button
+            type="button"
+            onClick={() => void handleAddPredecessor()}
+            disabled={!predecessorId || isCreating}
+          >
+            Add
+          </Button>
+        </div>
+      )}
+    </section>
+  );
+}

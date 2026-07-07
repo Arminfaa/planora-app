@@ -28,6 +28,7 @@ import { getApiErrorMessage } from '@/lib/api';
 import { AppModal } from '@/shared/components/ui/AppModal';
 import { MemberMultiSelect } from './MemberMultiSelect';
 import { TaskChecklistEditor } from './TaskChecklistEditor';
+import { TaskDependenciesEditor } from '@/features/gantt/components/TaskDependenciesEditor';
 
 const schema = z
   .object({
@@ -286,6 +287,12 @@ export function TaskModal({
       </form>
 
       <div className="mt-6 space-y-6 border-t border-gray-100 pt-6">
+        <TaskDependenciesEditor
+          taskId={task.id}
+          projectId={projectId}
+          canEdit
+        />
+
         <TaskChecklistEditor
           taskId={task.id}
           items={checklistItems}

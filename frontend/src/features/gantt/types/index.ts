@@ -18,9 +18,30 @@ export interface GanttTask {
   assignees: TaskAssignee[];
 }
 
+export type GanttDependencyType = 'FINISH_TO_START';
+
+export interface GanttDependency {
+  id: string;
+  projectId: string;
+  fromTaskId: string;
+  toTaskId: string;
+  type: GanttDependencyType;
+  fromTaskTitle: string;
+  toTaskTitle: string;
+  fromBoardName: string;
+  toBoardName: string;
+  createdAt: string;
+}
+
 export interface ProjectGanttData {
   scheduled: GanttTask[];
   unscheduled: GanttTask[];
+  dependencies: GanttDependency[];
+}
+
+export interface TaskDependencyLists {
+  predecessors: GanttDependency[];
+  successors: GanttDependency[];
 }
 
 export type GanttZoom = 'day' | 'week' | 'month';
@@ -33,4 +54,12 @@ export interface GanttTimelineRange {
 export interface GanttBarLayout {
   leftPx: number;
   widthPx: number;
+}
+
+export interface GanttTaskRowLayout {
+  taskId: string;
+  top: number;
+  centerY: number;
+  barLeftPx: number;
+  barWidthPx: number;
 }

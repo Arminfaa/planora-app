@@ -5,9 +5,11 @@ import { boardRepository } from '../repositories/board.repository';
 import { columnRepository } from '../repositories/column.repository';
 import { projectMemberRepository } from '../repositories/project-member.repository';
 import { taskRepository } from '../repositories/task.repository';
+import { taskDependencyRepository } from '../repositories/task-dependency.repository';
 import { projectAccessService } from './project-access.service';
 import { projectMemberService } from './project-member.service';
 import { serializeGanttTask } from '../utils/gantt-serializer';
+import { serializeTaskDependency } from '../utils/task-dependency-serializer';
 import type {
   CreateBoardTaskInput,
   CreateTaskInput,
@@ -321,7 +323,11 @@ export class TaskService {
       }
     }
 
-    return { scheduled, unscheduled };
+    const dependencies = (
+      await taskDependencyRepository.findByProject(projectId)
+    ).map(serializeTaskDependency);
+
+    return { scheduled, unscheduled, dependencies };
   }
 }
 
