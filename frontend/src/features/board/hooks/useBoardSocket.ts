@@ -17,21 +17,16 @@ export function useBoardSocket(
   boardId: string,
   { onRemoteChange }: UseBoardSocketOptions,
 ) {
-  const { user, isAuthenticated } = useAuth();
+  const { isAuthenticated } = useAuth();
   const [isConnected, setIsConnected] = useState(false);
   const [isJoined, setIsJoined] = useState(false);
   const [lastRemoteUpdate, setLastRemoteUpdate] = useState<Date | null>(null);
 
   const onRemoteChangeRef = useRef(onRemoteChange);
-  const userIdRef = useRef(user?.id);
 
   useEffect(() => {
     onRemoteChangeRef.current = onRemoteChange;
   }, [onRemoteChange]);
-
-  useEffect(() => {
-    userIdRef.current = user?.id;
-  }, [user?.id]);
 
   useEffect(() => {
     if (!isAuthenticated || !boardId) return;
@@ -51,7 +46,6 @@ export function useBoardSocket(
 
     const handleBoardEvent = (event: BoardSocketEvent) => {
       if (event.boardId !== boardId) return;
-      if (event.userId === userIdRef.current) return;
 
       setLastRemoteUpdate(new Date());
       onRemoteChangeRef.current(event);

@@ -1,8 +1,11 @@
 'use client';
 
 import Link from 'next/link';
+import { useMemo } from 'react';
+import { useBoards } from '@/features/board/hooks/useBoards';
 import { useProjectPermissions } from '@/features/permissions/hooks/useProjectPermissions';
 import { useProjectContext } from '@/features/projects/context/ProjectContext';
+import { useGanttBoardRealtimeSync } from '../hooks/useGanttBoardRealtimeSync';
 import { useProjectGantt } from '../hooks/useProjectGantt';
 import { useUpdateGanttSchedule } from '../hooks/useUpdateGanttSchedule';
 import { GanttTimeline } from './GanttTimeline';
@@ -15,6 +18,9 @@ export function ProjectGanttView() {
   const canViewTasks = can('task.view');
   const canEditTasks = can('task.edit');
   const { data, isLoading, error } = useProjectGantt(project.id, canViewTasks);
+  const { boards } = useBoards(project.id, canViewTasks);
+  const boardIds = useMemo(() => boards.map((board) => board.id), [boards]);
+  useGanttBoardRealtimeSync(project.id, slug, boardIds, canViewTasks);
   const { updateSchedule, savingTaskId } = useUpdateGanttSchedule(
     project.id,
     slug,

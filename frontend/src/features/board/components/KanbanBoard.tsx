@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useState } from 'react';
 import dynamic from 'next/dynamic';
 import { usePathname, useRouter, useSearchParams } from 'next/navigation';
+import { useQueryClient } from '@tanstack/react-query';
 import {
   DndContext,
   DragOverlay,
@@ -29,6 +30,8 @@ import { checklistService } from '@/features/tasks/services/checklist.service';
 import type { CreateTaskInput } from '@/features/tasks/types';
 import { useProjectMembers } from '@/features/projects/hooks/useProjectMembers';
 import { getApiErrorMessage, isForbiddenError } from '@/lib/api';
+import { queryKeys } from '@/lib/query-keys';
+import { applyRealtimeEvent } from '../utils/applyRealtimeEvent';
 import { AssetImage } from '@/shared/components/ui/AssetImage';
 import { LoadingSpinner } from '@/shared/components/feedback/LoadingSpinner';
 import { Button } from '@/shared/components/ui/Button';
@@ -110,6 +113,7 @@ export function KanbanBoard({
   const router = useRouter();
   const pathname = usePathname();
   const searchParams = useSearchParams();
+  const queryClient = useQueryClient();
   const activeTaskSlug = searchParams.get('task');
   const [editingTask, setEditingTask] = useState<BoardTask | null>(null);
   const [editingColumn, setEditingColumn] = useState<BoardColumn | null>(null);
@@ -204,9 +208,34 @@ export function KanbanBoard({
         setEditingColumn((prev) => (prev?.id === columnId ? null : prev));
       }
 
+      if (
+        event.type === 'task:created' ||
+        event.type === 'task:updated' ||
+        event.type === 'task:deleted' ||
+        event.type === 'task:moved'
+      ) {
+        queryClient.setQueryData<Board>(
+          queryKeys.boards.bySlug(projectSlug, board.slug),
+          (prev) => {
+            if (!prev?.columns) return prev;
+            return {
+              ...prev,
+              columns: applyRealtimeEvent(prev.columns, event),
+            };
+          },
+        );
+      }
+
       applyRemoteUpdate(event);
     },
-    [applyRemoteUpdate, board.slug, projectSlug, router, searchParams],
+    [
+      applyRemoteUpdate,
+      board.slug,
+      projectSlug,
+      queryClient,
+      router,
+      searchParams,
+    ],
   );
 
   const { isConnected, isJoined, lastRemoteUpdate } = useBoardSocket(board.id, {
