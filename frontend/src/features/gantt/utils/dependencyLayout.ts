@@ -1,39 +1,40 @@
-import type { GanttDependency, GanttTask, GanttTaskRowLayout } from '../types';
-import { getBarLayout, getTaskScheduleBounds } from './timeline';
+import type { GanttHierarchyRow, GanttTaskRowLayout } from '../types';
+import { getTaskScheduleBounds, getBarLayout } from './timeline';
 
 export const GANTT_ROW_METRICS = {
   header: 44,
   boardHeader: 36,
   taskRow: 56,
   timelinePaddingX: 16,
+  indentPx: 16,
 } as const;
 
 interface TaskGroup {
   boardName: string;
   boardSlug: string;
-  tasks: GanttTask[];
+  tasks: GanttHierarchyRow[];
 }
 
 export function buildGanttTaskRowLayouts(
-  groupedTasks: TaskGroup[],
+  groupedRows: TaskGroup[],
   range: { start: Date; end: Date },
   dayWidth: number,
 ): Map<string, GanttTaskRowLayout> {
   const layouts = new Map<string, GanttTaskRowLayout>();
   let top = 0;
 
-  for (const group of groupedTasks) {
+  for (const group of groupedRows) {
     top += GANTT_ROW_METRICS.boardHeader;
 
-    for (const task of group.tasks) {
-      const bounds = getTaskScheduleBounds(task);
+    for (const row of group.tasks) {
+      const bounds = getTaskScheduleBounds(row.task);
       if (!bounds) continue;
 
       const bar = getBarLayout(bounds, range, dayWidth);
       const centerY = top + GANTT_ROW_METRICS.taskRow / 2;
 
-      layouts.set(task.id, {
-        taskId: task.id,
+      layouts.set(row.task.id, {
+        taskId: row.task.id,
         top,
         centerY,
         barLeftPx: bar.leftPx + GANTT_ROW_METRICS.timelinePaddingX,
@@ -47,16 +48,17 @@ export function buildGanttTaskRowLayouts(
   return layouts;
 }
 
-export function getTimelineBodyHeight(groupedTasks: TaskGroup[]): number {
-  const scheduledTaskCount = groupedTasks.reduce(
+export function getTimelineBodyHeight(groupedRows: TaskGroup[]): number {
+  const rowCount = groupedRows.reduce(
     (count, group) =>
-      count + group.tasks.filter((task) => getTaskScheduleBounds(task)).length,
+      count +
+      group.tasks.filter((row) => getTaskScheduleBounds(row.task)).length,
     0,
   );
 
   return (
-    groupedTasks.length * GANTT_ROW_METRICS.boardHeader +
-    scheduledTaskCount * GANTT_ROW_METRICS.taskRow
+    groupedRows.length * GANTT_ROW_METRICS.boardHeader +
+    rowCount * GANTT_ROW_METRICS.taskRow
   );
 }
 
@@ -75,8 +77,11 @@ export function buildDependencyPath(
 }
 
 export function buildDependencyLinks(
-  dependencies: GanttDependency[],
-  layouts: Map<string, GanttTaskRowLayout>,
+  dependencies: Array<{ id: string; fromTaskId: string; toTaskId: string }>,
+  layouts: Map<
+    string,
+    { barLeftPx: number; barWidthPx: number; centerY: number }
+  >,
 ): Array<{ id: string; path: string }> {
   const links: Array<{ id: string; path: string }> = [];
 
@@ -85,18 +90,12 @@ export function buildDependencyLinks(
     const to = layouts.get(dependency.toTaskId);
     if (!from || !to) continue;
 
-    const start = {
-      x: from.barLeftPx + from.barWidthPx,
-      y: from.centerY,
-    };
-    const end = {
-      x: to.barLeftPx,
-      y: to.centerY,
-    };
-
     links.push({
       id: dependency.id,
-      path: buildDependencyPath(start, end),
+      path: buildDependencyPath(
+        { x: from.barLeftPx + from.barWidthPx, y: from.centerY },
+        { x: to.barLeftPx, y: to.centerY },
+      ),
     });
   }
 

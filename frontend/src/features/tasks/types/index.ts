@@ -24,6 +24,8 @@ export interface Task {
   priority: TaskPriority;
   startDate: string | null;
   dueDate: string | null;
+  progress?: number;
+  parentTaskId?: string | null;
   isCompleted?: boolean;
   assigneeIds: string[];
   createdById: string;
@@ -57,6 +59,8 @@ export interface UpdateTaskInput {
   position?: number;
   startDate?: string | null;
   dueDate?: string | null;
+  progress?: number;
+  parentTaskId?: string | null;
   assigneeIds?: string[];
   isCompleted?: boolean;
 }

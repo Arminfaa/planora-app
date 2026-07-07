@@ -10,7 +10,11 @@ function applyBoardTaskFields(existing: GanttTask, task: BoardTask): GanttTask {
     priority: task.priority,
     startDate: task.startDate ?? null,
     dueDate: task.dueDate ?? null,
+    progress: task.isCompleted
+      ? 100
+      : (task.progress ?? existing.progress ?? 0),
     isCompleted: Boolean(task.isCompleted),
+    parentTaskId: task.parentTaskId ?? null,
     columnId: task.columnId,
   };
 }

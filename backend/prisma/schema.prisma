@@ -212,7 +212,9 @@ model Task {
   priority     TaskPriority @default(MEDIUM)
   startDate    DateTime?
   dueDate      DateTime?
+  progress     Int          @default(0)
   isCompleted  Boolean      @default(false)
+  parentTaskId String?      @db.ObjectId
   assigneeIds  String[]     @db.ObjectId
   createdById String       @db.ObjectId
   createdAt   DateTime     @default(now())
@@ -227,8 +229,11 @@ model Task {
   checklistItems TaskChecklistItem[]
   outgoingDependencies TaskDependency[] @relation("DependencyFrom")
   incomingDependencies TaskDependency[] @relation("DependencyTo")
+  parentTask           Task?              @relation("TaskHierarchy", fields: [parentTaskId], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  childTasks           Task[]             @relation("TaskHierarchy")
 
   @@unique([boardId, slug])
+  @@index([parentTaskId])
   @@map("tasks")
 }
 

@@ -8,7 +8,10 @@ export interface GanttTask {
   priority: TaskPriority;
   startDate: string | null;
   dueDate: string | null;
+  progress: number;
   isCompleted: boolean;
+  parentTaskId: string | null;
+  childCount: number;
   boardId: string;
   boardName: string;
   boardSlug: string;
@@ -62,4 +65,10 @@ export interface GanttTaskRowLayout {
   centerY: number;
   barLeftPx: number;
   barWidthPx: number;
+}
+
+export interface GanttHierarchyRow {
+  task: GanttTask;
+  depth: number;
+  hasChildren: boolean;
 }

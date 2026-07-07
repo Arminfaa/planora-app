@@ -21,6 +21,8 @@ export interface BoardTask {
   priority: TaskPriority;
   startDate: string | null;
   dueDate: string | null;
+  progress?: number;
+  parentTaskId?: string | null;
   isCompleted?: boolean;
   column?: {
     id: string;

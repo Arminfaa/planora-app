@@ -6,7 +6,9 @@ import type { GanttDependency, GanttTask, GanttZoom } from '../types';
 import {
   buildGanttTaskRowLayouts,
   getTimelineBodyHeight,
+  GANTT_ROW_METRICS,
 } from '../utils/dependencyLayout';
+import { buildBoardHierarchyRows } from '../utils/hierarchy';
 import {
   buildTimelineLabels,
   buildTimelineRange,
@@ -66,6 +68,9 @@ export function GanttTimeline({
   onScheduleChange,
 }: GanttTimelineProps) {
   const [zoom, setZoom] = useState<GanttZoom>('week');
+  const [collapsedTaskIds, setCollapsedTaskIds] = useState<Set<string>>(
+    () => new Set(),
+  );
   const range = useMemo(() => buildTimelineRange(tasks), [tasks]);
   const dayCount = getTimelineDayCount(range);
   const dayWidth = getDayWidth(zoom);
@@ -74,15 +79,34 @@ export function GanttTimeline({
     () => buildTimelineLabels(range, zoom, dayWidth),
     [dayWidth, range, zoom],
   );
-  const groupedTasks = useMemo(() => groupTasksByBoard(tasks), [tasks]);
+
+  const groupedRows = useMemo(() => {
+    return groupTasksByBoard(tasks).map((group) => ({
+      ...group,
+      tasks: buildBoardHierarchyRows(group.tasks, collapsedTaskIds),
+    }));
+  }, [collapsedTaskIds, tasks]);
+
   const rowLayouts = useMemo(
-    () => buildGanttTaskRowLayouts(groupedTasks, range, dayWidth),
-    [groupedTasks, range, dayWidth],
+    () => buildGanttTaskRowLayouts(groupedRows, range, dayWidth),
+    [groupedRows, range, dayWidth],
   );
   const bodyHeight = useMemo(
-    () => getTimelineBodyHeight(groupedTasks),
-    [groupedTasks],
+    () => getTimelineBodyHeight(groupedRows),
+    [groupedRows],
   );
+
+  const toggleCollapsed = (taskId: string) => {
+    setCollapsedTaskIds((current) => {
+      const next = new Set(current);
+      if (next.has(taskId)) {
+        next.delete(taskId);
+      } else {
+        next.add(taskId);
+      }
+      return next;
+    });
+  };
 
   if (tasks.length === 0) {
     return (
@@ -161,7 +185,7 @@ export function GanttTimeline({
           </div>
 
           <div className="relative">
-            {groupedTasks.map((group) => (
+            {groupedRows.map((group) => (
               <div key={group.boardSlug}>
                 <div
                   className="grid border-b border-gray-100 bg-gray-50/70"
@@ -173,11 +197,12 @@ export function GanttTimeline({
                   <div className="border-s border-gray-100" />
                 </div>
 
-                {group.tasks.map((task) => {
+                {group.tasks.map(({ task, depth, hasChildren }) => {
                   const bounds = getTaskScheduleBounds(task);
                   if (!bounds) return null;
 
                   const taskHref = `/dashboard/projects/${projectSlug}/boards/${task.boardSlug}?task=${task.slug}`;
+                  const isCollapsed = collapsedTaskIds.has(task.id);
 
                   return (
                     <div
@@ -186,15 +211,44 @@ export function GanttTimeline({
                       style={{ gridTemplateColumns }}
                     >
                       <div className="sticky start-0 z-20 border-e border-gray-100 bg-white px-4 py-3">
-                        <Link
-                          href={taskHref}
-                          className="block truncate text-sm font-medium text-gray-900 hover:text-primary-700"
+                        <div
+                          className="flex items-start gap-1"
+                          style={{
+                            paddingInlineStart: `${depth * GANTT_ROW_METRICS.indentPx}px`,
+                          }}
                         >
-                          {task.title}
-                        </Link>
-                        <p className="mt-0.5 truncate text-xs text-gray-500">
-                          {task.columnName}
-                        </p>
+                          {hasChildren ? (
+                            <button
+                              type="button"
+                              aria-label={
+                                isCollapsed
+                                  ? 'Expand subtasks'
+                                  : 'Collapse subtasks'
+                              }
+                              onClick={() => toggleCollapsed(task.id)}
+                              className="mt-0.5 inline-flex h-5 w-5 shrink-0 items-center justify-center rounded text-gray-500 hover:bg-gray-100 hover:text-gray-800"
+                            >
+                              {isCollapsed ? '▶' : '▼'}
+                            </button>
+                          ) : (
+                            <span className="inline-block h-5 w-5 shrink-0" />
+                          )}
+
+                          <div className="min-w-0">
+                            <Link
+                              href={taskHref}
+                              className="block truncate text-sm font-medium text-gray-900 hover:text-primary-700"
+                            >
+                              {task.title}
+                            </Link>
+                            <p className="mt-0.5 truncate text-xs text-gray-500">
+                              {task.columnName}
+                              {task.childCount > 0
+                                ? ` · ${task.childCount} subtask${task.childCount === 1 ? '' : 's'}`
+                                : ''}
+                            </p>
+                          </div>
+                        </div>
                       </div>
 
                       <div className="relative border-s border-gray-100 px-4 py-3">

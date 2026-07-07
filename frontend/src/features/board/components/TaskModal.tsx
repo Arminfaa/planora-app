@@ -3,8 +3,9 @@
 import { useForm, Controller } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
-import { useEffect, useState } from 'react';
-import { Button } from 'antd';
+import { useEffect, useMemo, useState } from 'react';
+import { Button, Slider } from 'antd';
+import { useProjectGantt } from '@/features/gantt/hooks/useProjectGantt';
 import type { BoardColumn, BoardTask } from '../types';
 import type { ProjectMember } from '@/features/projects/types';
 import { LabelBadges } from '@/features/labels/components/LabelBadges';
@@ -38,6 +39,8 @@ const schema = z
     columnId: z.string().min(1),
     startDate: z.string().optional(),
     dueDate: z.string().optional(),
+    progress: z.coerce.number().min(0).max(100),
+    parentTaskId: z.string().optional(),
   })
   .refine(
     (data) => {
@@ -62,6 +65,8 @@ function getTaskFormValues(task: BoardTask): FormData {
     columnId: task.columnId,
     startDate: toDateInputValue(task.startDate),
     dueDate: toDateInputValue(task.dueDate),
+    progress: task.isCompleted ? 100 : (task.progress ?? 0),
+    parentTaskId: task.parentTaskId ?? '',
   };
 }
 
@@ -101,6 +106,18 @@ export function TaskModal({
   const { labels: projectLabels, createLabel } = useProjectLabels(projectId);
   const taskLabels = normalizeTaskLabels(task.labels);
   const checklistItems = task.checklistItems ?? [];
+  const { data: ganttData } = useProjectGantt(projectId, true);
+
+  const parentTaskOptions = useMemo(
+    () =>
+      [...ganttData.scheduled, ...ganttData.unscheduled]
+        .filter((candidate) => candidate.id !== task.id)
+        .map((candidate) => ({
+          value: candidate.id,
+          label: `${candidate.title} (${candidate.boardName})`,
+        })),
+    [ganttData.scheduled, ganttData.unscheduled, task.id],
+  );
 
   useEffect(() => {
     setAssigneeIds(getTaskAssignees(task).map((assignee) => assignee.id));
@@ -129,6 +146,11 @@ export function TaskModal({
       const currentAssigneeIds = getTaskAssignees(task).map(
         (assignee) => assignee.id,
       );
+      const nextParentTaskId = data.parentTaskId?.trim()
+        ? data.parentTaskId
+        : null;
+      const currentParentTaskId = task.parentTaskId ?? null;
+      const currentProgress = task.isCompleted ? 100 : (task.progress ?? 0);
 
       await taskService.update(task.id, {
         title: data.title,
@@ -138,6 +160,11 @@ export function TaskModal({
         startDate:
           nextStartDate !== currentStartDate ? nextStartDate : undefined,
         dueDate: nextDueDate !== currentDueDate ? nextDueDate : undefined,
+        progress: data.progress !== currentProgress ? data.progress : undefined,
+        parentTaskId:
+          nextParentTaskId !== currentParentTaskId
+            ? nextParentTaskId
+            : undefined,
         assigneeIds: !arraysEqual(assigneeIds, currentAssigneeIds)
           ? assigneeIds
           : undefined,
@@ -264,7 +291,42 @@ export function TaskModal({
               />
             )}
           />
+
+          <Controller
+            name="parentTaskId"
+            control={control}
+            render={({ field }) => (
+              <SelectField
+                label="Parent task"
+                value={field.value || undefined}
+                onChange={(value) => field.onChange(String(value ?? ''))}
+                options={[
+                  { value: '', label: 'No parent' },
+                  ...parentTaskOptions,
+                ]}
+              />
+            )}
+          />
         </div>
+
+        <Controller
+          name="progress"
+          control={control}
+          render={({ field }) => (
+            <div className="space-y-2">
+              <div className="flex items-center justify-between text-sm">
+                <span className="font-medium text-gray-700">Progress</span>
+                <span className="text-gray-500">{field.value}%</span>
+              </div>
+              <Slider
+                min={0}
+                max={100}
+                value={field.value}
+                onChange={field.onChange}
+              />
+            </div>
+          )}
+        />
 
         <div className="space-y-1">
           <label className="block text-sm font-medium text-gray-700">

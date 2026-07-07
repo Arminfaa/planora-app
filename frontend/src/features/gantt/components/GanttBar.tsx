@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useRef, useState } from 'react';
 import type { GanttTask } from '../types';
+import { getEffectiveProgress } from '../utils/hierarchy';
 import {
   boundsToScheduleDates,
   getBarLayout,
@@ -64,6 +65,8 @@ export function GanttBar({
 
   const activeBounds = previewBounds ?? baseBounds;
   const bar = getBarLayout(activeBounds, range, dayWidth);
+  const progress = getEffectiveProgress(task);
+  const barColorClass = getPriorityBarClass(task.priority);
 
   const setPreview = useCallback(
     (bounds: { start: Date; end: Date } | null) => {
@@ -173,14 +176,13 @@ export function GanttBar({
       style={{ backgroundSize: `${dayWidth}px 100%` }}
     >
       <div
-        title={task.title}
+        title={`${task.title} (${progress}%)`}
         className={cn(
-          'absolute top-1/2 flex h-6 -translate-y-1/2 items-center rounded-md text-[11px] font-medium text-white shadow-sm select-none touch-none',
-          getPriorityBarClass(task.priority),
-          task.isCompleted && 'opacity-60 line-through',
+          'absolute top-1/2 h-6 -translate-y-1/2 overflow-hidden rounded-md text-[11px] font-medium text-white shadow-sm select-none touch-none',
           canEdit ? 'cursor-grab active:cursor-grabbing' : '',
           isSaving && 'opacity-70',
           isDragging && 'cursor-grabbing',
+          task.isCompleted && 'opacity-80',
         )}
         style={{
           left: `${bar.leftPx}px`,
@@ -189,23 +191,43 @@ export function GanttBar({
         }}
         onPointerDown={canEdit ? handlePointerDown('move') : undefined}
       >
-        {canEdit && (
-          <span
-            aria-hidden
-            className="absolute inset-y-0 start-0 z-10 w-2 cursor-ew-resize rounded-s-md bg-black/10 hover:bg-black/20"
-            onPointerDown={handlePointerDown('resize-start')}
-          />
-        )}
+        <div className={cn('absolute inset-0 opacity-35', barColorClass)} />
+        <div
+          className={cn('absolute inset-y-0 start-0', barColorClass)}
+          style={{ width: `${progress}%` }}
+        />
+        <div className="relative flex h-full items-center">
+          {canEdit && (
+            <span
+              aria-hidden
+              className="absolute inset-y-0 start-0 z-10 w-2 cursor-ew-resize rounded-s-md bg-black/10 hover:bg-black/20"
+              onPointerDown={handlePointerDown('resize-start')}
+            />
+          )}
 
-        <span className="pointer-events-none truncate px-2">{task.title}</span>
-
-        {canEdit && (
           <span
-            aria-hidden
-            className="absolute inset-y-0 end-0 z-10 w-2 cursor-ew-resize rounded-e-md bg-black/10 hover:bg-black/20"
-            onPointerDown={handlePointerDown('resize-end')}
-          />
-        )}
+            className={cn(
+              'pointer-events-none truncate px-2',
+              task.isCompleted && 'line-through',
+            )}
+          >
+            {task.title}
+          </span>
+
+          {progress > 0 && progress < 100 && (
+            <span className="pointer-events-none ms-auto pe-2 text-[10px] font-semibold">
+              {progress}%
+            </span>
+          )}
+
+          {canEdit && (
+            <span
+              aria-hidden
+              className="absolute inset-y-0 end-0 z-10 w-2 cursor-ew-resize rounded-e-md bg-black/10 hover:bg-black/20"
+              onPointerDown={handlePointerDown('resize-end')}
+            />
+          )}
+        </div>
       </div>
     </div>
   );

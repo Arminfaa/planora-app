@@ -9,6 +9,10 @@ import { taskDependencyRepository } from '../repositories/task-dependency.reposi
 import { projectAccessService } from './project-access.service';
 import { projectMemberService } from './project-member.service';
 import { serializeGanttTask } from '../utils/gantt-serializer';
+import {
+  ensureTasksSameProject,
+  wouldCreateParentCycle,
+} from '../utils/task-hierarchy';
 import { serializeTaskDependency } from '../utils/task-dependency-serializer';
 import type {
   CreateBoardTaskInput,
@@ -246,6 +250,21 @@ export class TaskService {
       await this.ensureAssigneesAreMembers(projectId, input.assigneeIds);
     }
 
+    if (input.parentTaskId) {
+      await ensureTasksSameProject(taskId, input.parentTaskId);
+      if (await wouldCreateParentCycle(taskId, input.parentTaskId)) {
+        throw new ApiError(
+          400,
+          'This parent would create a circular hierarchy',
+        );
+      }
+    }
+
+    let normalizedInput: UpdateTaskInput = { ...input };
+    if (input.isCompleted === true && input.progress === undefined) {
+      normalizedInput = { ...normalizedInput, progress: 100 };
+    }
+
     const isMove = input.columnId !== undefined || input.position !== undefined;
     await projectAccessService.ensurePermission(
       userId,
@@ -278,7 +297,11 @@ export class TaskService {
         throw new ApiError(404, 'Task not found');
       }
 
-      const { columnId: _columnId, position: _position, ...rest } = input;
+      const {
+        columnId: _columnId,
+        position: _position,
+        ...rest
+      } = normalizedInput;
       if (Object.keys(rest).length > 0) {
         const updatePayload = await this.withUpdatedSlug(existing, rest);
         const updated = await taskRepository.update(taskId, updatePayload);
@@ -291,7 +314,7 @@ export class TaskService {
       return movedTask;
     }
 
-    const updatePayload = await this.withUpdatedSlug(existing, input);
+    const updatePayload = await this.withUpdatedSlug(existing, normalizedInput);
     return taskRepository.update(taskId, updatePayload);
   }
 
@@ -311,11 +334,25 @@ export class TaskService {
     await projectAccessService.ensurePermission(userId, projectId, 'task.view');
 
     const tasks = await taskRepository.findGanttByProject(projectId);
+    const childCountByParent = new Map<string, number>();
+
+    for (const task of tasks) {
+      if (task.parentTaskId) {
+        childCountByParent.set(
+          task.parentTaskId,
+          (childCountByParent.get(task.parentTaskId) ?? 0) + 1,
+        );
+      }
+    }
+
     const scheduled: ReturnType<typeof serializeGanttTask>[] = [];
     const unscheduled: ReturnType<typeof serializeGanttTask>[] = [];
 
     for (const task of tasks) {
-      const item = serializeGanttTask(task);
+      const item = serializeGanttTask({
+        ...task,
+        childCount: childCountByParent.get(task.id) ?? 0,
+      });
       if (item.startDate || item.dueDate) {
         scheduled.push(item);
       } else {

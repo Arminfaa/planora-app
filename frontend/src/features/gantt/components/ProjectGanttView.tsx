@@ -65,7 +65,7 @@ export function ProjectGanttView() {
           Track scheduled work across all boards. Tasks appear here when they
           have a start date, a due date, or both.
           {canEditTasks &&
-            ' Drag and resize bars to update dates. Add dependencies below.'}
+            ' Drag bars, set progress, and organize subtasks with parent links.'}
         </p>
       </div>
 

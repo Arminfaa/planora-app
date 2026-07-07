@@ -211,6 +211,10 @@ export class TaskRepository extends BaseRepository {
     if (!task) return;
 
     await this.db.$transaction(async (tx) => {
+      await tx.task.updateMany({
+        where: { parentTaskId: id },
+        data: { parentTaskId: null },
+      });
       await tx.taskLabel.deleteMany({ where: { taskId: id } });
       await tx.comment.deleteMany({ where: { taskId: id } });
       await tx.attachment.deleteMany({ where: { taskId: id } });
@@ -238,6 +242,14 @@ export class TaskRepository extends BaseRepository {
       select: { columnId: true },
     });
     return task?.columnId ?? null;
+  }
+
+  async findParentId(taskId: string): Promise<string | null> {
+    const task = await this.db.task.findUnique({
+      where: { id: taskId },
+      select: { parentTaskId: true },
+    });
+    return task?.parentTaskId ?? null;
   }
 
   async getProgressStatsByProjectId(projectId: string) {
