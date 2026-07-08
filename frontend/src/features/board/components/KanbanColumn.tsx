@@ -10,6 +10,7 @@ import {
 } from '@dnd-kit/sortable';
 import type { BoardColumn, BoardTask } from '../types';
 import type { ProjectMember } from '@/features/projects/types';
+import type { AssigneeColorTheme } from '@/features/tasks/utils/assigneeColors';
 import type { CreateTaskInput } from '@/features/tasks/types';
 import { columnSortableKey } from '../utils/applyRealtimeEvent';
 import { getColumnTaskDropId } from '../utils/kanbanDndUtils';
@@ -43,6 +44,7 @@ interface KanbanColumnProps {
   isDragOverlay?: boolean;
   highlightedTaskId?: string | null;
   variant?: 'default' | 'glass';
+  memberColorMap?: Map<string, AssigneeColorTheme>;
 }
 
 export const KanbanColumn = memo(function KanbanColumn({
@@ -66,6 +68,7 @@ export const KanbanColumn = memo(function KanbanColumn({
   isDragOverlay = false,
   highlightedTaskId = null,
   variant = 'default',
+  memberColorMap,
 }: KanbanColumnProps) {
   const { t } = useLocale();
   const { setNodeRef, isOver } = useDroppable({
@@ -203,6 +206,7 @@ export const KanbanColumn = memo(function KanbanColumn({
               canToggleComplete={canToggleComplete}
               canToggleChecklist={canToggleChecklist}
               canDrag={canMoveTasks}
+              memberColorMap={memberColorMap}
             />
           ))}
         </SortableContext>

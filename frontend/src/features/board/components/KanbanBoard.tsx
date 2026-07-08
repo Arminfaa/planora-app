@@ -1,6 +1,6 @@
 'use client';
 
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 import dynamic from 'next/dynamic';
 import { usePathname, useRouter, useSearchParams } from 'next/navigation';
 import { useQueryClient } from '@tanstack/react-query';
@@ -28,6 +28,7 @@ import { columnService } from '../services/column.service';
 import { taskService } from '@/features/tasks/services/task.service';
 import { checklistService } from '@/features/tasks/services/checklist.service';
 import type { CreateTaskInput } from '@/features/tasks/types';
+import { useMemberColorMap } from '@/features/tasks/hooks/useMemberColorMap';
 import { useProjectMembers } from '@/features/projects/hooks/useProjectMembers';
 import { getApiErrorMessage, isForbiddenError } from '@/lib/api';
 import { queryKeys } from '@/lib/query-keys';
@@ -245,6 +246,11 @@ export function KanbanBoard({
   });
 
   const members = useProjectMembers(projectId);
+  const boardTasks = useMemo(
+    () => columns.flatMap((column) => column.tasks ?? []),
+    [columns],
+  );
+  const memberColorMap = useMemberColorMap(members, boardTasks);
 
   const handleAddTask = useCallback(
     async (columnId: string, input: CreateTaskInput) => {
@@ -539,6 +545,7 @@ export function KanbanBoard({
                     canMoveTasks={canMoveTasks}
                     highlightedTaskId={highlightedTaskId}
                     variant="glass"
+                    memberColorMap={memberColorMap}
                   />
                 ))}
               </SortableContext>
@@ -570,6 +577,7 @@ export function KanbanBoard({
                   task={activeTask}
                   isCompleted={Boolean(activeTask.isCompleted)}
                   isDragOverlay
+                  memberColorMap={memberColorMap}
                 />
               ) : null}
               {activeColumn ? (

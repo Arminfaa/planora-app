@@ -23,6 +23,8 @@ import { getPriorityStyles } from '@/features/tasks/types';
 import { LabelBadges } from '@/features/labels/components/LabelBadges';
 import { normalizeTaskLabels } from '@/features/labels/types';
 import { formatDueDate, isDueDateOverdue } from '@/features/tasks/utils/dates';
+import { useMemberColorMap } from '@/features/tasks/hooks/useMemberColorMap';
+import { getTaskAssigneeCardPresentation } from '@/features/tasks/utils/assigneeColors';
 import { AllTasksCreateModal } from './AllTasksCreateModal';
 import { ImportTasksModal } from './ImportTasksModal';
 import { TaskChecklistPreview } from './TaskChecklistPreview';
@@ -87,6 +89,7 @@ export function AllTasksView({
   const canViewTasks = can('task.view');
   const canMoveTasks = can('task.move');
   const canCreateLabels = can('label.create');
+  const memberColorMap = useMemberColorMap(members, tasks);
 
   const columns = board?.columns ?? [];
 
@@ -585,6 +588,11 @@ export function AllTasksView({
             const labels = normalizeTaskLabels(task.labels);
             const isCompleted = Boolean(task.isCompleted);
             const isSelected = selectedTaskIds.has(task.id);
+            const cardPresentation = getTaskAssigneeCardPresentation(
+              task,
+              memberColorMap,
+              { isCompleted },
+            );
 
             return (
               <div key={task.id} className="flex items-start gap-3">
@@ -607,11 +615,10 @@ export function AllTasksView({
                 )}
 
                 <div
-                  className={`min-w-0 flex-1 rounded-xl border bg-white p-4 shadow-sm transition hover:border-primary-200 hover:shadow-md ${
-                    isCompleted
-                      ? 'border-green-200 bg-green-50/60'
-                      : 'border-gray-200'
-                  } ${isSelected ? 'border-primary-300 ring-2 ring-primary-100' : ''}`}
+                  className={`min-w-0 flex-1 rounded-xl p-4 shadow-sm transition hover:border-primary-200 hover:shadow-md ${
+                    cardPresentation.className
+                  } ${isSelected ? 'ring-2 ring-primary-200' : ''}`}
+                  style={cardPresentation.style}
                 >
                   <div className="flex flex-wrap items-start justify-between gap-3">
                     <div className="flex min-w-0 flex-1 items-start gap-3">
@@ -683,7 +690,10 @@ export function AllTasksView({
                     />
 
                     <div className="mt-3 flex flex-wrap items-center gap-3 text-xs text-gray-500">
-                      <AssigneeDisplay task={task} />
+                      <AssigneeDisplay
+                        task={task}
+                        memberColorMap={memberColorMap}
+                      />
                       {task.dueDate && (
                         <span
                           className={

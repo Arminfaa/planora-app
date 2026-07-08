@@ -10,6 +10,10 @@ import { useLocale } from '@/i18n/LocaleProvider';
 import { LabelBadges } from '@/features/labels/components/LabelBadges';
 import { normalizeTaskLabels } from '@/features/labels/types';
 import { formatDueDate, isDueDateOverdue } from '@/features/tasks/utils/dates';
+import {
+  getTaskAssigneeCardPresentation,
+  type AssigneeColorTheme,
+} from '@/features/tasks/utils/assigneeColors';
 import { getTaskAttachmentCount } from '../utils/taskMeta';
 import { PaperclipIcon } from './PaperclipIcon';
 import { EditIcon } from './EditIcon';
@@ -36,6 +40,7 @@ interface TaskCardProps {
   canEdit?: boolean;
   canToggleComplete?: boolean;
   canToggleChecklist?: boolean;
+  memberColorMap?: Map<string, AssigneeColorTheme>;
 }
 
 export const TaskCard = memo(function TaskCard({
@@ -52,11 +57,20 @@ export const TaskCard = memo(function TaskCard({
   canEdit = false,
   canToggleComplete = false,
   canToggleChecklist = false,
+  memberColorMap,
 }: TaskCardProps) {
   const { t, locale } = useLocale();
   const style = getPriorityStyles(t)[task.priority];
   const labels = normalizeTaskLabels(task.labels);
   const attachmentCount = getTaskAttachmentCount(task);
+  const cardPresentation = memberColorMap
+    ? getTaskAssigneeCardPresentation(task, memberColorMap, {
+        isCompleted,
+        isHighlighted,
+        isDragOverlay,
+        isDimmed,
+      })
+    : null;
 
   const stopCardPointer = (event: React.SyntheticEvent) => {
     event.stopPropagation();
@@ -64,13 +78,17 @@ export const TaskCard = memo(function TaskCard({
 
   return (
     <div
-      className={`cursor-default w-full rounded-lg border bg-white shadow-sm transition ${
-        isDragOverlay ? 'rotate-2 shadow-lg ring-2 ring-primary-200' : ''
-      } ${isDimmed ? 'opacity-35' : ''} ${
-        isHighlighted
-          ? 'border-primary-400 ring-2 ring-primary-100'
-          : 'border-gray-200'
-      } ${isCompleted ? 'bg-green-100/70' : ''}`}
+      className={
+        cardPresentation?.className ??
+        `cursor-default w-full rounded-lg border bg-white shadow-sm transition ${
+          isDragOverlay ? 'rotate-2 shadow-lg ring-2 ring-primary-200' : ''
+        } ${isDimmed ? 'opacity-35' : ''} ${
+          isHighlighted
+            ? 'border-primary-400 ring-2 ring-primary-100'
+            : 'border-gray-200'
+        } ${isCompleted ? 'bg-green-100/70' : ''}`
+      }
+      style={cardPresentation?.style}
     >
       <div className="p-3">
         <div className="flex items-start gap-1.5 sm:gap-2">
@@ -187,6 +205,7 @@ export const TaskCard = memo(function TaskCard({
                 )}
                 <AssigneeDisplay
                   task={task}
+                  memberColorMap={memberColorMap}
                   className="text-xs text-gray-500"
                 />
               </div>
@@ -215,6 +234,7 @@ interface SortableTaskCardProps {
   canToggleComplete?: boolean;
   canToggleChecklist?: boolean;
   canDrag?: boolean;
+  memberColorMap?: Map<string, AssigneeColorTheme>;
 }
 
 export const SortableTaskCard = memo(function SortableTaskCard({
@@ -230,6 +250,7 @@ export const SortableTaskCard = memo(function SortableTaskCard({
   canToggleComplete = false,
   canToggleChecklist = false,
   canDrag = true,
+  memberColorMap,
 }: SortableTaskCardProps) {
   const isMobile = useMediaQuery('(max-width: 639px)');
   const {
@@ -271,6 +292,7 @@ export const SortableTaskCard = memo(function SortableTaskCard({
         canEdit={canEdit}
         canToggleComplete={canToggleComplete}
         canToggleChecklist={canToggleChecklist}
+        memberColorMap={memberColorMap}
       />
     </div>
   );
