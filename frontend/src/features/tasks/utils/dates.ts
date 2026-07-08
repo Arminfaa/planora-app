@@ -13,6 +13,16 @@ export function formatDueDate(value: string, locale: Locale = 'en'): string {
   });
 }
 
+export function formatCompleteDate(value: string, locale: Locale = 'en'): string {
+  return formatLocaleDate(value, locale, {
+    year: 'numeric',
+    month: 'short',
+    day: 'numeric',
+    hour: 'numeric',
+    minute: '2-digit',
+  });
+}
+
 export function isDueDateOverdue(value: string): boolean {
   const due = new Date(value);
   const today = new Date();

@@ -8,7 +8,7 @@ import { TaskComments } from '@/features/comments/components/TaskComments';
 import { TaskAttachments } from '@/features/attachments/components/TaskAttachments';
 import { normalizeTaskLabels } from '@/features/labels/types';
 import { getTaskAssignees, getPriorityStyles } from '@/features/tasks/types';
-import { formatDueDate, isDueDateOverdue } from '@/features/tasks/utils/dates';
+import { formatCompleteDate, formatDueDate, isDueDateOverdue } from '@/features/tasks/utils/dates';
 import { useLocale } from '@/i18n/LocaleProvider';
 import { AppModal } from '@/shared/components/ui/AppModal';
 import { AssigneeDisplay } from './AssigneeDisplay';
@@ -108,6 +108,16 @@ export function TaskViewModal({
             {task.dueDate ? formatDueDate(task.dueDate, locale) : t('common.emDash')}
           </p>
         </div>
+        {task.completeDate && (
+          <div>
+            <span className="font-medium text-gray-700">
+              {t('tasks.completeDate')}
+            </span>
+            <p className="mt-0.5 text-gray-600">
+              {formatCompleteDate(task.completeDate, locale)}
+            </p>
+          </div>
+        )}
       </div>
 
       {labels.length > 0 && (

@@ -26,6 +26,7 @@ export interface Task {
   priority: TaskPriority;
   startDate: string | null;
   dueDate: string | null;
+  completeDate?: string | null;
   progress?: number;
   parentTaskId?: string | null;
   isCompleted?: boolean;
@@ -65,6 +66,7 @@ export interface UpdateTaskInput {
   parentTaskId?: string | null;
   assigneeIds?: string[];
   isCompleted?: boolean;
+  completeDate?: string | null;
 }
 
 export const PRIORITY_OPTIONS: TaskPriority[] = [

@@ -656,6 +656,8 @@ export const enMessages = {
     headerRowOption: 'Row {number}',
     emptyHeader: 'Empty header',
     statusFieldHint: 'Maps spreadsheet values to completed / not completed',
+    completeDateFieldHint:
+      'When the task was actually completed (date and time). Separate from due date.',
     descriptionFieldHint:
       'Select multiple Excel columns to merge into the task description. Values are joined with "-".',
     descriptionColumnsPlaceholder: 'Select columns',
@@ -712,6 +714,7 @@ export const enMessages = {
     assignee: 'Assignee',
     unassigned: 'Unassigned',
     dueDate: 'Due date',
+    completeDate: 'Completed on',
     startDate: 'Start date',
     noDueDate: 'No due date',
     overdue: 'Overdue',

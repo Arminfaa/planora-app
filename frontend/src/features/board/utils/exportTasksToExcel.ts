@@ -14,6 +14,7 @@ import type { Board, BoardColumn, BoardTask } from '../types';
 export type ExportableBoardTask = BoardTask & {
   createdAt?: string;
   updatedAt?: string;
+  completeDate?: string | null;
   createdBy?: {
     id: string;
     name: string;
@@ -166,10 +167,9 @@ export function exportBoardTasksToExcel(
         : t('export.statusNotCompleted'),
       [cols.createdAt]: formatDateTime(task.createdAt, locale),
       [cols.updatedAt]: formatDateTime(task.updatedAt, locale),
-      [cols.completedAt]:
-        task.isCompleted && task.updatedAt
-          ? formatDateTime(task.updatedAt, locale)
-          : '',
+      [cols.completedAt]: task.completeDate
+        ? formatDateTime(task.completeDate, locale)
+        : '',
       [cols.assignees]: formatAssigneeNames(task),
       [cols.labels]: labels.map((label) => label.name).join(', '),
       [cols.checklistProgress]: formatChecklistProgress(task.checklistItems),

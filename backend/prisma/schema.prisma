@@ -212,6 +212,7 @@ model Task {
   priority     TaskPriority @default(MEDIUM)
   startDate    DateTime?
   dueDate      DateTime?
+  completeDate DateTime?
   progress     Int          @default(0)
   isCompleted  Boolean      @default(false)
   parentTaskId String?      @db.ObjectId

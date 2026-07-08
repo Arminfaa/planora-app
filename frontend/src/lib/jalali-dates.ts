@@ -105,6 +105,39 @@ export function parseImportDateToApiDate(value: string): string | null {
   return null;
 }
 
+/** Parse Excel/import date-time strings (Jalali or Gregorian) to ISO format. */
+export function parseImportDateTimeToIso(value: string): string | null {
+  const trimmed = normalizeDateDigits(value.trim());
+  if (!trimmed) return null;
+
+  const timeMatch = trimmed.match(/\s+(\d{1,2}:\d{2}(?::\d{2})?)$/);
+  if (timeMatch) {
+    const datePart = trimmed
+      .slice(0, trimmed.length - timeMatch[0].length)
+      .trim();
+    const apiDate = parseImportDateToApiDate(datePart);
+    if (!apiDate) return null;
+
+    const time = timeMatch[1];
+    const format =
+      time.length > 5 ? 'YYYY-MM-DD HH:mm:ss' : 'YYYY-MM-DD HH:mm';
+    const parsed = dayjs(`${apiDate} ${time}`, format, true);
+    return parsed.isValid() ? parsed.toISOString() : null;
+  }
+
+  if (/T|\d{1,2}:\d{2}/.test(trimmed)) {
+    const parsed = dayjs(trimmed);
+    if (parsed.isValid()) return parsed.toISOString();
+  }
+
+  const dateOnly = parseImportDateToApiDate(trimmed);
+  if (dateOnly) {
+    return dayjs(dateOnly).startOf('day').toISOString();
+  }
+
+  return null;
+}
+
 export function apiDateToPickerValue(
   value: string | null | undefined,
   locale: Locale,

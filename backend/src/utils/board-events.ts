@@ -59,6 +59,9 @@ function serializeTask(task: Record<string, unknown>) {
     startDate: task.startDate
       ? new Date(task.startDate as string | Date).toISOString()
       : null,
+    completeDate: task.completeDate
+      ? new Date(task.completeDate as string | Date).toISOString()
+      : null,
     progress: Number(task.progress ?? 0),
     parentTaskId: task.parentTaskId ? String(task.parentTaskId) : null,
     isCompleted: Boolean(task.isCompleted),

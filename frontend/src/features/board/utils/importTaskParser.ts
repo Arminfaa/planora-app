@@ -4,7 +4,7 @@ import type { ProjectMember } from '@/features/projects/types';
 import type { CreateTaskInput, TaskPriority } from '@/features/tasks/types';
 import { PRIORITY_OPTIONS } from '@/features/tasks/types';
 import type { Translator } from '@/i18n/utils';
-import { parseImportDateToApiDate } from '@/lib/jalali-dates';
+import { parseImportDateToApiDate, parseImportDateTimeToIso } from '@/lib/jalali-dates';
 
 dayjs.extend(jalaliday);
 
@@ -15,6 +15,7 @@ export type ImportFieldKey =
   | 'dueDate'
   | 'startDate'
   | 'status'
+  | 'completeDate'
   | 'assignees'
   | 'labels'
   | 'checklistItems';
@@ -26,6 +27,7 @@ export const IMPORT_FIELD_KEYS: ImportFieldKey[] = [
   'dueDate',
   'startDate',
   'status',
+  'completeDate',
   'assignees',
   'labels',
   'checklistItems',
@@ -64,6 +66,7 @@ export interface ParsedImportRow {
   dueDate?: string;
   startDate?: string;
   isCompleted?: boolean;
+  completeDate?: string;
   assigneeIds?: string[];
   assigneeNames?: string[];
   labelNames?: string[];
@@ -146,6 +149,12 @@ export function getImportFieldDefinitions(
       label: t('export.columns.status'),
       required: false,
       hint: t('import.statusFieldHint'),
+    },
+    {
+      key: 'completeDate',
+      label: t('export.columns.completedAt'),
+      required: false,
+      hint: t('import.completeDateFieldHint'),
     },
     {
       key: 'assignees',
@@ -335,6 +344,21 @@ function parseImportDate(
   return { warning: t('import.invalidDate', { value: trimmed }) };
 }
 
+function parseImportDateTime(
+  value: string,
+  t: Translator,
+): { dateTime?: string; warning?: string } {
+  const trimmed = value.trim();
+  if (!trimmed) return {};
+
+  const parsed = parseImportDateTimeToIso(trimmed);
+  if (parsed) {
+    return { dateTime: parsed };
+  }
+
+  return { warning: t('import.invalidDate', { value: trimmed }) };
+}
+
 function parsePriority(
   value: string,
   priorityLabels: Record<TaskPriority, string>,
@@ -501,6 +525,17 @@ export function buildImportPreview({
       isCompleted = mappedStatus === 'completed';
     }
 
+    let completeDate: string | undefined;
+    if (columnMapping.completeDate != null) {
+      const rawCompleteDate = getCellValue(row, columnMapping.completeDate);
+      const parsedCompleteDate = parseImportDateTime(rawCompleteDate, t);
+      completeDate = parsedCompleteDate.dateTime;
+      if (parsedCompleteDate.warning) warnings.push(parsedCompleteDate.warning);
+      if (completeDate) {
+        isCompleted = true;
+      }
+    }
+
     let assigneeIds: string[] | undefined;
     let assigneeNames: string[] | undefined;
     if (columnMapping.assignees != null) {
@@ -546,6 +581,7 @@ export function buildImportPreview({
       dueDate,
       startDate,
       isCompleted,
+      completeDate,
       assigneeIds,
       assigneeNames,
       labelNames,

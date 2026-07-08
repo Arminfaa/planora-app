@@ -40,6 +40,7 @@ export const updateTaskSchema = createTaskSchema
     assigneeIds: z.array(objectIdSchema).optional(),
     startDate: z.coerce.date().nullable().optional(),
     dueDate: z.coerce.date().nullable().optional(),
+    completeDate: z.coerce.date().nullable().optional(),
     progress: z.coerce.number().int().min(0).max(100).optional(),
     parentTaskId: objectIdSchema.nullable().optional(),
     isCompleted: z.boolean().optional(),

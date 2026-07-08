@@ -78,10 +78,11 @@ export async function executeTaskImport({
         toCreateTaskInput(row),
       );
 
-      if (canEditTasks && row.isCompleted) {
+      if (canEditTasks && (row.isCompleted || row.completeDate)) {
         await taskService.update(task.id, {
           isCompleted: true,
           progress: 100,
+          ...(row.completeDate ? { completeDate: row.completeDate } : {}),
         });
       }
 

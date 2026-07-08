@@ -264,6 +264,12 @@ export class TaskService {
     if (input.isCompleted === true && input.progress === undefined) {
       normalizedInput = { ...normalizedInput, progress: 100 };
     }
+    if (input.isCompleted === true && input.completeDate === undefined) {
+      normalizedInput = { ...normalizedInput, completeDate: new Date() };
+    }
+    if (input.isCompleted === false) {
+      normalizedInput = { ...normalizedInput, completeDate: null };
+    }
 
     const isMove = input.columnId !== undefined || input.position !== undefined;
     await projectAccessService.ensurePermission(

@@ -653,6 +653,8 @@ export const faMessages = {
     headerRowOption: 'ردیف {number}',
     emptyHeader: 'هدر خالی',
     statusFieldHint: 'مقادیر اکسل را به تکمیل‌شده / تکمیل‌نشده نگاشت می‌کند',
+    completeDateFieldHint:
+      'زمان واقعی تکمیل تسک (تاریخ و ساعت). جدا از تاریخ سررسید است.',
     descriptionFieldHint:
       'می‌توانید چند ستون اکسل را برای توضیحات انتخاب کنید. مقادیر با «-» به هم وصل می‌شوند.',
     descriptionColumnsPlaceholder: 'انتخاب ستون‌ها',
@@ -709,6 +711,7 @@ export const faMessages = {
     assignee: 'مسئول',
     unassigned: 'بدون مسئول',
     dueDate: 'تاریخ سررسید',
+    completeDate: 'تاریخ تکمیل',
     startDate: 'تاریخ شروع',
     noDueDate: 'بدون تاریخ سررسید',
     overdue: 'گذشته از موعد',
