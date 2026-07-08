@@ -609,6 +609,15 @@ export const enMessages = {
       'Default columns (To Do, In Progress, Done) will be added automatically.',
     createBoardModalHint:
       'To Do, In Progress, and Done columns are added automatically.',
+    bulkSelectAll: 'Select all',
+    bulkSelectTask: 'Select "{title}"',
+    bulkSelectedCount: '{count} selected',
+    bulkMoveToColumn: 'Move to column',
+    bulkMove: 'Move',
+    bulkMoving: 'Moving...',
+    bulkClearSelection: 'Clear selection',
+    bulkMoveSuccess: '{count} tasks moved',
+    bulkMovePartial: '{moved} moved, {failed} failed',
   },
 
   export: {

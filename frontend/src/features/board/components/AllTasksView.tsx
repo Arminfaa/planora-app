@@ -30,6 +30,7 @@ import { AssigneeDisplay } from './AssigneeDisplay';
 import { LoadingSpinner } from '@/shared/components/feedback/LoadingSpinner';
 import { Button } from '@/shared/components/ui/Button';
 import { SearchInput } from '@/shared/components/ui/SearchInput';
+import { SelectField } from '@/shared/components/ui/SelectField';
 import { getApiErrorMessage, isForbiddenError } from '@/lib/api';
 import { exportBoardTasksToExcel } from '../utils/exportTasksToExcel';
 import { useLocale } from '@/i18n/LocaleProvider';
@@ -71,6 +72,11 @@ export function AllTasksView({
   const [showImportModal, setShowImportModal] = useState(false);
   const [viewTask, setViewTask] = useState<BoardTask | null>(null);
   const [editTask, setEditTask] = useState<BoardTask | null>(null);
+  const [selectedTaskIds, setSelectedTaskIds] = useState<Set<string>>(
+    () => new Set(),
+  );
+  const [bulkTargetColumnId, setBulkTargetColumnId] = useState('');
+  const [isBulkMoving, setIsBulkMoving] = useState(false);
 
   const { can } = useProjectPermissions(project);
   const members = useProjectMembers(project.id);
@@ -79,6 +85,7 @@ export function AllTasksView({
   const canEditTasks = can('task.edit');
   const canDeleteTasks = can('task.delete');
   const canViewTasks = can('task.view');
+  const canMoveTasks = can('task.move');
   const canCreateLabels = can('label.create');
 
   const columns = board?.columns ?? [];
@@ -132,6 +139,116 @@ export function AllTasksView({
 
   const hasActiveView =
     searchQuery.trim().length > 0 || isTaskFiltersActive(filters);
+
+  const selectedCount = selectedTaskIds.size;
+  const filteredTaskIds = useMemo(
+    () => filteredTasks.map((task) => task.id),
+    [filteredTasks],
+  );
+  const allFilteredSelected =
+    filteredTaskIds.length > 0 &&
+    filteredTaskIds.every((id) => selectedTaskIds.has(id));
+  const someFilteredSelected =
+    filteredTaskIds.some((id) => selectedTaskIds.has(id)) &&
+    !allFilteredSelected;
+
+  const columnMoveOptions = useMemo(
+    () =>
+      columns.map((column) => ({
+        value: column.id,
+        label: column.name,
+      })),
+    [columns],
+  );
+
+  const toggleTaskSelection = useCallback((taskId: string, selected: boolean) => {
+    setSelectedTaskIds((current) => {
+      const next = new Set(current);
+      if (selected) {
+        next.add(taskId);
+      } else {
+        next.delete(taskId);
+      }
+      return next;
+    });
+  }, []);
+
+  const toggleSelectAllFiltered = useCallback(
+    (selected: boolean) => {
+      setSelectedTaskIds((current) => {
+        const next = new Set(current);
+        if (selected) {
+          filteredTaskIds.forEach((id) => next.add(id));
+        } else {
+          filteredTaskIds.forEach((id) => next.delete(id));
+        }
+        return next;
+      });
+    },
+    [filteredTaskIds],
+  );
+
+  const clearSelection = useCallback(() => {
+    setSelectedTaskIds(new Set());
+    setBulkTargetColumnId('');
+  }, []);
+
+  const handleBulkMove = useCallback(async () => {
+    if (!canMoveTasks || !bulkTargetColumnId || selectedCount === 0) return;
+
+    const taskIds = Array.from(selectedTaskIds);
+    setIsBulkMoving(true);
+    setActionError('');
+
+    let moved = 0;
+    let failed = 0;
+    let nextPosition = tasks.filter(
+      (task) => task.columnId === bulkTargetColumnId,
+    ).length;
+
+    try {
+      for (const taskId of taskIds) {
+        try {
+          await taskService.update(taskId, {
+            columnId: bulkTargetColumnId,
+            position: nextPosition,
+          });
+          moved += 1;
+          nextPosition += 1;
+        } catch (err) {
+          failed += 1;
+          if (!isForbiddenError(err)) {
+            setActionError((current) => current || getApiErrorMessage(err));
+          }
+        }
+      }
+
+      clearSelection();
+      await loadData();
+
+      if (failed === 0) {
+        setActionError('');
+      } else if (moved > 0) {
+        setActionError(
+          t('board.bulkMovePartial', {
+            moved: String(moved),
+            failed: String(failed),
+          }),
+        );
+      }
+    } finally {
+      setIsBulkMoving(false);
+    }
+  }, [
+    bulkTargetColumnId,
+    canMoveTasks,
+    clearSelection,
+    loadData,
+    selectedCount,
+    selectedTaskIds,
+    t,
+    tasks,
+  ]);
 
   const handleCreateTask = async () => {
     setShowCreateModal(false);
@@ -423,6 +540,61 @@ export function AllTasksView({
         </div>
       )}
 
+      {canMoveTasks && filteredTasks.length > 0 && (
+        <div className="mt-4 flex flex-col gap-3 rounded-xl border border-gray-200 bg-gray-50 p-3 sm:flex-row sm:items-center sm:justify-between">
+          <label className="flex cursor-pointer items-center gap-2 text-sm text-gray-700">
+            <Checkbox
+              checked={allFilteredSelected}
+              indeterminate={someFilteredSelected}
+              onChange={(event) =>
+                toggleSelectAllFiltered(event.target.checked)
+              }
+            />
+            <span>
+              {t('board.bulkSelectAll')}
+              {selectedCount > 0 && (
+                <span className="ms-1 font-medium text-primary-700">
+                  · {t('board.bulkSelectedCount', { count: selectedCount })}
+                </span>
+              )}
+            </span>
+          </label>
+
+          {selectedCount > 0 && (
+            <div className="flex flex-col gap-2 sm:flex-row sm:items-end">
+              <div className="min-w-[200px]">
+                <SelectField
+                  label={t('board.bulkMoveToColumn')}
+                  value={bulkTargetColumnId}
+                  onChange={(value) => setBulkTargetColumnId(String(value))}
+                  options={columnMoveOptions}
+                  showSearch
+                  optionFilterProp="label"
+                  placeholder={t('board.bulkMoveToColumn')}
+                />
+              </div>
+              <div className="flex gap-2">
+                <Button
+                  type="button"
+                  onClick={() => void handleBulkMove()}
+                  disabled={!bulkTargetColumnId || isBulkMoving}
+                >
+                  {isBulkMoving ? t('board.bulkMoving') : t('board.bulkMove')}
+                </Button>
+                <Button
+                  type="button"
+                  variant="secondary"
+                  onClick={clearSelection}
+                  disabled={isBulkMoving}
+                >
+                  {t('board.bulkClearSelection')}
+                </Button>
+              </div>
+            </div>
+          )}
+        </div>
+      )}
+
       <div className="mt-6 space-y-3">
         {filteredTasks.length === 0 ? (
           <div className="rounded-xl border border-dashed border-gray-200 bg-white py-16 text-center">
@@ -437,16 +609,35 @@ export function AllTasksView({
             const style = priorityStylesMap[task.priority];
             const labels = normalizeTaskLabels(task.labels);
             const isCompleted = Boolean(task.isCompleted);
+            const isSelected = selectedTaskIds.has(task.id);
 
             return (
               <div
                 key={task.id}
                 className={`rounded-xl border bg-white p-4 shadow-sm transition hover:border-primary-200 hover:shadow-md ${
                   isCompleted ? 'border-green-200 bg-green-50/60' : 'border-gray-200'
-                }`}
+                } ${isSelected ? 'border-primary-300 ring-2 ring-primary-100' : ''}`}
               >
                 <div className="flex flex-wrap items-start justify-between gap-3">
                   <div className="flex min-w-0 flex-1 items-start gap-3">
+                    {canMoveTasks && (
+                      <div
+                        className="shrink-0 pt-0.5"
+                        onClick={(event) => event.stopPropagation()}
+                        onPointerDown={(event) => event.stopPropagation()}
+                      >
+                        <Checkbox
+                          checked={isSelected}
+                          onChange={(event) =>
+                            toggleTaskSelection(task.id, event.target.checked)
+                          }
+                          aria-label={t('board.bulkSelectTask', {
+                            title: task.title,
+                          })}
+                        />
+                      </div>
+                    )}
+
                     <div
                       className="shrink-0 pt-0.5"
                       onClick={(event) => event.stopPropagation()}

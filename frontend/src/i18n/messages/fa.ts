@@ -606,6 +606,15 @@ export const faMessages = {
       'ستون‌های پیش‌فرض (انجام نشده، در حال انجام، انجام‌شده) به‌طور خودکار اضافه می‌شوند.',
     createBoardModalHint:
       'ستون‌های انجام نشده، در حال انجام و انجام‌شده به‌طور خودکار اضافه می‌شوند.',
+    bulkSelectAll: 'انتخاب همه',
+    bulkSelectTask: 'انتخاب «{title}»',
+    bulkSelectedCount: '{count} مورد انتخاب شده',
+    bulkMoveToColumn: 'انتقال به ستون',
+    bulkMove: 'انتقال',
+    bulkMoving: 'در حال انتقال...',
+    bulkClearSelection: 'پاک کردن انتخاب',
+    bulkMoveSuccess: '{count} وظیفه منتقل شد',
+    bulkMovePartial: '{moved} منتقل شد، {failed} ناموفق',
   },
 
   export: {
