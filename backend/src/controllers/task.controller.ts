@@ -18,6 +18,7 @@ import type {
   CreateBoardTaskInput,
   CreateTaskInput,
   UpdateTaskInput,
+  BulkMoveTasksInput,
 } from '../validators/task.validator';
 
 export const listBoardTasks = asyncHandler(
@@ -205,6 +206,43 @@ export const updateTask = asyncHandler(
     }
 
     ApiResponse.success(res, task, 'Task updated');
+  },
+);
+
+export const bulkMoveBoardTasks = asyncHandler(
+  async (req: AuthenticatedRequest, res: Response) => {
+    const boardId = getParam(req.params, 'id');
+    const { taskIds, columnId } = req.body as BulkMoveTasksInput;
+
+    const tasks = await taskService.bulkMoveToColumn(
+      req.user!.userId,
+      boardId,
+      taskIds,
+      columnId,
+    );
+
+    await notifyBoardTaskEvent(req.user!.userId, 'task:moved', {
+      columnId,
+      payload: { tasks },
+    });
+
+    const projectId = await boardRepository.getProjectId(boardId);
+    if (projectId) {
+      const toColumn = await columnRepository.findById(columnId);
+      for (const task of tasks) {
+        void projectGroupActivityService.logTaskMoved(
+          req.user!.userId,
+          projectId,
+          {
+            taskId: task.id,
+            taskTitle: task.title,
+            toColumn: toColumn?.name,
+          },
+        );
+      }
+    }
+
+    ApiResponse.success(res, tasks, 'Tasks moved');
   },
 );
 

@@ -39,10 +39,21 @@ export const taskService = {
 
   async createOnBoard(
     boardId: string,
-    input: CreateTaskInput,
+    input: CreateTaskInput & { columnId?: string },
   ): Promise<BoardTask> {
     const { data } = await api.post<ApiSuccessResponse<BoardTask>>(
       `/boards/${boardId}/tasks`,
+      input,
+    );
+    return data.data;
+  },
+
+  async bulkMoveToColumn(
+    boardId: string,
+    input: { taskIds: string[]; columnId: string },
+  ): Promise<BoardTask[]> {
+    const { data } = await api.post<ApiSuccessResponse<BoardTask[]>>(
+      `/boards/${boardId}/tasks/bulk-move`,
       input,
     );
     return data.data;

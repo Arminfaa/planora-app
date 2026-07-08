@@ -324,6 +324,49 @@ export class TaskService {
     return taskRepository.update(taskId, updatePayload);
   }
 
+  async bulkMoveToColumn(
+    userId: string,
+    boardId: string,
+    taskIds: string[],
+    columnId: string,
+  ) {
+    const projectId = await boardRepository.getProjectId(boardId);
+    if (!projectId) {
+      throw new ApiError(404, 'Board not found');
+    }
+
+    await projectAccessService.ensurePermission(userId, projectId, 'task.move');
+
+    const targetColumn = await columnRepository.findById(columnId);
+    if (!targetColumn || targetColumn.boardId !== boardId) {
+      throw new ApiError(400, 'Invalid target column for this board');
+    }
+
+    const uniqueIds = [...new Set(taskIds)];
+    if (uniqueIds.length === 0) {
+      throw new ApiError(400, 'No tasks selected');
+    }
+
+    const existingTasks = await taskRepository.findBoardMembership(uniqueIds);
+
+    if (existingTasks.length !== uniqueIds.length) {
+      throw new ApiError(404, 'Some tasks were not found');
+    }
+
+    if (existingTasks.some((task) => task.boardId !== boardId)) {
+      throw new ApiError(400, 'Some tasks do not belong to this board');
+    }
+
+    try {
+      return await taskRepository.bulkMoveTasks(uniqueIds, columnId);
+    } catch (error) {
+      if (error instanceof Error && error.message === 'TASK_NOT_FOUND') {
+        throw new ApiError(404, 'Some tasks were not found');
+      }
+      throw error;
+    }
+  }
+
   async delete(userId: string, taskId: string) {
     const projectId = await this.resolveProjectIdFromTask(taskId);
     await projectAccessService.ensurePermission(

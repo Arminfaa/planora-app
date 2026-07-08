@@ -55,6 +55,12 @@ export const updateTaskSchema = createTaskSchema
 
 export const taskListQuerySchema = paginationSchema;
 
+export const bulkMoveTasksSchema = z.object({
+  taskIds: z.array(objectIdSchema).min(1).max(500),
+  columnId: objectIdSchema,
+});
+
 export type CreateTaskInput = z.infer<typeof createTaskSchema>;
 export type CreateBoardTaskInput = z.infer<typeof createBoardTaskSchema>;
 export type UpdateTaskInput = z.infer<typeof updateTaskSchema>;
+export type BulkMoveTasksInput = z.infer<typeof bulkMoveTasksSchema>;

@@ -11,6 +11,7 @@ import {
 } from '../../controllers/board.controller';
 import {
   createBoardTask,
+  bulkMoveBoardTasks,
   listBoardTasks,
 } from '../../controllers/task.controller';
 import { authenticate } from '../../middlewares/auth.middleware';
@@ -25,7 +26,10 @@ import {
   createBoardSchema,
   updateBoardSchema,
 } from '../../validators/board.validator';
-import { createBoardTaskSchema } from '../../validators/task.validator';
+import {
+  createBoardTaskSchema,
+  bulkMoveTasksSchema,
+} from '../../validators/task.validator';
 
 const router = Router({ mergeParams: true });
 
@@ -50,6 +54,12 @@ boardRouter.get(
   '/:id/tasks',
   validateParams(boardIdParamSchema),
   listBoardTasks,
+);
+boardRouter.post(
+  '/:id/tasks/bulk-move',
+  validateParams(boardIdParamSchema),
+  validateBody(bulkMoveTasksSchema),
+  bulkMoveBoardTasks,
 );
 boardRouter.post(
   '/:id/tasks',

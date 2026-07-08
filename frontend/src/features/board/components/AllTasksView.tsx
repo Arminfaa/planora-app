@@ -194,60 +194,35 @@ export function AllTasksView({
   }, []);
 
   const handleBulkMove = useCallback(async () => {
-    if (!canMoveTasks || !bulkTargetColumnId || selectedCount === 0) return;
+    if (!canMoveTasks || !bulkTargetColumnId || selectedCount === 0 || !board)
+      return;
 
     const taskIds = Array.from(selectedTaskIds);
     setIsBulkMoving(true);
     setActionError('');
 
-    let moved = 0;
-    let failed = 0;
-    let nextPosition = tasks.filter(
-      (task) => task.columnId === bulkTargetColumnId,
-    ).length;
-
     try {
-      for (const taskId of taskIds) {
-        try {
-          await taskService.update(taskId, {
-            columnId: bulkTargetColumnId,
-            position: nextPosition,
-          });
-          moved += 1;
-          nextPosition += 1;
-        } catch (err) {
-          failed += 1;
-          if (!isForbiddenError(err)) {
-            setActionError((current) => current || getApiErrorMessage(err));
-          }
-        }
-      }
-
+      await taskService.bulkMoveToColumn(board.id, {
+        taskIds,
+        columnId: bulkTargetColumnId,
+      });
       clearSelection();
       await loadData();
-
-      if (failed === 0) {
-        setActionError('');
-      } else if (moved > 0) {
-        setActionError(
-          t('board.bulkMovePartial', {
-            moved: String(moved),
-            failed: String(failed),
-          }),
-        );
+    } catch (err) {
+      if (!isForbiddenError(err)) {
+        setActionError(getApiErrorMessage(err));
       }
     } finally {
       setIsBulkMoving(false);
     }
   }, [
+    board,
     bulkTargetColumnId,
     canMoveTasks,
     clearSelection,
     loadData,
     selectedCount,
     selectedTaskIds,
-    t,
-    tasks,
   ]);
 
   const handleCreateTask = async () => {

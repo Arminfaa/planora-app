@@ -47,6 +47,13 @@ export class TaskRepository extends BaseRepository {
     return task ? this.enrichOne(task) : null;
   }
 
+  async findBoardMembership(taskIds: string[]) {
+    return this.db.task.findMany({
+      where: { id: { in: taskIds } },
+      select: { id: true, boardId: true, columnId: true },
+    });
+  }
+
   async findByColumn(
     columnId: string,
     page: number,
@@ -200,6 +207,61 @@ export class TaskRepository extends BaseRepository {
     });
 
     return this.findById(taskId);
+  }
+
+  async bulkMoveTasks(taskIds: string[], targetColumnId: string) {
+    const uniqueIds = [...new Set(taskIds)];
+
+    await this.db.$transaction(async (tx) => {
+      const reorderColumn = async (columnId: string, orderedIds: string[]) => {
+        for (let index = 0; index < orderedIds.length; index += 1) {
+          await tx.task.update({
+            where: { id: orderedIds[index] },
+            data: { columnId, position: index },
+          });
+        }
+      };
+
+      const tasks = await tx.task.findMany({
+        where: { id: { in: uniqueIds } },
+        select: { id: true, columnId: true },
+      });
+
+      if (tasks.length !== uniqueIds.length) {
+        throw new Error('TASK_NOT_FOUND');
+      }
+
+      const movingSet = new Set(uniqueIds);
+      const affectedColumns = new Set([
+        targetColumnId,
+        ...tasks.map((task) => task.columnId),
+      ]);
+
+      for (const columnId of affectedColumns) {
+        const currentIds = (
+          await tx.task.findMany({
+            where: { columnId },
+            orderBy: { position: 'asc' },
+            select: { id: true },
+          })
+        ).map((task) => task.id);
+
+        if (columnId === targetColumnId) {
+          const staying = currentIds.filter((id) => !movingSet.has(id));
+          await reorderColumn(columnId, [...staying, ...uniqueIds]);
+        } else {
+          const remaining = currentIds.filter((id) => !movingSet.has(id));
+          await reorderColumn(columnId, remaining);
+        }
+      }
+    });
+
+    const moved = await this.db.task.findMany({
+      where: { id: { in: uniqueIds } },
+      include: taskInclude,
+    });
+
+    return this.enrichMany(moved);
   }
 
   async delete(id: string): Promise<void> {
