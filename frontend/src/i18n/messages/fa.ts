@@ -505,6 +505,22 @@ export const faMessages = {
     revokeInviteConfirm: 'دعوت‌نامه {email} لغو شود؟',
     boardsCountShort: '{count} برد',
     membersCountShort: '{count} عضو',
+    teamWorkload: 'بار کاری تیم',
+    noBoardsProgress:
+      'هنوز بردی وجود ندارد. یک برد بسازید تا پیشرفت را اینجا ببینید.',
+    saveRolesHint:
+      'نقش‌ها را در پایین اضافه یا ویرایش کنید، سپس «ذخیره نقش‌ها» را بزنید.',
+    editProjectForm: {
+      title: 'ویرایش پروژه',
+      save: 'ذخیره',
+      switchingToDefaultWarning:
+        'با تغییر به نقش‌های پیش‌فرض، همه تعریف‌های نقش سفارشی حذف می‌شوند. اعضا سطح دسترسی مدیر یا عضو خود را حفظ می‌کنند.',
+      customRolesReadonlyTitle: 'نقش‌های سفارشی',
+      customRolesReadonlyHint:
+        'مجوزهای نقش را در بخش «نقش‌ها و مجوزها» در صفحه پروژه ببینید.',
+      validationCustomRoles:
+        'حداقل یک نقش سفارشی با نام و یک مجوز اضافه کنید.',
+    },
   },
 
   board: {
@@ -653,6 +669,8 @@ export const faMessages = {
     headerRowOption: 'ردیف {number}',
     emptyHeader: 'هدر خالی',
     statusFieldHint: 'مقادیر اکسل را به تکمیل‌شده / تکمیل‌نشده نگاشت می‌کند',
+    assigneeFieldHint:
+      'چند مسئول را با «-» از هم جدا کنید. مثال: علی - سارا',
     ignoreColumn: '— نادیده بگیر —',
     rowCount: '{count} ردیف یافت شد',
     titleMappingRequired: 'لطفاً فیلد عنوان را به یک ستون اکسل وصل کنید.',
@@ -667,7 +685,7 @@ export const faMessages = {
       'برای هر مقدار در ستون وضعیت، تکمیل‌شده یا تکمیل‌نشده را انتخاب کنید.',
     assigneeValueMappingTitle: 'نگاشت مقادیر مسئول',
     assigneeValueMappingHint:
-      'برای هر نام در ستون مسئولان اکسل، یک یا چند عضو مربوطه در پروژه را انتخاب کنید.',
+      'برای هر مقدار در ستون مسئولان اکسل، یک یا چند عضو پروژه را انتخاب کنید (چندانتخابی). اگر در سلول چند نام با «-» جدا شده‌اند، هر بخش جداگانه نگاشت می‌شود.',
     assigneeSelectPlaceholder: 'انتخاب اعضا',
     assigneeUnmapped: 'مسئول نگاشت نشده: {name}',
     emptyValue: '(خالی)',
@@ -803,6 +821,25 @@ export const faMessages = {
     selectTask: 'انتخاب وظیفه',
     blockedBy: 'مسدود شده توسط',
     selectPredecessor: 'انتخاب پیش‌نیاز',
+    dependenciesHint:
+      'لینک‌های پایان-به-شروع نشان می‌دهند کدام وظایف باید قبل از شروع بقیه تمام شوند.',
+    addLink: 'افزودن لینک',
+    noDependencies: 'هنوز وابستگی‌ای وجود ندارد.',
+    noPredecessors: 'هنوز پیش‌نیازی وجود ندارد.',
+    dependenciesTaskHint:
+      'وظایفی که باید قبل از شروع این وظیفه تمام شوند.',
+    blocks: 'مسدودکننده',
+    day: 'روز',
+    noScheduledTasksHint:
+      'هنوز وظیفه زمان‌بندی‌شده‌ای نیست. تاریخ شروع یا سررسید به وظایف اضافه کنید تا در جدول زمانی نمایش داده شوند.',
+    scheduledTasksSummary: '{count} وظیفه زمان‌بندی‌شده',
+    scheduledTasksSummaryPlural: '{count} وظیفه زمان‌بندی‌شده',
+    dependenciesSummary: '{count} وابستگی',
+    dependenciesSummaryPlural: '{count} وابستگی',
+    dragHint: 'نوارها را بکشید، لبه‌ها را برای تغییر اندازه بکشید',
+    taskColumnHeader: 'وظیفه',
+    subtaskCount: '{count} زیروظیفه',
+    subtaskCountPlural: '{count} زیروظیفه',
   },
 
   notifications: {
@@ -1069,6 +1106,80 @@ export const faMessages = {
     defaultRoleOwner: 'مالک — دسترسی کامل شامل ویرایش/حذف پروژه',
     defaultRoleAdmin: 'مدیر — دسترسی کامل به جز ویرایش/حذف پروژه',
     defaultRoleMember: 'عضو — وظایف برد، ستون‌ها، پس‌زمینه',
+    groupLabels: {
+      project: 'پروژه',
+      board: 'برد',
+      column: 'ستون',
+      task: 'وظیفه',
+      team: 'تیم',
+      label: 'برچسب‌ها',
+      comment: 'نظرات',
+      attachment: 'پیوست‌ها',
+      group: 'گروه پروژه',
+      role: 'نقش‌ها',
+    },
+    permissionLabels: {
+      project: {
+        view: 'مشاهده پروژه',
+        edit: 'ویرایش پروژه',
+        delete: 'حذف پروژه',
+      },
+      board: {
+        view: 'مشاهده بردها',
+        create: 'ایجاد برد',
+        edit: 'ویرایش برد',
+        delete: 'حذف برد',
+        reorder: 'مرتب‌سازی بردها',
+        change_background: 'تغییر پس‌زمینه برد',
+      },
+      column: {
+        create: 'ایجاد ستون',
+        edit: 'ویرایش ستون',
+        delete: 'حذف ستون',
+        reorder: 'مرتب‌سازی ستون‌ها',
+      },
+      task: {
+        view: 'مشاهده وظایف',
+        create: 'ایجاد وظیفه',
+        edit: 'ویرایش وظیفه',
+        delete: 'حذف وظیفه',
+        move: 'جابه‌جایی / مرتب‌سازی وظایف',
+      },
+      team: {
+        view: 'مشاهده تیم',
+        invite: 'دعوت اعضا',
+        change_role: 'تغییر نقش اعضا',
+        remove: 'حذف اعضا',
+        manage_invites: 'مدیریت دعوت‌های در انتظار',
+      },
+      label: {
+        create: 'ایجاد برچسب',
+        edit: 'ویرایش برچسب',
+        delete: 'حذف برچسب',
+        assign: 'اختصاص برچسب به وظایف',
+      },
+      comment: {
+        create: 'ایجاد نظر',
+        edit_any: 'ویرایش هر نظر',
+        delete_any: 'حذف هر نظر',
+      },
+      attachment: {
+        upload: 'بارگذاری پیوست',
+        delete: 'حذف پیوست',
+      },
+      group: {
+        view: 'مشاهده گروه پروژه',
+        send: 'ارسال پیام',
+        upload: 'بارگذاری فایل در گروه',
+        delete_any: 'حذف هر پیام گروه',
+      },
+      role: {
+        manage: 'مدیریت نقش‌های سفارشی',
+      },
+    },
+    resetRoles: 'بازنشانی',
+    permissionCount: '{count} مجوز',
+    permissionCountPlural: '{count} مجوز',
   },
 
   invite: {
