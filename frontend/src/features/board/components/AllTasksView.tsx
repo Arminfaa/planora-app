@@ -171,6 +171,7 @@ export function AllTasksView({
     '#6B7280';
 
   const handleImportComplete = async () => {
+    setShowImportModal(false);
     await loadData();
   };
 

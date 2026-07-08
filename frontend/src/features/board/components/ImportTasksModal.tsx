@@ -318,7 +318,6 @@ export function ImportTasksModal({
         failed: result.failed,
       });
       setStep('done');
-      await onImported();
     } catch (importError) {
       setError(
         importError instanceof Error
@@ -400,7 +399,12 @@ export function ImportTasksModal({
 
     return (
       <div className="flex justify-end">
-        <Button type="primary" onClick={onClose}>
+        <Button
+          type="primary"
+          onClick={() => {
+            void onImported().finally(() => onClose());
+          }}
+        >
           {t('common.done')}
         </Button>
       </div>
@@ -409,6 +413,7 @@ export function ImportTasksModal({
     handleGoToPreview,
     handleImport,
     onClose,
+    onImported,
     preview,
     rows.length,
     step,
