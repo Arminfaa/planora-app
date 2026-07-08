@@ -656,6 +656,9 @@ export const enMessages = {
     headerRowOption: 'Row {number}',
     emptyHeader: 'Empty header',
     statusFieldHint: 'Maps spreadsheet values to completed / not completed',
+    descriptionFieldHint:
+      'Select multiple Excel columns to merge into the task description. Values are joined with "-".',
+    descriptionColumnsPlaceholder: 'Select columns',
     ignoreColumn: '— Ignore —',
     rowCount: '{count} rows found',
     titleMappingRequired: 'Please map the Title field to an Excel column.',

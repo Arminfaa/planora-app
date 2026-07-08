@@ -653,6 +653,9 @@ export const faMessages = {
     headerRowOption: 'ردیف {number}',
     emptyHeader: 'هدر خالی',
     statusFieldHint: 'مقادیر اکسل را به تکمیل‌شده / تکمیل‌نشده نگاشت می‌کند',
+    descriptionFieldHint:
+      'می‌توانید چند ستون اکسل را برای توضیحات انتخاب کنید. مقادیر با «-» به هم وصل می‌شوند.',
+    descriptionColumnsPlaceholder: 'انتخاب ستون‌ها',
     ignoreColumn: '— نادیده بگیر —',
     rowCount: '{count} ردیف یافت شد',
     titleMappingRequired: 'لطفاً فیلد عنوان را به یک ستون اکسل وصل کنید.',

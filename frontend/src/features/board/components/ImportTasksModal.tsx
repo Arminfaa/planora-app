@@ -25,6 +25,7 @@ import {
   getUniqueColumnValues,
   type AssigneeValueMapping,
   type ColumnMapping,
+  type SingleColumnMappingField,
   type ImportPreviewResult,
   type StatusValueMapping,
 } from '../utils/importTaskParser';
@@ -105,6 +106,15 @@ export function ImportTasksModal({
       })),
     ],
     [headerLabels, t],
+  );
+
+  const excelMultiColumnOptions = useMemo(
+    () =>
+      headerLabels.map((label, index) => ({
+        value: String(index),
+        label,
+      })),
+    [headerLabels],
   );
 
   const statusValueOptions = useMemo(
@@ -192,7 +202,7 @@ export function ImportTasksModal({
   };
 
   const handleMappingFieldChange = (
-    fieldKey: keyof ColumnMapping,
+    fieldKey: SingleColumnMappingField,
     value: string,
   ) => {
     const columnIndex = Number(value);
@@ -203,6 +213,23 @@ export function ImportTasksModal({
         delete next[fieldKey];
       } else {
         next[fieldKey] = columnIndex;
+      }
+      return next;
+    });
+    setPreview(null);
+  };
+
+  const handleDescriptionColumnsChange = (values: string[]) => {
+    const columnIndexes = values
+      .map(Number)
+      .filter((index) => !Number.isNaN(index) && index >= 0);
+
+    setColumnMapping((current) => {
+      const next = { ...current };
+      if (columnIndexes.length) {
+        next.description = columnIndexes;
+      } else {
+        delete next.description;
       }
       return next;
     });
@@ -522,26 +549,57 @@ export function ImportTasksModal({
 
           <div className="space-y-3">
             {fieldDefinitions.map((field) => (
-              <SelectField
-                key={field.key}
-                label={
-                  <span>
-                    {field.label}
-                    {field.required && (
-                      <span className="ms-1 text-red-500">*</span>
+              <div key={field.key}>
+                {field.multiColumn ? (
+                  <SelectField
+                    mode="multiple"
+                    allowClear
+                    label={
+                      <span>
+                        {field.label}
+                        {field.required && (
+                          <span className="ms-1 text-red-500">*</span>
+                        )}
+                      </span>
+                    }
+                    value={(columnMapping.description ?? []).map(String)}
+                    onChange={(value) =>
+                      handleDescriptionColumnsChange(value as string[])
+                    }
+                    options={excelMultiColumnOptions}
+                    showSearch
+                    optionFilterProp="label"
+                    placeholder={t('import.descriptionColumnsPlaceholder')}
+                  />
+                ) : (
+                  <SelectField
+                    label={
+                      <span>
+                        {field.label}
+                        {field.required && (
+                          <span className="ms-1 text-red-500">*</span>
+                        )}
+                      </span>
+                    }
+                    value={String(
+                      columnMapping[field.key as SingleColumnMappingField] ??
+                        IGNORE_COLUMN_VALUE,
                     )}
-                  </span>
-                }
-                value={String(
-                  columnMapping[field.key] ?? IGNORE_COLUMN_VALUE,
+                    onChange={(value) =>
+                      handleMappingFieldChange(
+                        field.key as SingleColumnMappingField,
+                        String(value),
+                      )
+                    }
+                    options={excelColumnOptions}
+                    showSearch
+                    optionFilterProp="label"
+                  />
                 )}
-                onChange={(value) =>
-                  handleMappingFieldChange(field.key, String(value))
-                }
-                options={excelColumnOptions}
-                showSearch
-                optionFilterProp="label"
-              />
+                {field.hint && (
+                  <p className="mt-1 text-xs text-gray-500">{field.hint}</p>
+                )}
+              </div>
             ))}
           </div>
         </div>

@@ -31,8 +31,12 @@ export const IMPORT_FIELD_KEYS: ImportFieldKey[] = [
   'checklistItems',
 ];
 
-/** Maps task fields to Excel column index (0-based). */
-export type ColumnMapping = Partial<Record<ImportFieldKey, number>>;
+/** Maps task fields to Excel column index (0-based). Description supports multiple columns. */
+export type ColumnMapping = {
+  [K in ImportFieldKey]?: K extends 'description' ? number[] : number;
+};
+
+export type SingleColumnMappingField = Exclude<ImportFieldKey, 'description'>;
 
 export type StatusValueMapping = Record<string, 'completed' | 'not_completed'>;
 
@@ -44,6 +48,7 @@ export interface ImportFieldDefinition {
   label: string;
   required: boolean;
   hint?: string;
+  multiColumn?: boolean;
 }
 
 export interface ParsedChecklistItem {
@@ -75,6 +80,8 @@ export interface ImportPreviewResult {
 }
 
 export const IGNORE_COLUMN_VALUE = -1;
+
+const DESCRIPTION_COLUMN_SEPARATOR = ' - ';
 
 const COMPLETED_STATUS_HINTS = new Set([
   'completed',
@@ -116,6 +123,8 @@ export function getImportFieldDefinitions(
       key: 'description',
       label: t('export.columns.description'),
       required: false,
+      multiColumn: true,
+      hint: t('import.descriptionFieldHint'),
     },
     {
       key: 'priority',
@@ -299,6 +308,18 @@ function getCellValue(row: string[], columnIndex: number | undefined): string {
   return row[columnIndex]?.trim() ?? '';
 }
 
+function getDescriptionFromColumns(
+  row: string[],
+  columnIndexes: number[] | undefined,
+): string {
+  if (!columnIndexes?.length) return '';
+
+  return columnIndexes
+    .map((index) => getCellValue(row, index))
+    .filter(Boolean)
+    .join(DESCRIPTION_COLUMN_SEPARATOR);
+}
+
 function parseImportDate(
   value: string,
   t: Translator,
@@ -445,7 +466,7 @@ export function buildImportPreview({
       errors.push(t('import.missingTitle'));
     }
 
-    const descriptionRaw = getCellValue(row, columnMapping.description);
+    const descriptionRaw = getDescriptionFromColumns(row, columnMapping.description);
     const description = descriptionRaw || undefined;
 
     let priority: TaskPriority | undefined;
