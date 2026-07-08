@@ -665,6 +665,11 @@ export const faMessages = {
     statusValueMappingTitle: 'نگاشت مقادیر وضعیت',
     statusValueMappingHint:
       'برای هر مقدار در ستون وضعیت، تکمیل‌شده یا تکمیل‌نشده را انتخاب کنید.',
+    assigneeValueMappingTitle: 'نگاشت مقادیر مسئول',
+    assigneeValueMappingHint:
+      'برای هر نام در ستون مسئولان اکسل، عضو مربوطه در پروژه را انتخاب کنید.',
+    assigneeIgnore: '— نادیده بگیر —',
+    assigneeUnmapped: 'مسئول نگاشت نشده: {name}',
     emptyValue: '(خالی)',
     refreshPreview: 'به‌روزرسانی پیش‌نمایش',
     previewResult: 'نتیجه',

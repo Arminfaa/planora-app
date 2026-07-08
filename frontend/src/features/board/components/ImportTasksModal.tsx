@@ -14,11 +14,15 @@ import {
 } from '../utils/parseExcelFile';
 import {
   IGNORE_COLUMN_VALUE,
+  buildDefaultAssigneeValueMapping,
   buildDefaultStatusValueMapping,
   buildImportPreview,
+  getAssigneeValueMappingOptions,
   getImportFieldDefinitions,
   getStatusValueMappingOptions,
+  getUniqueAssigneeTokens,
   getUniqueColumnValues,
+  type AssigneeValueMapping,
   type ColumnMapping,
   type ImportPreviewResult,
   type StatusValueMapping,
@@ -63,6 +67,8 @@ export function ImportTasksModal({
   const [columnMapping, setColumnMapping] = useState<ColumnMapping>({});
   const [statusValueMapping, setStatusValueMapping] =
     useState<StatusValueMapping>({});
+  const [assigneeValueMapping, setAssigneeValueMapping] =
+    useState<AssigneeValueMapping>({});
   const [preview, setPreview] = useState<ImportPreviewResult | null>(null);
   const [error, setError] = useState('');
   const [importProgress, setImportProgress] = useState({ done: 0, total: 0 });
@@ -105,6 +111,11 @@ export function ImportTasksModal({
     [t],
   );
 
+  const assigneeValueOptions = useMemo(
+    () => getAssigneeValueMappingOptions(members, t),
+    [members, t],
+  );
+
   const headerRowOptions = useMemo(
     () =>
       rawRows.map((_, index) => ({
@@ -137,6 +148,7 @@ export function ImportTasksModal({
     setHeaderRowIndex(nextIndex);
     setColumnMapping({});
     setStatusValueMapping({});
+    setAssigneeValueMapping({});
     setPreview(null);
     applyHeaderRow(rawRows, nextIndex);
   };
@@ -160,6 +172,7 @@ export function ImportTasksModal({
       setHeaderRowIndex(0);
       setColumnMapping({});
       setStatusValueMapping({});
+      setAssigneeValueMapping({});
       setPreview(null);
       applyHeaderRow(parsed.rawRows, 0);
       setStep('mapping');
@@ -195,16 +208,37 @@ export function ImportTasksModal({
     setPreview(null);
   };
 
-  const initializeStatusMapping = useCallback(() => {
-    if (columnMapping.status == null) {
-      return {};
+  const initializeValueMappings = useCallback(() => {
+    let nextStatusValueMapping: StatusValueMapping = {};
+    let nextAssigneeValueMapping: AssigneeValueMapping = {};
+
+    if (columnMapping.status != null) {
+      const uniqueValues = getUniqueColumnValues(rows, columnMapping.status);
+      nextStatusValueMapping = buildDefaultStatusValueMapping(uniqueValues);
+      setStatusValueMapping(nextStatusValueMapping);
+    } else {
+      setStatusValueMapping({});
     }
 
-    const uniqueValues = getUniqueColumnValues(rows, columnMapping.status);
-    const nextStatusValueMapping = buildDefaultStatusValueMapping(uniqueValues);
-    setStatusValueMapping(nextStatusValueMapping);
-    return nextStatusValueMapping;
-  }, [columnMapping.status, rows]);
+    if (columnMapping.assignees != null) {
+      const uniqueTokens = getUniqueAssigneeTokens(
+        rows,
+        columnMapping.assignees,
+      );
+      nextAssigneeValueMapping = buildDefaultAssigneeValueMapping(
+        uniqueTokens,
+        members,
+      );
+      setAssigneeValueMapping(nextAssigneeValueMapping);
+    } else {
+      setAssigneeValueMapping({});
+    }
+
+    return {
+      statusValueMapping: nextStatusValueMapping,
+      assigneeValueMapping: nextAssigneeValueMapping,
+    };
+  }, [columnMapping.assignees, columnMapping.status, members, rows]);
 
   const handleGoToPreview = () => {
     if (!titleMapped) {
@@ -218,11 +252,12 @@ export function ImportTasksModal({
     }
 
     setError('');
-    const nextStatusValueMapping = initializeStatusMapping();
+    const mappings = initializeValueMappings();
     const previewResult = buildImportPreview({
       rows,
       columnMapping,
-      statusValueMapping: nextStatusValueMapping,
+      statusValueMapping: mappings.statusValueMapping,
+      assigneeValueMapping: mappings.assigneeValueMapping,
       members,
       priorityLabels,
       t,
@@ -237,6 +272,7 @@ export function ImportTasksModal({
       rows,
       columnMapping,
       statusValueMapping,
+      assigneeValueMapping,
       members,
       priorityLabels,
       t,
@@ -249,6 +285,7 @@ export function ImportTasksModal({
       rows,
       columnMapping,
       statusValueMapping,
+      assigneeValueMapping,
       members,
       priorityLabels,
       t,
@@ -518,6 +555,43 @@ export function ImportTasksModal({
             </div>
           </div>
 
+          {columnMapping.assignees != null && (
+            <div className="rounded-xl border border-gray-200 p-4">
+              <h3 className="text-sm font-semibold text-gray-900">
+                {t('import.assigneeValueMappingTitle')}
+              </h3>
+              <p className="mt-1 text-xs text-gray-500">
+                {t('import.assigneeValueMappingHint')}
+              </p>
+              <div className="mt-3 space-y-2">
+                {Object.entries(assigneeValueMapping).map(
+                  ([excelValue, memberId]) => (
+                    <div
+                      key={`assignee-${excelValue || '__empty__'}`}
+                      className="grid gap-2 sm:grid-cols-2 sm:items-center"
+                    >
+                      <div className="rounded-md bg-gray-50 px-3 py-2 text-sm text-gray-700">
+                        {excelValue || t('import.emptyValue')}
+                      </div>
+                      <SelectField
+                        value={memberId}
+                        onChange={(value) => {
+                          setAssigneeValueMapping((current) => ({
+                            ...current,
+                            [excelValue]: String(value),
+                          }));
+                        }}
+                        options={assigneeValueOptions}
+                        showSearch
+                        optionFilterProp="label"
+                      />
+                    </div>
+                  ),
+                )}
+              </div>
+            </div>
+          )}
+
           {columnMapping.status != null && (
             <div className="rounded-xl border border-gray-200 p-4">
               <h3 className="text-sm font-semibold text-gray-900">
@@ -569,6 +643,9 @@ export function ImportTasksModal({
                     {t('export.columns.dueDate')}
                   </th>
                   <th className="px-3 py-2 text-start font-medium text-gray-600">
+                    {t('export.columns.assignees')}
+                  </th>
+                  <th className="px-3 py-2 text-start font-medium text-gray-600">
                     {t('common.status')}
                   </th>
                   <th className="px-3 py-2 text-start font-medium text-gray-600">
@@ -585,6 +662,9 @@ export function ImportTasksModal({
                     </td>
                     <td className="px-3 py-2 text-gray-700">
                       {row.dueDate || t('common.emDash')}
+                    </td>
+                    <td className="px-3 py-2 text-gray-700">
+                      {row.assigneeNames?.join(', ') || t('common.emDash')}
                     </td>
                     <td className="px-3 py-2 text-gray-700">
                       {row.isCompleted == null

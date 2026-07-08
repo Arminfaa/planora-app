@@ -39,6 +39,11 @@ export type ColumnMapping = Partial<Record<ImportFieldKey, number>>;
 
 export type StatusValueMapping = Record<string, 'completed' | 'not_completed'>;
 
+/** Maps Excel assignee tokens to project member IDs. */
+export type AssigneeValueMapping = Record<string, string>;
+
+export const IGNORE_ASSIGNEE_VALUE = '__ignore__';
+
 export interface ImportFieldDefinition {
   key: ImportFieldKey;
   label: string;
@@ -170,6 +175,92 @@ export function getUniqueColumnValues(
   return Array.from(values).sort((a, b) => a.localeCompare(b));
 }
 
+export function getUniqueAssigneeTokens(
+  rows: string[][],
+  columnIndex: number,
+): string[] {
+  if (columnIndex < 0) return [];
+
+  const values = new Set<string>();
+
+  for (const row of rows) {
+    const raw = row[columnIndex]?.trim() ?? '';
+    if (!raw) {
+      values.add('');
+      continue;
+    }
+
+    raw.split(/[,;،]/)
+      .map((part) => part.trim())
+      .filter(Boolean)
+      .forEach((token) => values.add(token));
+  }
+
+  return Array.from(values).sort((a, b) => a.localeCompare(b));
+}
+
+export function buildDefaultAssigneeValueMapping(
+  uniqueValues: string[],
+  members: ProjectMember[],
+): AssigneeValueMapping {
+  const mapping: AssigneeValueMapping = {};
+
+  for (const value of uniqueValues) {
+    if (!value.trim()) {
+      mapping[value] = IGNORE_ASSIGNEE_VALUE;
+      continue;
+    }
+
+    const matched = findMemberByToken(value, members);
+    mapping[value] = matched?.id ?? IGNORE_ASSIGNEE_VALUE;
+  }
+
+  if (!uniqueValues.includes('')) {
+    mapping[''] = IGNORE_ASSIGNEE_VALUE;
+  }
+
+  return mapping;
+}
+
+export function getAssigneeValueMappingOptions(
+  members: ProjectMember[],
+  t: Translator,
+): Array<{ value: string; label: string }> {
+  return [
+    { value: IGNORE_ASSIGNEE_VALUE, label: t('import.assigneeIgnore') },
+    ...members.map((member) => ({
+      value: member.id,
+      label: member.email ? `${member.name} (${member.email})` : member.name,
+    })),
+  ];
+}
+
+function findMemberByToken(
+  token: string,
+  members: ProjectMember[],
+): ProjectMember | undefined {
+  const normalized = token.trim().toLowerCase();
+  if (!normalized) return undefined;
+
+  const exact = members.find(
+    (member) =>
+      member.name.trim().toLowerCase() === normalized ||
+      member.email.trim().toLowerCase() === normalized,
+  );
+  if (exact) return exact;
+
+  return members.find((member) => {
+    const name = member.name.trim().toLowerCase();
+    if (name.includes(normalized) || normalized.includes(name)) {
+      return true;
+    }
+
+    return name
+      .split(/\s+/)
+      .some((part) => part === normalized || part.includes(normalized));
+  });
+}
+
 export function buildDefaultStatusValueMapping(
   uniqueValues: string[],
 ): StatusValueMapping {
@@ -229,6 +320,60 @@ function parseImportDate(
     return { date: iso.format(GREGORIAN_API_DATE_FORMAT) };
   }
 
+  const slashMatch = trimmed.match(/^(\d{4})[/-](\d{1,2})[/-](\d{1,2})$/);
+  if (slashMatch) {
+    const year = Number(slashMatch[1]);
+
+    if (year >= 1200 && year < 1700) {
+      const jalali = dayjs(trimmed, JALALI_DISPLAY_DATE_FORMAT, true).calendar(
+        'jalali',
+      );
+      if (jalali.isValid()) {
+        return {
+          date: jalali.calendar('gregory').format(GREGORIAN_API_DATE_FORMAT),
+        };
+      }
+    }
+
+    const gregorian = dayjs(trimmed, 'YYYY/MM/DD', true).calendar('gregory');
+    if (gregorian.isValid()) {
+      return { date: gregorian.format(GREGORIAN_API_DATE_FORMAT) };
+    }
+
+    const gregorianDash = dayjs(trimmed, 'YYYY-MM-DD', true).calendar('gregory');
+    if (gregorianDash.isValid()) {
+      return { date: gregorianDash.format(GREGORIAN_API_DATE_FORMAT) };
+    }
+  }
+
+  const dmyMatch = trimmed.match(/^(\d{1,2})[/-](\d{1,2})[/-](\d{4})$/);
+  if (dmyMatch) {
+    const year = Number(dmyMatch[3]);
+    const day = dmyMatch[1].padStart(2, '0');
+    const month = dmyMatch[2].padStart(2, '0');
+    const normalized = `${year}/${month}/${day}`;
+
+    if (year >= 1200 && year < 1700) {
+      const jalali = dayjs(normalized, JALALI_DISPLAY_DATE_FORMAT, true).calendar(
+        'jalali',
+      );
+      if (jalali.isValid()) {
+        return {
+          date: jalali.calendar('gregory').format(GREGORIAN_API_DATE_FORMAT),
+        };
+      }
+    }
+
+    const gregorian = dayjs(
+      `${year}-${month}-${day}`,
+      GREGORIAN_API_DATE_FORMAT,
+      true,
+    );
+    if (gregorian.isValid()) {
+      return { date: gregorian.format(GREGORIAN_API_DATE_FORMAT) };
+    }
+  }
+
   const jalali = dayjs(trimmed, JALALI_DISPLAY_DATE_FORMAT, true).calendar(
     'jalali',
   );
@@ -236,11 +381,6 @@ function parseImportDate(
     return {
       date: jalali.calendar('gregory').format(GREGORIAN_API_DATE_FORMAT),
     };
-  }
-
-  const slashGregorian = dayjs(trimmed, 'YYYY/MM/DD', true);
-  if (slashGregorian.isValid()) {
-    return { date: slashGregorian.format(GREGORIAN_API_DATE_FORMAT) };
   }
 
   const flex = dayjs(trimmed);
@@ -276,6 +416,7 @@ function parsePriority(
 function parseAssignees(
   value: string,
   members: ProjectMember[],
+  assigneeValueMapping: AssigneeValueMapping,
   t: Translator,
 ): {
   assigneeIds?: string[];
@@ -285,7 +426,7 @@ function parseAssignees(
   const trimmed = value.trim();
   if (!trimmed) return { warnings: [] };
 
-  const names = trimmed
+  const tokens = trimmed
     .split(/[,;،]/)
     .map((part) => part.trim())
     .filter(Boolean);
@@ -293,19 +434,28 @@ function parseAssignees(
   const assigneeIds: string[] = [];
   const assigneeNames: string[] = [];
   const warnings: string[] = [];
+  const seenIds = new Set<string>();
 
-  for (const name of names) {
-    const member = members.find(
-      (item) =>
-        item.name.trim().toLowerCase() === name.toLowerCase() ||
-        item.email.trim().toLowerCase() === name.toLowerCase(),
-    );
+  for (const token of tokens) {
+    const mappedMemberId =
+      assigneeValueMapping[token] ??
+      assigneeValueMapping[''] ??
+      IGNORE_ASSIGNEE_VALUE;
 
-    if (member) {
+    if (mappedMemberId === IGNORE_ASSIGNEE_VALUE) {
+      continue;
+    }
+
+    const member = members.find((item) => item.id === mappedMemberId);
+    if (!member) {
+      warnings.push(t('import.assigneeNotFound', { name: token }));
+      continue;
+    }
+
+    if (!seenIds.has(member.id)) {
+      seenIds.add(member.id);
       assigneeIds.push(member.id);
       assigneeNames.push(member.name);
-    } else {
-      warnings.push(t('import.assigneeNotFound', { name }));
     }
   }
 
@@ -354,6 +504,7 @@ export function buildImportPreview({
   rows,
   columnMapping,
   statusValueMapping,
+  assigneeValueMapping,
   members,
   priorityLabels,
   t,
@@ -361,6 +512,7 @@ export function buildImportPreview({
   rows: string[][];
   columnMapping: ColumnMapping;
   statusValueMapping: StatusValueMapping;
+  assigneeValueMapping: AssigneeValueMapping;
   members: ProjectMember[];
   priorityLabels: Record<TaskPriority, string>;
   t: Translator;
@@ -413,7 +565,12 @@ export function buildImportPreview({
     let assigneeNames: string[] | undefined;
     if (columnMapping.assignees != null) {
       const rawAssignees = getCellValue(row, columnMapping.assignees);
-      const parsedAssignees = parseAssignees(rawAssignees, members, t);
+      const parsedAssignees = parseAssignees(
+        rawAssignees,
+        members,
+        assigneeValueMapping,
+        t,
+      );
       assigneeIds = parsedAssignees.assigneeIds;
       assigneeNames = parsedAssignees.assigneeNames;
       warnings.push(...parsedAssignees.warnings);
