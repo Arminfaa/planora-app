@@ -667,8 +667,8 @@ export const faMessages = {
       'برای هر مقدار در ستون وضعیت، تکمیل‌شده یا تکمیل‌نشده را انتخاب کنید.',
     assigneeValueMappingTitle: 'نگاشت مقادیر مسئول',
     assigneeValueMappingHint:
-      'برای هر نام در ستون مسئولان اکسل، عضو مربوطه در پروژه را انتخاب کنید.',
-    assigneeIgnore: '— نادیده بگیر —',
+      'برای هر نام در ستون مسئولان اکسل، یک یا چند عضو مربوطه در پروژه را انتخاب کنید.',
+    assigneeSelectPlaceholder: 'انتخاب اعضا',
     assigneeUnmapped: 'مسئول نگاشت نشده: {name}',
     emptyValue: '(خالی)',
     refreshPreview: 'به‌روزرسانی پیش‌نمایش',

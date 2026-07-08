@@ -39,10 +39,8 @@ export type ColumnMapping = Partial<Record<ImportFieldKey, number>>;
 
 export type StatusValueMapping = Record<string, 'completed' | 'not_completed'>;
 
-/** Maps Excel assignee tokens to project member IDs. */
-export type AssigneeValueMapping = Record<string, string>;
-
-export const IGNORE_ASSIGNEE_VALUE = '__ignore__';
+/** Maps Excel assignee tokens to one or more project member IDs. */
+export type AssigneeValueMapping = Record<string, string[]>;
 
 export interface ImportFieldDefinition {
   key: ImportFieldKey;
@@ -207,16 +205,16 @@ export function buildDefaultAssigneeValueMapping(
 
   for (const value of uniqueValues) {
     if (!value.trim()) {
-      mapping[value] = IGNORE_ASSIGNEE_VALUE;
+      mapping[value] = [];
       continue;
     }
 
     const matched = findMemberByToken(value, members);
-    mapping[value] = matched?.id ?? IGNORE_ASSIGNEE_VALUE;
+    mapping[value] = matched ? [matched.id] : [];
   }
 
   if (!uniqueValues.includes('')) {
-    mapping[''] = IGNORE_ASSIGNEE_VALUE;
+    mapping[''] = [];
   }
 
   return mapping;
@@ -224,15 +222,11 @@ export function buildDefaultAssigneeValueMapping(
 
 export function getAssigneeValueMappingOptions(
   members: ProjectMember[],
-  t: Translator,
 ): Array<{ value: string; label: string }> {
-  return [
-    { value: IGNORE_ASSIGNEE_VALUE, label: t('import.assigneeIgnore') },
-    ...members.map((member) => ({
-      value: member.id,
-      label: member.email ? `${member.name} (${member.email})` : member.name,
-    })),
-  ];
+  return members.map((member) => ({
+    value: member.id,
+    label: member.email ? `${member.name} (${member.email})` : member.name,
+  }));
 }
 
 function findMemberByToken(
@@ -437,25 +431,21 @@ function parseAssignees(
   const seenIds = new Set<string>();
 
   for (const token of tokens) {
-    const mappedMemberId =
-      assigneeValueMapping[token] ??
-      assigneeValueMapping[''] ??
-      IGNORE_ASSIGNEE_VALUE;
+    const mappedMemberIds =
+      assigneeValueMapping[token] ?? assigneeValueMapping[''] ?? [];
 
-    if (mappedMemberId === IGNORE_ASSIGNEE_VALUE) {
-      continue;
-    }
+    for (const mappedMemberId of mappedMemberIds) {
+      const member = members.find((item) => item.id === mappedMemberId);
+      if (!member) {
+        warnings.push(t('import.assigneeNotFound', { name: token }));
+        continue;
+      }
 
-    const member = members.find((item) => item.id === mappedMemberId);
-    if (!member) {
-      warnings.push(t('import.assigneeNotFound', { name: token }));
-      continue;
-    }
-
-    if (!seenIds.has(member.id)) {
-      seenIds.add(member.id);
-      assigneeIds.push(member.id);
-      assigneeNames.push(member.name);
+      if (!seenIds.has(member.id)) {
+        seenIds.add(member.id);
+        assigneeIds.push(member.id);
+        assigneeNames.push(member.name);
+      }
     }
   }
 

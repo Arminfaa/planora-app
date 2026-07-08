@@ -112,8 +112,8 @@ export function ImportTasksModal({
   );
 
   const assigneeValueOptions = useMemo(
-    () => getAssigneeValueMappingOptions(members, t),
-    [members, t],
+    () => getAssigneeValueMappingOptions(members),
+    [members],
   );
 
   const headerRowOptions = useMemo(
@@ -570,7 +570,7 @@ export function ImportTasksModal({
               </p>
               <div className="mt-3 space-y-2">
                 {Object.entries(assigneeValueMapping).map(
-                  ([excelValue, memberId]) => (
+                  ([excelValue, memberIds]) => (
                     <div
                       key={`assignee-${excelValue || '__empty__'}`}
                       className="grid gap-2 sm:grid-cols-2 sm:items-center"
@@ -579,16 +579,19 @@ export function ImportTasksModal({
                         {excelValue || t('import.emptyValue')}
                       </div>
                       <SelectField
-                        value={memberId}
+                        mode="multiple"
+                        allowClear
+                        value={memberIds}
                         onChange={(value) => {
                           setAssigneeValueMapping((current) => ({
                             ...current,
-                            [excelValue]: String(value),
+                            [excelValue]: value as string[],
                           }));
                         }}
                         options={assigneeValueOptions}
                         showSearch
                         optionFilterProp="label"
+                        placeholder={t('import.assigneeSelectPlaceholder')}
                       />
                     </div>
                   ),

@@ -670,8 +670,8 @@ export const enMessages = {
       'For each value in the mapped status field, choose completed or not completed.',
     assigneeValueMappingTitle: 'Assignee value mapping',
     assigneeValueMappingHint:
-      'For each name found in the Excel assignee column, choose the matching project member.',
-    assigneeIgnore: '— Skip —',
+      'For each name found in the Excel assignee column, choose one or more matching project members.',
+    assigneeSelectPlaceholder: 'Select members',
     assigneeUnmapped: 'Assignee not mapped: {name}',
     emptyValue: '(empty)',
     refreshPreview: 'Refresh preview',
