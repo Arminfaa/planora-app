@@ -6,6 +6,7 @@ import Link from 'next/link';
 import type { Board, BoardTask } from '../types';
 import type { Project } from '@/features/projects/types';
 import { useProjectMembers } from '@/features/projects/hooks/useProjectMembers';
+import { useProjectLabels } from '@/features/labels/hooks/useProjectLabels';
 import { useProjectPermissions } from '@/features/permissions/hooks/useProjectPermissions';
 import { taskService } from '@/features/tasks/services/task.service';
 import { boardService } from '../services/board.service';
@@ -21,6 +22,7 @@ import { LabelBadges } from '@/features/labels/components/LabelBadges';
 import { normalizeTaskLabels } from '@/features/labels/types';
 import { formatDueDate, isDueDateOverdue } from '@/features/tasks/utils/dates';
 import { AllTasksCreateModal } from './AllTasksCreateModal';
+import { ImportTasksModal } from './ImportTasksModal';
 import { TaskChecklistPreview } from './TaskChecklistPreview';
 import { AssigneeDisplay } from './AssigneeDisplay';
 import { LoadingSpinner } from '@/shared/components/feedback/LoadingSpinner';
@@ -64,15 +66,18 @@ export function AllTasksView({
   const [filters, setFilters] = useState<TaskFilters>(defaultTaskFilters);
   const [showFilterModal, setShowFilterModal] = useState(false);
   const [showCreateModal, setShowCreateModal] = useState(false);
+  const [showImportModal, setShowImportModal] = useState(false);
   const [viewTask, setViewTask] = useState<BoardTask | null>(null);
   const [editTask, setEditTask] = useState<BoardTask | null>(null);
 
   const { can } = useProjectPermissions(project);
   const members = useProjectMembers(project.id);
+  const { labels: projectLabels } = useProjectLabels(project.id);
   const canCreateTasks = can('task.create');
   const canEditTasks = can('task.edit');
   const canDeleteTasks = can('task.delete');
   const canViewTasks = can('task.view');
+  const canCreateLabels = can('label.create');
 
   const columns = board?.columns ?? [];
 
@@ -165,6 +170,10 @@ export function AllTasksView({
     columns.find((column) => column.id === task.columnId)?.color ??
     '#6B7280';
 
+  const handleImportComplete = async () => {
+    await loadData();
+  };
+
   const handleExportExcel = () => {
     if (!board || tasks.length === 0) return;
     exportBoardTasksToExcel(tasks, board, columns, locale);
@@ -251,6 +260,31 @@ export function AllTasksView({
             </svg>
             {t('board.exportExcel')}
           </Button>
+
+          {canCreateTasks && (
+            <Button
+              type="button"
+              variant="secondary"
+              onClick={() => setShowImportModal(true)}
+              aria-label={t('board.importAriaLabel')}
+            >
+              <svg
+                className="me-2 h-4 w-4"
+                fill="none"
+                viewBox="0 0 24 24"
+                stroke="currentColor"
+                aria-hidden="true"
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth={2}
+                  d="M4 16v2a2 2 0 002 2h12a2 2 0 002-2v-2M7 10l5-5m0 0l5 5m-5-5v12"
+                />
+              </svg>
+              {t('board.importExcel')}
+            </Button>
+          )}
 
           {canCreateTasks && (
             <Button type="button" onClick={() => setShowCreateModal(true)}>
@@ -412,6 +446,20 @@ export function AllTasksView({
           members={members}
           onClose={() => setShowCreateModal(false)}
           onCreated={handleCreateTask}
+        />
+      )}
+
+      {showImportModal && (
+        <ImportTasksModal
+          boardId={board.id}
+          projectId={project.id}
+          columns={columns}
+          members={members}
+          projectLabels={projectLabels}
+          canCreateLabels={canCreateLabels}
+          canEditTasks={canEditTasks}
+          onClose={() => setShowImportModal(false)}
+          onImported={handleImportComplete}
         />
       )}
 
