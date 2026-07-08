@@ -612,48 +612,52 @@ export function AllTasksView({
             const isSelected = selectedTaskIds.has(task.id);
 
             return (
-              <div
-                key={task.id}
-                className={`rounded-xl border bg-white p-4 shadow-sm transition hover:border-primary-200 hover:shadow-md ${
-                  isCompleted ? 'border-green-200 bg-green-50/60' : 'border-gray-200'
-                } ${isSelected ? 'border-primary-300 ring-2 ring-primary-100' : ''}`}
-              >
-                <div className="flex flex-wrap items-start justify-between gap-3">
-                  <div className="flex min-w-0 flex-1 items-start gap-3">
-                    {canMoveTasks && (
+              <div key={task.id} className="flex items-start gap-3">
+                {canMoveTasks && (
+                  <div
+                    className="shrink-0 pt-4"
+                    onClick={(event) => event.stopPropagation()}
+                    onPointerDown={(event) => event.stopPropagation()}
+                  >
+                    <Checkbox
+                      checked={isSelected}
+                      onChange={(event) =>
+                        toggleTaskSelection(task.id, event.target.checked)
+                      }
+                      aria-label={t('board.bulkSelectTask', {
+                        title: task.title,
+                      })}
+                    />
+                  </div>
+                )}
+
+                <div
+                  className={`min-w-0 flex-1 rounded-xl border bg-white p-4 shadow-sm transition hover:border-primary-200 hover:shadow-md ${
+                    isCompleted
+                      ? 'border-green-200 bg-green-50/60'
+                      : 'border-gray-200'
+                  } ${isSelected ? 'border-primary-300 ring-2 ring-primary-100' : ''}`}
+                >
+                  <div className="flex flex-wrap items-start justify-between gap-3">
+                    <div className="flex min-w-0 flex-1 items-start gap-3">
                       <div
                         className="shrink-0 pt-0.5"
                         onClick={(event) => event.stopPropagation()}
                         onPointerDown={(event) => event.stopPropagation()}
                       >
                         <Checkbox
-                          checked={isSelected}
+                          checked={isCompleted}
+                          disabled={!canEditTasks}
                           onChange={(event) =>
-                            toggleTaskSelection(task.id, event.target.checked)
+                            void handleToggleComplete(task, event.target.checked)
                           }
-                          aria-label={t('board.bulkSelectTask', {
+                          aria-label={t('tasks.markComplete', {
                             title: task.title,
                           })}
                         />
                       </div>
-                    )}
 
-                    <div
-                      className="shrink-0 pt-0.5"
-                      onClick={(event) => event.stopPropagation()}
-                      onPointerDown={(event) => event.stopPropagation()}
-                    >
-                      <Checkbox
-                        checked={isCompleted}
-                        disabled={!canEditTasks}
-                        onChange={(event) =>
-                          void handleToggleComplete(task, event.target.checked)
-                        }
-                        aria-label={t('tasks.markComplete', { title: task.title })}
-                      />
-                    </div>
-
-                    <div className="min-w-0 flex-1">
+                      <div className="min-w-0 flex-1">
                     <div className="flex flex-wrap items-center gap-2">
                       <span
                         className="inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-medium text-white"
@@ -752,6 +756,7 @@ export function AllTasksView({
                   </div>
                 </div>
               </div>
+            </div>
             );
           })
         )}
