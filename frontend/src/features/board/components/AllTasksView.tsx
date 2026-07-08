@@ -453,7 +453,6 @@ export function AllTasksView({
         <ImportTasksModal
           boardId={board.id}
           projectId={project.id}
-          columns={columns}
           members={members}
           projectLabels={projectLabels}
           canCreateLabels={canCreateLabels}

@@ -648,7 +648,13 @@ export const enMessages = {
     supportedFormats: 'Supported formats: .xlsx, .xls',
     mappingHint:
       'Select which Excel column should fill each task field. Only Title is required.',
-    columnFieldHint: 'Maps spreadsheet values to a board column',
+    unspecifiedColumnNote:
+      'All imported tasks are placed in the Unassigned column. You can move them on the board later.',
+    headerRow: 'Header row',
+    headerRowHint:
+      'Choose the row that contains column names. The columns below will update automatically.',
+    headerRowOption: 'Row {number}',
+    emptyHeader: 'Empty header',
     statusFieldHint: 'Maps spreadsheet values to completed / not completed',
     ignoreColumn: '— Ignore —',
     rowCount: '{count} rows found',

@@ -1,8 +1,6 @@
 import dayjs from 'dayjs';
 import jalaliday from 'jalaliday/dayjs';
-import type { BoardColumn } from '../types';
 import type { ProjectMember } from '@/features/projects/types';
-import type { ProjectLabel } from '@/features/labels/types';
 import type { CreateTaskInput, TaskPriority } from '@/features/tasks/types';
 import { PRIORITY_OPTIONS } from '@/features/tasks/types';
 import type { Translator } from '@/i18n/utils';
@@ -16,7 +14,6 @@ dayjs.extend(jalaliday);
 export type ImportFieldKey =
   | 'title'
   | 'description'
-  | 'column'
   | 'priority'
   | 'dueDate'
   | 'startDate'
@@ -28,7 +25,6 @@ export type ImportFieldKey =
 export const IMPORT_FIELD_KEYS: ImportFieldKey[] = [
   'title',
   'description',
-  'column',
   'priority',
   'dueDate',
   'startDate',
@@ -38,9 +34,9 @@ export const IMPORT_FIELD_KEYS: ImportFieldKey[] = [
   'checklistItems',
 ];
 
-export type ColumnMapping = Partial<Record<ImportFieldKey, string>>;
+/** Maps task fields to Excel column index (0-based). */
+export type ColumnMapping = Partial<Record<ImportFieldKey, number>>;
 
-export type ColumnValueMapping = Record<string, string>;
 export type StatusValueMapping = Record<string, 'completed' | 'not_completed'>;
 
 export interface ImportFieldDefinition {
@@ -59,8 +55,6 @@ export interface ParsedImportRow {
   rowIndex: number;
   title: string;
   description?: string;
-  columnId?: string;
-  columnName?: string;
   priority?: TaskPriority;
   dueDate?: string;
   startDate?: string;
@@ -80,8 +74,7 @@ export interface ImportPreviewResult {
   warningCount: number;
 }
 
-const IGNORE_COLUMN_VALUE = '__ignore__';
-const UNSPECIFIED_COLUMN_VALUE = '__unspecified__';
+export const IGNORE_COLUMN_VALUE = -1;
 
 const COMPLETED_STATUS_HINTS = new Set([
   'completed',
@@ -125,12 +118,6 @@ export function getImportFieldDefinitions(
       required: false,
     },
     {
-      key: 'column',
-      label: t('export.columns.column'),
-      required: false,
-      hint: t('import.columnFieldHint'),
-    },
-    {
       key: 'priority',
       label: t('export.columns.priority'),
       required: false,
@@ -171,10 +158,8 @@ export function getImportFieldDefinitions(
 
 export function getUniqueColumnValues(
   rows: string[][],
-  headers: string[],
-  excelColumn: string,
+  columnIndex: number,
 ): string[] {
-  const columnIndex = headers.indexOf(excelColumn);
   if (columnIndex < 0) return [];
 
   const values = new Set<string>();
@@ -183,32 +168,6 @@ export function getUniqueColumnValues(
   }
 
   return Array.from(values).sort((a, b) => a.localeCompare(b));
-}
-
-export function buildDefaultColumnValueMapping(
-  uniqueValues: string[],
-  columns: BoardColumn[],
-): ColumnValueMapping {
-  const mapping: ColumnValueMapping = {};
-
-  for (const value of uniqueValues) {
-    if (!value) {
-      mapping[value] = UNSPECIFIED_COLUMN_VALUE;
-      continue;
-    }
-
-    const matched = columns.find(
-      (column) => column.name.trim().toLowerCase() === value.toLowerCase(),
-    );
-
-    mapping[value] = matched?.id ?? UNSPECIFIED_COLUMN_VALUE;
-  }
-
-  if (!uniqueValues.includes('')) {
-    mapping[''] = UNSPECIFIED_COLUMN_VALUE;
-  }
-
-  return mapping;
 }
 
 export function buildDefaultStatusValueMapping(
@@ -244,19 +203,6 @@ export function buildDefaultStatusValueMapping(
   return mapping;
 }
 
-export function getColumnValueMappingOptions(
-  columns: BoardColumn[],
-  t: Translator,
-): Array<{ value: string; label: string }> {
-  return [
-    { value: UNSPECIFIED_COLUMN_VALUE, label: t('board.unspecifiedColumn') },
-    ...columns.map((column) => ({
-      value: column.id,
-      label: column.name,
-    })),
-  ];
-}
-
 export function getStatusValueMappingOptions(
   t: Translator,
 ): Array<{ value: string; label: string }> {
@@ -266,15 +212,9 @@ export function getStatusValueMappingOptions(
   ];
 }
 
-function getCellValue(
-  row: string[],
-  headers: string[],
-  excelColumn: string | undefined,
-): string {
-  if (!excelColumn) return '';
-  const index = headers.indexOf(excelColumn);
-  if (index < 0) return '';
-  return row[index]?.trim() ?? '';
+function getCellValue(row: string[], columnIndex: number | undefined): string {
+  if (columnIndex == null || columnIndex < 0) return '';
+  return row[columnIndex]?.trim() ?? '';
 }
 
 function parseImportDate(
@@ -410,40 +350,17 @@ function parseChecklistItems(value: string): ParsedChecklistItem[] {
     .filter((item) => item.title.length > 0);
 }
 
-function resolveColumnFromValue(
-  rawValue: string,
-  columns: BoardColumn[],
-  columnValueMapping: ColumnValueMapping,
-): { columnId?: string; columnName?: string; warning?: string } {
-  const mapped = columnValueMapping[rawValue] ?? UNSPECIFIED_COLUMN_VALUE;
-
-  if (mapped === UNSPECIFIED_COLUMN_VALUE) {
-    return {};
-  }
-
-  const column = columns.find((item) => item.id === mapped);
-  if (!column) return {};
-
-  return { columnId: column.id, columnName: column.name };
-}
-
 export function buildImportPreview({
   rows,
-  headers,
   columnMapping,
-  columnValueMapping,
   statusValueMapping,
-  columns,
   members,
   priorityLabels,
   t,
 }: {
   rows: string[][];
-  headers: string[];
   columnMapping: ColumnMapping;
-  columnValueMapping: ColumnValueMapping;
   statusValueMapping: StatusValueMapping;
-  columns: BoardColumn[];
   members: ProjectMember[];
   priorityLabels: Record<TaskPriority, string>;
   t: Translator;
@@ -452,56 +369,41 @@ export function buildImportPreview({
     const errors: string[] = [];
     const warnings: string[] = [];
 
-    const title = getCellValue(row, headers, columnMapping.title);
+    const title = getCellValue(row, columnMapping.title);
     if (!title) {
       errors.push(t('import.missingTitle'));
     }
 
-    const descriptionRaw = getCellValue(row, headers, columnMapping.description);
+    const descriptionRaw = getCellValue(row, columnMapping.description);
     const description = descriptionRaw || undefined;
 
-    let columnId: string | undefined;
-    let columnName: string | undefined;
-
-    if (columnMapping.column) {
-      const rawColumnValue = getCellValue(row, headers, columnMapping.column);
-      const resolved = resolveColumnFromValue(
-        rawColumnValue,
-        columns,
-        columnValueMapping,
-      );
-      columnId = resolved.columnId;
-      columnName = resolved.columnName;
-      if (resolved.warning) warnings.push(resolved.warning);
-    }
-
     let priority: TaskPriority | undefined;
-    if (columnMapping.priority) {
-      const rawPriority = getCellValue(row, headers, columnMapping.priority);
+    if (columnMapping.priority != null) {
+      const rawPriority = getCellValue(row, columnMapping.priority);
       const parsedPriority = parsePriority(rawPriority, priorityLabels, t);
       priority = parsedPriority.priority;
       if (parsedPriority.warning) warnings.push(parsedPriority.warning);
     }
 
     let dueDate: string | undefined;
-    if (columnMapping.dueDate) {
-      const rawDueDate = getCellValue(row, headers, columnMapping.dueDate);
+    if (columnMapping.dueDate != null) {
+      const rawDueDate = getCellValue(row, columnMapping.dueDate);
       const parsedDueDate = parseImportDate(rawDueDate, t);
       dueDate = parsedDueDate.date;
       if (parsedDueDate.warning) warnings.push(parsedDueDate.warning);
     }
 
     let startDate: string | undefined;
-    if (columnMapping.startDate) {
-      const rawStartDate = getCellValue(row, headers, columnMapping.startDate);
+    if (columnMapping.startDate != null) {
+      const rawStartDate = getCellValue(row, columnMapping.startDate);
       const parsedStartDate = parseImportDate(rawStartDate, t);
       startDate = parsedStartDate.date;
       if (parsedStartDate.warning) warnings.push(parsedStartDate.warning);
     }
 
     let isCompleted: boolean | undefined;
-    if (columnMapping.status) {
-      const rawStatus = getCellValue(row, headers, columnMapping.status);
+    if (columnMapping.status != null) {
+      const rawStatus = getCellValue(row, columnMapping.status);
       const mappedStatus =
         statusValueMapping[rawStatus] ?? statusValueMapping[''] ?? 'not_completed';
       isCompleted = mappedStatus === 'completed';
@@ -509,8 +411,8 @@ export function buildImportPreview({
 
     let assigneeIds: string[] | undefined;
     let assigneeNames: string[] | undefined;
-    if (columnMapping.assignees) {
-      const rawAssignees = getCellValue(row, headers, columnMapping.assignees);
+    if (columnMapping.assignees != null) {
+      const rawAssignees = getCellValue(row, columnMapping.assignees);
       const parsedAssignees = parseAssignees(rawAssignees, members, t);
       assigneeIds = parsedAssignees.assigneeIds;
       assigneeNames = parsedAssignees.assigneeNames;
@@ -518,19 +420,15 @@ export function buildImportPreview({
     }
 
     let labelNames: string[] | undefined;
-    if (columnMapping.labels) {
-      const rawLabels = getCellValue(row, headers, columnMapping.labels);
+    if (columnMapping.labels != null) {
+      const rawLabels = getCellValue(row, columnMapping.labels);
       const parsedLabels = parseLabels(rawLabels);
       labelNames = parsedLabels.length ? parsedLabels : undefined;
     }
 
     let checklistItems: ParsedChecklistItem[] | undefined;
-    if (columnMapping.checklistItems) {
-      const rawChecklist = getCellValue(
-        row,
-        headers,
-        columnMapping.checklistItems,
-      );
+    if (columnMapping.checklistItems != null) {
+      const rawChecklist = getCellValue(row, columnMapping.checklistItems);
       const parsedChecklist = parseChecklistItems(rawChecklist);
       checklistItems = parsedChecklist.length ? parsedChecklist : undefined;
     }
@@ -547,8 +445,6 @@ export function buildImportPreview({
       rowIndex: index + 1,
       title,
       description,
-      columnId,
-      columnName,
       priority,
       dueDate,
       startDate,
@@ -582,9 +478,6 @@ export function toCreateTaskInput(row: ParsedImportRow): CreateTaskInput {
   if (row.dueDate) input.dueDate = row.dueDate;
   if (row.startDate) input.startDate = row.startDate;
   if (row.assigneeIds?.length) input.assigneeIds = row.assigneeIds;
-  if (row.columnId) input.columnId = row.columnId;
 
   return input;
 }
-
-export { IGNORE_COLUMN_VALUE, UNSPECIFIED_COLUMN_VALUE };

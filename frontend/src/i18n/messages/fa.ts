@@ -645,7 +645,13 @@ export const faMessages = {
     supportedFormats: 'فرمت‌های پشتیبانی‌شده: .xlsx, .xls',
     mappingHint:
       'برای هر فیلد وظیفه، ستون اکسل مربوطه را انتخاب کنید. فقط عنوان الزامی است.',
-    columnFieldHint: 'مقادیر اکسل را به ستون بورد نگاشت می‌کند',
+    unspecifiedColumnNote:
+      'همه وظایف واردشده در ستون «نامشخص» قرار می‌گیرند. بعداً می‌توانید آن‌ها را در بورد جابه‌جا کنید.',
+    headerRow: 'ردیف هدر',
+    headerRowHint:
+      'ردیفی را انتخاب کنید که نام ستون‌ها در آن است. لیست ستون‌ها خودکار به‌روز می‌شود.',
+    headerRowOption: 'ردیف {number}',
+    emptyHeader: 'هدر خالی',
     statusFieldHint: 'مقادیر اکسل را به تکمیل‌شده / تکمیل‌نشده نگاشت می‌کند',
     ignoreColumn: '— نادیده بگیر —',
     rowCount: '{count} ردیف یافت شد',

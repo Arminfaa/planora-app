@@ -2,25 +2,24 @@
 
 import { useCallback, useMemo, useRef, useState } from 'react';
 import { Button, Progress } from 'antd';
-import type { BoardColumn } from '../types';
 import type { ProjectMember } from '@/features/projects/types';
 import type { ProjectLabel } from '@/features/labels/types';
 import { useLocale } from '@/i18n/LocaleProvider';
 import { AppModal } from '@/shared/components/ui/AppModal';
 import { SelectField } from '@/shared/components/ui/SelectField';
 import { getPriorityStyles } from '@/features/tasks/types';
-import { parseExcelFile } from '../utils/parseExcelFile';
+import {
+  extractSheetData,
+  parseExcelFile,
+} from '../utils/parseExcelFile';
 import {
   IGNORE_COLUMN_VALUE,
-  buildDefaultColumnValueMapping,
   buildDefaultStatusValueMapping,
   buildImportPreview,
-  getColumnValueMappingOptions,
   getImportFieldDefinitions,
   getStatusValueMappingOptions,
   getUniqueColumnValues,
   type ColumnMapping,
-  type ColumnValueMapping,
   type ImportPreviewResult,
   type StatusValueMapping,
 } from '../utils/importTaskParser';
@@ -31,7 +30,6 @@ type WizardStep = 'upload' | 'mapping' | 'preview' | 'importing' | 'done';
 interface ImportTasksModalProps {
   boardId: string;
   projectId: string;
-  columns: BoardColumn[];
   members: ProjectMember[];
   projectLabels: ProjectLabel[];
   canCreateLabels: boolean;
@@ -41,11 +39,11 @@ interface ImportTasksModalProps {
 }
 
 const ACCEPTED_EXTENSIONS = '.xlsx,.xls';
+const HEADER_PREVIEW_ROWS = 8;
 
 export function ImportTasksModal({
   boardId,
   projectId,
-  columns,
   members,
   projectLabels,
   canCreateLabels,
@@ -58,11 +56,11 @@ export function ImportTasksModal({
 
   const [step, setStep] = useState<WizardStep>('upload');
   const [fileName, setFileName] = useState('');
-  const [headers, setHeaders] = useState<string[]>([]);
+  const [rawRows, setRawRows] = useState<string[][]>([]);
+  const [headerRowIndex, setHeaderRowIndex] = useState(0);
+  const [headerLabels, setHeaderLabels] = useState<string[]>([]);
   const [rows, setRows] = useState<string[][]>([]);
   const [columnMapping, setColumnMapping] = useState<ColumnMapping>({});
-  const [columnValueMapping, setColumnValueMapping] =
-    useState<ColumnValueMapping>({});
   const [statusValueMapping, setStatusValueMapping] =
     useState<StatusValueMapping>({});
   const [preview, setPreview] = useState<ImportPreviewResult | null>(null);
@@ -93,15 +91,13 @@ export function ImportTasksModal({
 
   const excelColumnOptions = useMemo(
     () => [
-      { value: IGNORE_COLUMN_VALUE, label: t('import.ignoreColumn') },
-      ...headers.map((header) => ({ value: header, label: header })),
+      { value: String(IGNORE_COLUMN_VALUE), label: t('import.ignoreColumn') },
+      ...headerLabels.map((label, index) => ({
+        value: String(index),
+        label,
+      })),
     ],
-    [headers, t],
-  );
-
-  const columnValueOptions = useMemo(
-    () => getColumnValueMappingOptions(columns, t),
-    [columns, t],
+    [headerLabels, t],
   );
 
   const statusValueOptions = useMemo(
@@ -109,11 +105,44 @@ export function ImportTasksModal({
     [t],
   );
 
-  const titleMapped = Boolean(
-    columnMapping.title &&
-      columnMapping.title !== IGNORE_COLUMN_VALUE &&
-      headers.includes(columnMapping.title),
+  const headerRowOptions = useMemo(
+    () =>
+      rawRows.map((_, index) => ({
+        value: String(index),
+        label: t('import.headerRowOption', { number: index + 1 }),
+      })),
+    [rawRows, t],
   );
+
+  const applyHeaderRow = useCallback(
+    (nextRawRows: string[][], nextHeaderRowIndex: number) => {
+      const extracted = extractSheetData(
+        nextRawRows,
+        nextHeaderRowIndex,
+        t('import.emptyHeader'),
+      );
+
+      setHeaderLabels(extracted.headerLabels);
+      setRows(extracted.rows);
+    },
+    [t],
+  );
+
+  const handleHeaderRowChange = (value: string) => {
+    const nextIndex = Number(value);
+    if (Number.isNaN(nextIndex) || nextIndex < 0 || nextIndex >= rawRows.length) {
+      return;
+    }
+
+    setHeaderRowIndex(nextIndex);
+    setColumnMapping({});
+    setStatusValueMapping({});
+    setPreview(null);
+    applyHeaderRow(rawRows, nextIndex);
+  };
+
+  const titleMapped =
+    columnMapping.title != null && columnMapping.title >= 0;
 
   const handleFileChange = async (
     event: React.ChangeEvent<HTMLInputElement>,
@@ -127,12 +156,12 @@ export function ImportTasksModal({
     try {
       const parsed = await parseExcelFile(file);
       setFileName(file.name);
-      setHeaders(parsed.headers);
-      setRows(parsed.rows);
+      setRawRows(parsed.rawRows);
+      setHeaderRowIndex(0);
       setColumnMapping({});
-      setColumnValueMapping({});
       setStatusValueMapping({});
       setPreview(null);
+      applyHeaderRow(parsed.rawRows, 0);
       setStep('mapping');
     } catch (parseError) {
       const code =
@@ -152,51 +181,30 @@ export function ImportTasksModal({
     fieldKey: keyof ColumnMapping,
     value: string,
   ) => {
+    const columnIndex = Number(value);
+
     setColumnMapping((current) => {
       const next = { ...current };
-      if (value === IGNORE_COLUMN_VALUE) {
+      if (columnIndex === IGNORE_COLUMN_VALUE || Number.isNaN(columnIndex)) {
         delete next[fieldKey];
       } else {
-        next[fieldKey] = value;
+        next[fieldKey] = columnIndex;
       }
       return next;
     });
     setPreview(null);
   };
 
-  const initializeValueMappings = useCallback(() => {
-    let nextColumnValueMapping: ColumnValueMapping = {};
-    let nextStatusValueMapping: StatusValueMapping = {};
-
-    if (columnMapping.column) {
-      const uniqueValues = getUniqueColumnValues(
-        rows,
-        headers,
-        columnMapping.column,
-      );
-      nextColumnValueMapping = buildDefaultColumnValueMapping(
-        uniqueValues,
-        columns,
-      );
+  const initializeStatusMapping = useCallback(() => {
+    if (columnMapping.status == null) {
+      return {};
     }
 
-    if (columnMapping.status) {
-      const uniqueValues = getUniqueColumnValues(
-        rows,
-        headers,
-        columnMapping.status,
-      );
-      nextStatusValueMapping = buildDefaultStatusValueMapping(uniqueValues);
-    }
-
-    setColumnValueMapping(nextColumnValueMapping);
+    const uniqueValues = getUniqueColumnValues(rows, columnMapping.status);
+    const nextStatusValueMapping = buildDefaultStatusValueMapping(uniqueValues);
     setStatusValueMapping(nextStatusValueMapping);
-
-    return {
-      columnValueMapping: nextColumnValueMapping,
-      statusValueMapping: nextStatusValueMapping,
-    };
-  }, [columnMapping.column, columnMapping.status, columns, headers, rows, t]);
+    return nextStatusValueMapping;
+  }, [columnMapping.status, rows]);
 
   const handleGoToPreview = () => {
     if (!titleMapped) {
@@ -204,15 +212,17 @@ export function ImportTasksModal({
       return;
     }
 
+    if (rows.length === 0) {
+      setError(t('import.errors.noRows'));
+      return;
+    }
+
     setError('');
-    const mappings = initializeValueMappings();
+    const nextStatusValueMapping = initializeStatusMapping();
     const previewResult = buildImportPreview({
       rows,
-      headers,
       columnMapping,
-      columnValueMapping: mappings.columnValueMapping,
-      statusValueMapping: mappings.statusValueMapping,
-      columns,
+      statusValueMapping: nextStatusValueMapping,
       members,
       priorityLabels,
       t,
@@ -225,11 +235,8 @@ export function ImportTasksModal({
   const refreshPreview = () => {
     const previewResult = buildImportPreview({
       rows,
-      headers,
       columnMapping,
-      columnValueMapping,
       statusValueMapping,
-      columns,
       members,
       priorityLabels,
       t,
@@ -240,11 +247,8 @@ export function ImportTasksModal({
   const handleImport = async () => {
     const freshPreview = buildImportPreview({
       rows,
-      headers,
       columnMapping,
-      columnValueMapping,
       statusValueMapping,
-      columns,
       members,
       priorityLabels,
       t,
@@ -323,7 +327,11 @@ export function ImportTasksModal({
           <Button onClick={() => setStep('upload')}>{t('common.back')}</Button>
           <div className="flex gap-2">
             <Button onClick={onClose}>{t('common.cancel')}</Button>
-            <Button type="primary" disabled={!titleMapped} onClick={handleGoToPreview}>
+            <Button
+              type="primary"
+              disabled={!titleMapped || rows.length === 0}
+              onClick={handleGoToPreview}
+            >
               {t('common.next')}
             </Button>
           </div>
@@ -365,6 +373,7 @@ export function ImportTasksModal({
     handleImport,
     onClose,
     preview,
+    rows.length,
     step,
     t,
     titleMapped,
@@ -425,6 +434,49 @@ export function ImportTasksModal({
 
           <p className="text-sm text-gray-600">{t('import.mappingHint')}</p>
 
+          <div className="rounded-lg bg-blue-50 px-4 py-3 text-sm text-blue-900">
+            {t('import.unspecifiedColumnNote')}
+          </div>
+
+          <SelectField
+            label={t('import.headerRow')}
+            value={String(headerRowIndex)}
+            onChange={(value) => handleHeaderRowChange(String(value))}
+            options={headerRowOptions}
+          />
+          <p className="-mt-2 text-xs text-gray-500">
+            {t('import.headerRowHint')}
+          </p>
+
+          <div className="max-h-40 overflow-auto rounded-xl border border-gray-200">
+            <table className="min-w-full text-xs">
+              <tbody>
+                {rawRows.slice(0, HEADER_PREVIEW_ROWS).map((row, rowIndex) => (
+                  <tr
+                    key={`preview-row-${rowIndex}`}
+                    className={
+                      rowIndex === headerRowIndex
+                        ? 'bg-primary-50 font-medium text-primary-900'
+                        : 'bg-white text-gray-700'
+                    }
+                  >
+                    <td className="w-14 shrink-0 border-b border-gray-100 px-2 py-1.5 text-gray-500">
+                      {rowIndex + 1}
+                    </td>
+                    {row.slice(0, 6).map((cell, cellIndex) => (
+                      <td
+                        key={`preview-cell-${rowIndex}-${cellIndex}`}
+                        className="max-w-[140px] truncate border-b border-gray-100 px-2 py-1.5"
+                      >
+                        {cell || t('import.emptyValue')}
+                      </td>
+                    ))}
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+
           <div className="space-y-3">
             {fieldDefinitions.map((field) => (
               <SelectField
@@ -437,22 +489,18 @@ export function ImportTasksModal({
                     )}
                   </span>
                 }
-                value={columnMapping[field.key] ?? IGNORE_COLUMN_VALUE}
+                value={String(
+                  columnMapping[field.key] ?? IGNORE_COLUMN_VALUE,
+                )}
                 onChange={(value) =>
                   handleMappingFieldChange(field.key, String(value))
                 }
                 options={excelColumnOptions}
+                showSearch
+                optionFilterProp="label"
               />
             ))}
           </div>
-
-          {(columnMapping.column || columnMapping.status) && (
-            <p className="text-xs text-gray-500">
-              {columnMapping.column && t('import.columnFieldHint')}
-              {columnMapping.column && columnMapping.status && ' · '}
-              {columnMapping.status && t('import.statusFieldHint')}
-            </p>
-          )}
         </div>
       )}
 
@@ -470,40 +518,7 @@ export function ImportTasksModal({
             </div>
           </div>
 
-          {columnMapping.column && (
-            <div className="rounded-xl border border-gray-200 p-4">
-              <h3 className="text-sm font-semibold text-gray-900">
-                {t('import.columnValueMappingTitle')}
-              </h3>
-              <p className="mt-1 text-xs text-gray-500">
-                {t('import.columnValueMappingHint')}
-              </p>
-              <div className="mt-3 space-y-2">
-                {Object.entries(columnValueMapping).map(([excelValue, target]) => (
-                  <div
-                    key={`column-${excelValue || '__empty__'}`}
-                    className="grid gap-2 sm:grid-cols-2 sm:items-center"
-                  >
-                    <div className="rounded-md bg-gray-50 px-3 py-2 text-sm text-gray-700">
-                      {excelValue || t('import.emptyValue')}
-                    </div>
-                    <SelectField
-                      value={target}
-                      onChange={(value) => {
-                        setColumnValueMapping((current) => ({
-                          ...current,
-                          [excelValue]: String(value),
-                        }));
-                      }}
-                      options={columnValueOptions}
-                    />
-                  </div>
-                ))}
-              </div>
-            </div>
-          )}
-
-          {columnMapping.status && (
+          {columnMapping.status != null && (
             <div className="rounded-xl border border-gray-200 p-4">
               <h3 className="text-sm font-semibold text-gray-900">
                 {t('import.statusValueMappingTitle')}
@@ -551,9 +566,6 @@ export function ImportTasksModal({
                     {t('export.columns.title')}
                   </th>
                   <th className="px-3 py-2 text-start font-medium text-gray-600">
-                    {t('export.columns.column')}
-                  </th>
-                  <th className="px-3 py-2 text-start font-medium text-gray-600">
                     {t('export.columns.dueDate')}
                   </th>
                   <th className="px-3 py-2 text-start font-medium text-gray-600">
@@ -570,9 +582,6 @@ export function ImportTasksModal({
                     <td className="px-3 py-2 text-gray-500">{row.rowIndex}</td>
                     <td className="px-3 py-2 font-medium text-gray-900">
                       {row.title || t('common.emDash')}
-                    </td>
-                    <td className="px-3 py-2 text-gray-700">
-                      {row.columnName || t('board.unspecifiedColumn')}
                     </td>
                     <td className="px-3 py-2 text-gray-700">
                       {row.dueDate || t('common.emDash')}
