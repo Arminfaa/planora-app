@@ -4,10 +4,7 @@ import type { ProjectMember } from '@/features/projects/types';
 import type { CreateTaskInput, TaskPriority } from '@/features/tasks/types';
 import { PRIORITY_OPTIONS } from '@/features/tasks/types';
 import type { Translator } from '@/i18n/utils';
-import {
-  GREGORIAN_API_DATE_FORMAT,
-  JALALI_DISPLAY_DATE_FORMAT,
-} from '@/lib/jalali-dates';
+import { parseImportDateToApiDate } from '@/lib/jalali-dates';
 
 dayjs.extend(jalaliday);
 
@@ -309,77 +306,9 @@ function parseImportDate(
   const trimmed = value.trim();
   if (!trimmed) return {};
 
-  const iso = dayjs(trimmed, GREGORIAN_API_DATE_FORMAT, true);
-  if (iso.isValid()) {
-    return { date: iso.format(GREGORIAN_API_DATE_FORMAT) };
-  }
-
-  const slashMatch = trimmed.match(/^(\d{4})[/-](\d{1,2})[/-](\d{1,2})$/);
-  if (slashMatch) {
-    const year = Number(slashMatch[1]);
-
-    if (year >= 1200 && year < 1700) {
-      const jalali = dayjs(trimmed, JALALI_DISPLAY_DATE_FORMAT, true).calendar(
-        'jalali',
-      );
-      if (jalali.isValid()) {
-        return {
-          date: jalali.calendar('gregory').format(GREGORIAN_API_DATE_FORMAT),
-        };
-      }
-    }
-
-    const gregorian = dayjs(trimmed, 'YYYY/MM/DD', true).calendar('gregory');
-    if (gregorian.isValid()) {
-      return { date: gregorian.format(GREGORIAN_API_DATE_FORMAT) };
-    }
-
-    const gregorianDash = dayjs(trimmed, 'YYYY-MM-DD', true).calendar('gregory');
-    if (gregorianDash.isValid()) {
-      return { date: gregorianDash.format(GREGORIAN_API_DATE_FORMAT) };
-    }
-  }
-
-  const dmyMatch = trimmed.match(/^(\d{1,2})[/-](\d{1,2})[/-](\d{4})$/);
-  if (dmyMatch) {
-    const year = Number(dmyMatch[3]);
-    const day = dmyMatch[1].padStart(2, '0');
-    const month = dmyMatch[2].padStart(2, '0');
-    const normalized = `${year}/${month}/${day}`;
-
-    if (year >= 1200 && year < 1700) {
-      const jalali = dayjs(normalized, JALALI_DISPLAY_DATE_FORMAT, true).calendar(
-        'jalali',
-      );
-      if (jalali.isValid()) {
-        return {
-          date: jalali.calendar('gregory').format(GREGORIAN_API_DATE_FORMAT),
-        };
-      }
-    }
-
-    const gregorian = dayjs(
-      `${year}-${month}-${day}`,
-      GREGORIAN_API_DATE_FORMAT,
-      true,
-    );
-    if (gregorian.isValid()) {
-      return { date: gregorian.format(GREGORIAN_API_DATE_FORMAT) };
-    }
-  }
-
-  const jalali = dayjs(trimmed, JALALI_DISPLAY_DATE_FORMAT, true).calendar(
-    'jalali',
-  );
-  if (jalali.isValid()) {
-    return {
-      date: jalali.calendar('gregory').format(GREGORIAN_API_DATE_FORMAT),
-    };
-  }
-
-  const flex = dayjs(trimmed);
-  if (flex.isValid()) {
-    return { date: flex.format(GREGORIAN_API_DATE_FORMAT) };
+  const parsed = parseImportDateToApiDate(trimmed);
+  if (parsed) {
+    return { date: parsed };
   }
 
   return { warning: t('import.invalidDate', { value: trimmed }) };

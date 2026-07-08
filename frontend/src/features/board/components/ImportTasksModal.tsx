@@ -5,6 +5,7 @@ import { Button, Progress } from 'antd';
 import type { ProjectMember } from '@/features/projects/types';
 import type { ProjectLabel } from '@/features/labels/types';
 import { useLocale } from '@/i18n/LocaleProvider';
+import { formatLocaleDate } from '@/lib/jalali-dates';
 import { AppModal } from '@/shared/components/ui/AppModal';
 import { SelectField } from '@/shared/components/ui/SelectField';
 import { getPriorityStyles } from '@/features/tasks/types';
@@ -55,7 +56,7 @@ export function ImportTasksModal({
   onClose,
   onImported,
 }: ImportTasksModalProps) {
-  const { t } = useLocale();
+  const { t, locale } = useLocale();
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const [step, setStep] = useState<WizardStep>('upload');
@@ -669,7 +670,13 @@ export function ImportTasksModal({
                       {row.title || t('common.emDash')}
                     </td>
                     <td className="px-3 py-2 text-gray-700">
-                      {row.dueDate || t('common.emDash')}
+                      {row.dueDate
+                        ? formatLocaleDate(row.dueDate, locale, {
+                            year: 'numeric',
+                            month: '2-digit',
+                            day: '2-digit',
+                          })
+                        : t('common.emDash')}
                     </td>
                     <td className="px-3 py-2 text-gray-700">
                       {row.assigneeNames?.join(', ') || t('common.emDash')}

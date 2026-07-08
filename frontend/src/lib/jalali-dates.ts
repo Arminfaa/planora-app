@@ -8,6 +8,103 @@ dayjs.extend(jalaliday);
 export const GREGORIAN_API_DATE_FORMAT = 'YYYY-MM-DD';
 export const JALALI_DISPLAY_DATE_FORMAT = 'YYYY/MM/DD';
 
+const PERSIAN_DIGITS = '۰۱۲۳۴۵۶۷۸۹';
+const ARABIC_DIGITS = '٠١٢٣٤٥٦٧٨٩';
+
+function isLikelyJalaliYear(year: number): boolean {
+  return year >= 1200 && year < 1700;
+}
+
+export function normalizeDateDigits(value: string): string {
+  return value.replace(/[۰-۹٠-٩]/g, (ch) => {
+    const persianIndex = PERSIAN_DIGITS.indexOf(ch);
+    if (persianIndex >= 0) return String(persianIndex);
+
+    const arabicIndex = ARABIC_DIGITS.indexOf(ch);
+    if (arabicIndex >= 0) return String(arabicIndex);
+
+    return ch;
+  });
+}
+
+function jalaliPartsToApiDate(
+  year: number,
+  month: number,
+  day: number,
+): string | null {
+  const normalized = `${year}-${String(month).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
+  const jalali = dayjs(normalized, { jalali: true });
+
+  if (!jalali.isValid()) return null;
+
+  return jalali.calendar('gregory').format(GREGORIAN_API_DATE_FORMAT);
+}
+
+function gregorianPartsToApiDate(
+  year: number,
+  month: number,
+  day: number,
+): string | null {
+  const normalized = `${year}-${String(month).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
+  const gregorian = dayjs(normalized, GREGORIAN_API_DATE_FORMAT, true);
+
+  if (!gregorian.isValid()) return null;
+
+  return gregorian.format(GREGORIAN_API_DATE_FORMAT);
+}
+
+/** Parse Excel/import date strings (Jalali or Gregorian) to API format. */
+export function parseImportDateToApiDate(value: string): string | null {
+  const trimmed = normalizeDateDigits(value.trim());
+  if (!trimmed) return null;
+
+  const ymdMatch = trimmed.match(/^(\d{4})[/-](\d{1,2})[/-](\d{1,2})$/);
+  if (ymdMatch) {
+    const year = Number(ymdMatch[1]);
+    const month = Number(ymdMatch[2]);
+    const day = Number(ymdMatch[3]);
+
+    if (isLikelyJalaliYear(year)) {
+      const jalali = jalaliPartsToApiDate(year, month, day);
+      if (jalali) return jalali;
+    }
+
+    const gregorian = gregorianPartsToApiDate(year, month, day);
+    if (gregorian) return gregorian;
+  }
+
+  const dmyMatch = trimmed.match(/^(\d{1,2})[/-](\d{1,2})[/-](\d{4})$/);
+  if (dmyMatch) {
+    const day = Number(dmyMatch[1]);
+    const month = Number(dmyMatch[2]);
+    const year = Number(dmyMatch[3]);
+
+    if (isLikelyJalaliYear(year)) {
+      const jalali = jalaliPartsToApiDate(year, month, day);
+      if (jalali) return jalali;
+    }
+
+    const gregorian = gregorianPartsToApiDate(year, month, day);
+    if (gregorian) return gregorian;
+  }
+
+  const serial = Number(trimmed);
+  if (Number.isFinite(serial) && serial > 20000 && serial < 60000) {
+    const excelEpoch = dayjs('1899-12-30', GREGORIAN_API_DATE_FORMAT);
+    const fromSerial = excelEpoch.add(serial, 'day');
+    if (fromSerial.isValid()) {
+      return fromSerial.format(GREGORIAN_API_DATE_FORMAT);
+    }
+  }
+
+  const native = dayjs(trimmed);
+  if (native.isValid() && !/^\d{4}[/-]\d{1,2}[/-]\d{1,2}$/.test(trimmed)) {
+    return native.format(GREGORIAN_API_DATE_FORMAT);
+  }
+
+  return null;
+}
+
 export function apiDateToPickerValue(
   value: string | null | undefined,
   locale: Locale,
