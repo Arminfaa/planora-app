@@ -35,6 +35,7 @@ export function isTaskFiltersActive(
     filters.priorities.length > 0 ||
     filters.assigneeId !== null ||
     filters.dueDate !== 'all' ||
+    filters.completion !== 'all' ||
     filters.columnId !== null
   );
 }
@@ -62,6 +63,14 @@ export function taskMatchesFilters(
   }
 
   if (filters.columnId && task.columnId !== filters.columnId) {
+    return false;
+  }
+
+  if (filters.completion === 'completed' && !task.isCompleted) {
+    return false;
+  }
+
+  if (filters.completion === 'not_completed' && task.isCompleted) {
     return false;
   }
 
@@ -152,6 +161,7 @@ export function countActiveFilters(filters: TaskFilters): number {
   let count = filters.priorities.length > 0 ? 1 : 0;
   if (filters.assigneeId !== null) count += 1;
   if (filters.dueDate !== 'all') count += 1;
+  if (filters.completion !== 'all') count += 1;
   if (filters.columnId !== null) count += 1;
   return count;
 }

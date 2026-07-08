@@ -2,12 +2,15 @@ import type { TaskPriority } from '@/features/tasks/types';
 
 export type DueDateFilter = 'all' | 'overdue' | 'today' | 'week' | 'none';
 
+export type CompletionFilter = 'all' | 'completed' | 'not_completed';
+
 export const UNASSIGNED_ASSIGNEE = '__unassigned__';
 
 export interface TaskFilters {
   priorities: TaskPriority[];
   assigneeId: string | null;
   dueDate: DueDateFilter;
+  completion: CompletionFilter;
   columnId: string | null;
 }
 
@@ -15,6 +18,7 @@ export const defaultTaskFilters: TaskFilters = {
   priorities: [],
   assigneeId: null,
   dueDate: 'all',
+  completion: 'all',
   columnId: null,
 };
 
@@ -38,6 +42,17 @@ export function getDueDateFilterOptions(t: (key: string) => string) {
     { value: 'today' as const, label: t('search.dueToday') },
     { value: 'week' as const, label: t('search.dueThisWeek') },
     { value: 'none' as const, label: t('search.noDueDate') },
+  ];
+}
+
+export function getCompletionFilterOptions(t: (key: string) => string) {
+  return [
+    { value: 'all' as const, label: t('search.allCompletion') },
+    { value: 'completed' as const, label: t('search.completionCompleted') },
+    {
+      value: 'not_completed' as const,
+      label: t('search.completionNotCompleted'),
+    },
   ];
 }
 

@@ -3,12 +3,14 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import dynamic from 'next/dynamic';
 import Link from 'next/link';
+import { Checkbox } from 'antd';
 import type { Board, BoardTask } from '../types';
 import type { Project } from '@/features/projects/types';
 import { useProjectMembers } from '@/features/projects/hooks/useProjectMembers';
 import { useProjectLabels } from '@/features/labels/hooks/useProjectLabels';
 import { useProjectPermissions } from '@/features/permissions/hooks/useProjectPermissions';
 import { taskService } from '@/features/tasks/services/task.service';
+import { checklistService } from '@/features/tasks/services/checklist.service';
 import { boardService } from '../services/board.service';
 import { BoardFilterModal } from '@/features/search/components/BoardFilterModal';
 import { defaultTaskFilters, type TaskFilters } from '@/features/search/types';
@@ -80,6 +82,15 @@ export function AllTasksView({
   const canCreateLabels = can('label.create');
 
   const columns = board?.columns ?? [];
+
+  const columnsForFilter = useMemo(
+    () =>
+      columns.map((column) => ({
+        ...column,
+        tasks: tasks.filter((task) => task.columnId === column.id),
+      })),
+    [columns, tasks],
+  );
 
   const loadData = useCallback(async () => {
     if (!canViewTasks) {
@@ -179,6 +190,92 @@ export function AllTasksView({
     if (!board || tasks.length === 0) return;
     exportBoardTasksToExcel(tasks, board, columns, locale);
   };
+
+  const updateTaskInList = useCallback(
+    (taskId: string, updater: (task: BoardTask) => BoardTask) => {
+      setTasks((current) =>
+        current.map((task) => (task.id === taskId ? updater(task) : task)),
+      );
+      setViewTask((current) =>
+        current?.id === taskId ? updater(current) : current,
+      );
+      setEditTask((current) =>
+        current?.id === taskId ? updater(current) : current,
+      );
+    },
+    [],
+  );
+
+  const handleToggleComplete = useCallback(
+    async (task: BoardTask, completed: boolean) => {
+      if (!canEditTasks) return;
+      if (Boolean(task.isCompleted) === completed) return;
+
+      const previousCompleteDate = task.completeDate ?? null;
+      setActionError('');
+      updateTaskInList(task.id, (current) => ({
+        ...current,
+        isCompleted: completed,
+        completeDate: completed ? new Date().toISOString() : null,
+        progress: completed ? 100 : current.progress,
+      }));
+
+      try {
+        const updated = await taskService.update(task.id, {
+          isCompleted: completed,
+        });
+        updateTaskInList(task.id, (current) => ({
+          ...current,
+          isCompleted: Boolean(updated.isCompleted),
+          completeDate: updated.completeDate ?? null,
+          progress: updated.progress ?? current.progress,
+        }));
+      } catch (err) {
+        updateTaskInList(task.id, (current) => ({
+          ...current,
+          isCompleted: Boolean(task.isCompleted),
+          completeDate: previousCompleteDate,
+        }));
+        if (!isForbiddenError(err)) {
+          setActionError(getApiErrorMessage(err));
+        }
+      }
+    },
+    [canEditTasks, updateTaskInList],
+  );
+
+  const handleChecklistItemToggle = useCallback(
+    async (taskId: string, itemId: string, isDone: boolean) => {
+      if (!canViewTasks) return;
+
+      const task = tasks.find((entry) => entry.id === taskId);
+      const previousItems = task?.checklistItems;
+
+      setActionError('');
+      updateTaskInList(taskId, (current) => ({
+        ...current,
+        checklistItems: current.checklistItems?.map((item) =>
+          item.id === itemId ? { ...item, isDone } : item,
+        ),
+      }));
+
+      try {
+        await checklistService.update(taskId, itemId, { isDone });
+      } catch (err) {
+        if (previousItems) {
+          updateTaskInList(taskId, (current) => ({
+            ...current,
+            checklistItems: previousItems,
+          }));
+        }
+        if (!isForbiddenError(err)) {
+          setActionError(getApiErrorMessage(err));
+        }
+        throw err;
+      }
+    },
+    [canViewTasks, tasks, updateTaskInList],
+  );
 
   if (isLoading) {
     return (
@@ -339,14 +436,33 @@ export function AllTasksView({
           filteredTasks.map((task) => {
             const style = priorityStylesMap[task.priority];
             const labels = normalizeTaskLabels(task.labels);
+            const isCompleted = Boolean(task.isCompleted);
 
             return (
               <div
                 key={task.id}
-                className="rounded-xl border border-gray-200 bg-white p-4 shadow-sm transition hover:border-primary-200 hover:shadow-md"
+                className={`rounded-xl border bg-white p-4 shadow-sm transition hover:border-primary-200 hover:shadow-md ${
+                  isCompleted ? 'border-green-200 bg-green-50/60' : 'border-gray-200'
+                }`}
               >
                 <div className="flex flex-wrap items-start justify-between gap-3">
-                  <div className="min-w-0 flex-1">
+                  <div className="flex min-w-0 flex-1 items-start gap-3">
+                    <div
+                      className="shrink-0 pt-0.5"
+                      onClick={(event) => event.stopPropagation()}
+                      onPointerDown={(event) => event.stopPropagation()}
+                    >
+                      <Checkbox
+                        checked={isCompleted}
+                        disabled={!canEditTasks}
+                        onChange={(event) =>
+                          void handleToggleComplete(task, event.target.checked)
+                        }
+                        aria-label={t('tasks.markComplete', { title: task.title })}
+                      />
+                    </div>
+
+                    <div className="min-w-0 flex-1">
                     <div className="flex flex-wrap items-center gap-2">
                       <span
                         className="inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-medium text-white"
@@ -359,12 +475,21 @@ export function AllTasksView({
                       >
                         {style.label}
                       </span>
+                      {isCompleted && (
+                        <span className="rounded-full bg-green-100 px-2.5 py-0.5 text-xs font-medium text-green-800">
+                          {t('export.statusCompleted')}
+                        </span>
+                      )}
                     </div>
 
                     <button
                       type="button"
                       onClick={() => setViewTask(task)}
-                      className="mt-2 block text-start text-base font-semibold text-gray-900 hover:text-primary-700"
+                      className={`mt-2 block text-start text-base font-semibold hover:text-primary-700 ${
+                        isCompleted
+                          ? 'text-gray-500 line-through'
+                          : 'text-gray-900'
+                      }`}
                     >
                       {task.title}
                     </button>
@@ -376,7 +501,16 @@ export function AllTasksView({
                     )}
 
                     <LabelBadges labels={labels} className="mt-2" />
-                    <TaskChecklistPreview items={task.checklistItems} />
+                    <TaskChecklistPreview
+                      items={task.checklistItems}
+                      interactive={canViewTasks}
+                      onToggleItem={
+                        canViewTasks
+                          ? (itemId, isDone) =>
+                              handleChecklistItemToggle(task.id, itemId, isDone)
+                          : undefined
+                      }
+                    />
 
                     <div className="mt-3 flex flex-wrap items-center gap-3 text-xs text-gray-500">
                       <AssigneeDisplay task={task} />
@@ -393,6 +527,7 @@ export function AllTasksView({
                           })}
                         </span>
                       )}
+                    </div>
                     </div>
                   </div>
 
@@ -433,7 +568,7 @@ export function AllTasksView({
 
       {showFilterModal && (
         <BoardFilterModal
-          columns={columns}
+          columns={columnsForFilter}
           filters={filters}
           onChange={setFilters}
           onClose={() => setShowFilterModal(false)}

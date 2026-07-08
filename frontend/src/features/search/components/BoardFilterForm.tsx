@@ -9,6 +9,7 @@ import {
 import { useLocale } from '@/i18n/LocaleProvider';
 import { SelectField } from '@/shared/components/ui/SelectField';
 import {
+  getCompletionFilterOptions,
   getDueDateFilterOptions,
   UNASSIGNED_ASSIGNEE,
   type TaskFilters,
@@ -64,6 +65,11 @@ export function BoardFilterForm({
   ];
 
   const dueDateOptions = getDueDateFilterOptions(t).map((option) => ({
+    value: option.value,
+    label: option.label,
+  }));
+
+  const completionOptions = getCompletionFilterOptions(t).map((option) => ({
     value: option.value,
     label: option.label,
   }));
@@ -145,6 +151,18 @@ export function BoardFilterForm({
             })
           }
           options={dueDateOptions}
+        />
+
+        <SelectField
+          label={<span className={labelClass}>{t('common.status')}</span>}
+          value={filters.completion}
+          onChange={(value) =>
+            onChange({
+              ...filters,
+              completion: value as TaskFilters['completion'],
+            })
+          }
+          options={completionOptions}
         />
       </div>
     </div>
