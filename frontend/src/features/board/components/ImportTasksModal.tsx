@@ -522,30 +522,26 @@ export function ImportTasksModal({
 
           <div className="space-y-3">
             {fieldDefinitions.map((field) => (
-              <div key={field.key}>
-                <SelectField
-                  label={
-                    <span>
-                      {field.label}
-                      {field.required && (
-                        <span className="ms-1 text-red-500">*</span>
-                      )}
-                    </span>
-                  }
-                  value={String(
-                    columnMapping[field.key] ?? IGNORE_COLUMN_VALUE,
-                  )}
-                  onChange={(value) =>
-                    handleMappingFieldChange(field.key, String(value))
-                  }
-                  options={excelColumnOptions}
-                  showSearch
-                  optionFilterProp="label"
-                />
-                {field.hint && (
-                  <p className="mt-1 text-xs text-gray-500">{field.hint}</p>
+              <SelectField
+                key={field.key}
+                label={
+                  <span>
+                    {field.label}
+                    {field.required && (
+                      <span className="ms-1 text-red-500">*</span>
+                    )}
+                  </span>
+                }
+                value={String(
+                  columnMapping[field.key] ?? IGNORE_COLUMN_VALUE,
                 )}
-              </div>
+                onChange={(value) =>
+                  handleMappingFieldChange(field.key, String(value))
+                }
+                options={excelColumnOptions}
+                showSearch
+                optionFilterProp="label"
+              />
             ))}
           </div>
         </div>

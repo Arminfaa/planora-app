@@ -508,17 +508,6 @@ export const enMessages = {
     membersCountShort: '{count} members',
     teamWorkload: 'Team workload',
     noBoardsProgress: 'No boards yet. Create a board to track progress here.',
-    editProjectForm: {
-      title: 'Edit project',
-      save: 'Save',
-      switchingToDefaultWarning:
-        'Switching to default roles will remove all custom role definitions. Members will keep their Admin or Member access level.',
-      customRolesReadonlyTitle: 'Custom roles',
-      customRolesReadonlyHint:
-        'View role permissions in the Roles & Permissions section on the project page.',
-      validationCustomRoles:
-        'Add at least one custom role with a name and one permission.',
-    },
   },
 
   board: {
@@ -667,8 +656,6 @@ export const enMessages = {
     headerRowOption: 'Row {number}',
     emptyHeader: 'Empty header',
     statusFieldHint: 'Maps spreadsheet values to completed / not completed',
-    assigneeFieldHint:
-      'Separate multiple assignees with "-". Example: Ali - Sara',
     ignoreColumn: '— Ignore —',
     rowCount: '{count} rows found',
     titleMappingRequired: 'Please map the Title field to an Excel column.',
@@ -683,7 +670,7 @@ export const enMessages = {
       'For each value in the mapped status field, choose completed or not completed.',
     assigneeValueMappingTitle: 'Assignee value mapping',
     assigneeValueMappingHint:
-      'For each value in the Excel assignee column, choose one or more project members (multi-select). If the cell contains several names separated by "-", each part is mapped separately.',
+      'For each name found in the Excel assignee column, choose one or more matching project members.',
     assigneeSelectPlaceholder: 'Select members',
     assigneeUnmapped: 'Assignee not mapped: {name}',
     emptyValue: '(empty)',
@@ -826,17 +813,6 @@ export const enMessages = {
     noPredecessors: 'No predecessors yet.',
     dependenciesTaskHint: 'Tasks that must finish before this one can start.',
     blocks: 'Blocks',
-    day: 'Day',
-    noScheduledTasksHint:
-      'No scheduled tasks yet. Add a start date or due date to tasks to see them on the timeline.',
-    scheduledTasksSummary: '{count} scheduled task',
-    scheduledTasksSummaryPlural: '{count} scheduled tasks',
-    dependenciesSummary: '{count} dependency',
-    dependenciesSummaryPlural: '{count} dependencies',
-    dragHint: 'Drag bars to move, edges to resize',
-    taskColumnHeader: 'Task',
-    subtaskCount: '{count} subtask',
-    subtaskCountPlural: '{count} subtasks',
   },
 
   notifications: {
@@ -1103,80 +1079,6 @@ export const enMessages = {
     defaultRoleOwner: 'Owner — full access including edit/delete project',
     defaultRoleAdmin: 'Admin — full access except edit/delete project',
     defaultRoleMember: 'Member — board tasks, columns, background',
-    groupLabels: {
-      project: 'Project',
-      board: 'Board',
-      column: 'Column',
-      task: 'Task',
-      team: 'Team',
-      label: 'Labels',
-      comment: 'Comments',
-      attachment: 'Attachments',
-      group: 'Project group',
-      role: 'Roles',
-    },
-    permissionLabels: {
-      project: {
-        view: 'View project',
-        edit: 'Edit project',
-        delete: 'Delete project',
-      },
-      board: {
-        view: 'View boards',
-        create: 'Create board',
-        edit: 'Edit board',
-        delete: 'Delete board',
-        reorder: 'Reorder boards',
-        change_background: 'Change board background',
-      },
-      column: {
-        create: 'Create column',
-        edit: 'Edit column',
-        delete: 'Delete column',
-        reorder: 'Reorder columns',
-      },
-      task: {
-        view: 'View tasks',
-        create: 'Create task',
-        edit: 'Edit task',
-        delete: 'Delete task',
-        move: 'Move / reorder tasks',
-      },
-      team: {
-        view: 'View team',
-        invite: 'Invite members',
-        change_role: 'Change member roles',
-        remove: 'Remove members',
-        manage_invites: 'Manage pending invites',
-      },
-      label: {
-        create: 'Create labels',
-        edit: 'Edit labels',
-        delete: 'Delete labels',
-        assign: 'Assign labels to tasks',
-      },
-      comment: {
-        create: 'Create comments',
-        edit_any: 'Edit any comment',
-        delete_any: 'Delete any comment',
-      },
-      attachment: {
-        upload: 'Upload attachments',
-        delete: 'Delete attachments',
-      },
-      group: {
-        view: 'View project group',
-        send: 'Send messages',
-        upload: 'Upload files in group',
-        delete_any: 'Delete any group message',
-      },
-      role: {
-        manage: 'Manage custom roles',
-      },
-    },
-    resetRoles: 'Reset',
-    permissionCount: '{count} permission',
-    permissionCountPlural: '{count} permissions',
   },
 
   invite: {

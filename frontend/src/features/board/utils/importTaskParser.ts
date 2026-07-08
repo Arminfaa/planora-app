@@ -76,9 +76,6 @@ export interface ImportPreviewResult {
 
 export const IGNORE_COLUMN_VALUE = -1;
 
-/** Splits multiple assignee names in one Excel cell (e.g. "Ali - Reza"). */
-const ASSIGNEE_TOKEN_SPLIT = /\s*-\s*|[,;،]/;
-
 const COMPLETED_STATUS_HINTS = new Set([
   'completed',
   'complete',
@@ -145,7 +142,6 @@ export function getImportFieldDefinitions(
       key: 'assignees',
       label: t('export.columns.assignees'),
       required: false,
-      hint: t('import.assigneeFieldHint'),
     },
     {
       key: 'labels',
@@ -189,7 +185,7 @@ export function getUniqueAssigneeTokens(
       continue;
     }
 
-    raw.split(ASSIGNEE_TOKEN_SPLIT)
+    raw.split(/[,;،]/)
       .map((part) => part.trim())
       .filter(Boolean)
       .forEach((token) => values.add(token));
@@ -354,7 +350,7 @@ function parseAssignees(
   if (!trimmed) return { warnings: [] };
 
   const tokens = trimmed
-    .split(ASSIGNEE_TOKEN_SPLIT)
+    .split(/[,;،]/)
     .map((part) => part.trim())
     .filter(Boolean);
 
