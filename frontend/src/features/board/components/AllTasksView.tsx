@@ -29,6 +29,10 @@ import { AllTasksCreateModal } from './AllTasksCreateModal';
 import { ImportTasksModal } from './ImportTasksModal';
 import { TaskChecklistPreview } from './TaskChecklistPreview';
 import { AssigneeDisplay } from './AssigneeDisplay';
+import { EditIcon } from './EditIcon';
+import { TaskListActionButton } from './TaskListActionButton';
+import { TrashIcon } from './TrashIcon';
+import { ViewIcon } from './ViewIcon';
 import { LoadingSpinner } from '@/shared/components/feedback/LoadingSpinner';
 import { Button } from '@/shared/components/ui/Button';
 import { SearchInput } from '@/shared/components/ui/SearchInput';
@@ -595,10 +599,13 @@ export function AllTasksView({
             );
 
             return (
-              <div key={task.id} className="flex items-start gap-3">
+              <div
+                key={task.id}
+                className="flex flex-col gap-2 sm:flex-row sm:items-start sm:gap-3"
+              >
                 {canMoveTasks && (
                   <div
-                    className="shrink-0 pt-4"
+                    className="flex shrink-0 items-center sm:pt-4"
                     onClick={(event) => event.stopPropagation()}
                     onPointerDown={(event) => event.stopPropagation()}
                   >
@@ -615,34 +622,15 @@ export function AllTasksView({
                 )}
 
                 <div
-                  className={`min-w-0 flex-1 rounded-xl p-4 shadow-sm transition hover:border-primary-200 hover:shadow-md ${
+                  className={`min-w-0 flex-1 rounded-xl p-3 shadow-sm transition hover:border-primary-200 hover:shadow-md sm:p-4 ${
                     cardPresentation.className
                   } ${isSelected ? 'ring-2 ring-primary-200' : ''}`}
                   style={cardPresentation.style}
                 >
-                  <div className="flex flex-wrap items-start justify-between gap-3">
-                    <div className="flex min-w-0 flex-1 items-start gap-3">
-                      <div
-                        className="shrink-0 pt-0.5"
-                        onClick={(event) => event.stopPropagation()}
-                        onPointerDown={(event) => event.stopPropagation()}
-                      >
-                        <Checkbox
-                          checked={isCompleted}
-                          disabled={!canEditTasks}
-                          onChange={(event) =>
-                            void handleToggleComplete(task, event.target.checked)
-                          }
-                          aria-label={t('tasks.markComplete', {
-                            title: task.title,
-                          })}
-                        />
-                      </div>
-
-                      <div className="min-w-0 flex-1">
-                    <div className="flex flex-wrap items-center gap-2">
+                  <div className="flex items-start justify-between gap-2">
+                    <div className="flex min-w-0 flex-1 flex-wrap items-center gap-1.5 sm:gap-2">
                       <span
-                        className="inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-medium text-white"
+                        className="inline-flex max-w-full items-center truncate rounded-full px-2.5 py-0.5 text-xs font-medium text-white"
                         style={{ backgroundColor: getColumnColor(task) }}
                       >
                         {getColumnName(task)}
@@ -659,89 +647,109 @@ export function AllTasksView({
                       )}
                     </div>
 
-                    <button
-                      type="button"
-                      onClick={() => setViewTask(task)}
-                      className={`mt-2 block text-start text-base font-semibold hover:text-primary-700 ${
-                        isCompleted
-                          ? 'text-gray-500 line-through'
-                          : 'text-gray-900'
-                      }`}
-                    >
-                      {task.title}
-                    </button>
-
-                    {task.description && (
-                      <p className="mt-1 line-clamp-2 text-sm text-gray-500">
-                        {task.description}
-                      </p>
-                    )}
-
-                    <LabelBadges labels={labels} className="mt-2" />
-                    <TaskChecklistPreview
-                      items={task.checklistItems}
-                      interactive={canViewTasks}
-                      onToggleItem={
-                        canViewTasks
-                          ? (itemId, isDone) =>
-                              handleChecklistItemToggle(task.id, itemId, isDone)
-                          : undefined
-                      }
-                    />
-
-                    <div className="mt-3 flex flex-wrap items-center gap-3 text-xs text-gray-500">
-                      <AssigneeDisplay
-                        task={task}
-                        memberColorMap={memberColorMap}
-                      />
-                      {task.dueDate && (
-                        <span
-                          className={
-                            isDueDateOverdue(task.dueDate)
-                              ? 'font-medium text-red-600'
-                              : undefined
-                          }
+                    <div className="flex shrink-0 items-center gap-0.5">
+                      <TaskListActionButton
+                        label={t('common.view')}
+                        onClick={() => setViewTask(task)}
+                      >
+                        <ViewIcon className="h-4 w-4" />
+                      </TaskListActionButton>
+                      {canEditTasks && (
+                        <TaskListActionButton
+                          label={t('common.edit')}
+                          onClick={() => setEditTask(task)}
                         >
-                          {t('tasks.duePrefix', {
-                            date: formatDueDate(task.dueDate, locale),
-                          })}
-                        </span>
+                          <EditIcon className="h-4 w-4" />
+                        </TaskListActionButton>
                       )}
-                    </div>
+                      {canDeleteTasks && (
+                        <TaskListActionButton
+                          label={t('common.delete')}
+                          onClick={() => void handleDeleteTask(task)}
+                          className="hover:bg-red-50 hover:text-red-600"
+                        >
+                          <TrashIcon className="h-4 w-4" />
+                        </TaskListActionButton>
+                      )}
                     </div>
                   </div>
 
-                  <div className="flex shrink-0 gap-2">
-                    <Button
-                      type="button"
-                      variant="secondary"
-                      onClick={() => setViewTask(task)}
+                  <div className="mt-2 flex items-start gap-2 sm:mt-3 sm:gap-3">
+                    <div
+                      className="shrink-0 pt-0.5"
+                      onClick={(event) => event.stopPropagation()}
+                      onPointerDown={(event) => event.stopPropagation()}
                     >
-                      {t('common.view')}
-                    </Button>
-                    {canEditTasks && (
-                      <Button
+                      <Checkbox
+                        checked={isCompleted}
+                        disabled={!canEditTasks}
+                        onChange={(event) =>
+                          void handleToggleComplete(task, event.target.checked)
+                        }
+                        aria-label={t('tasks.markComplete', {
+                          title: task.title,
+                        })}
+                      />
+                    </div>
+
+                    <div className="min-w-0 flex-1">
+                      <button
                         type="button"
-                        variant="secondary"
-                        onClick={() => setEditTask(task)}
+                        onClick={() => setViewTask(task)}
+                        className={`block w-full text-start text-sm font-semibold hover:text-primary-700 sm:text-base ${
+                          isCompleted
+                            ? 'text-gray-500 line-through'
+                            : 'text-gray-900'
+                        }`}
                       >
-                        {t('common.edit')}
-                      </Button>
-                    )}
-                    {canDeleteTasks && (
-                      <Button
-                        type="button"
-                        variant="ghost"
-                        className="text-red-600 hover:bg-red-50"
-                        onClick={() => void handleDeleteTask(task)}
-                      >
-                        {t('common.delete')}
-                      </Button>
-                    )}
+                        {task.title}
+                      </button>
+
+                      {task.description && (
+                        <p className="mt-1 line-clamp-2 text-sm text-gray-500">
+                          {task.description}
+                        </p>
+                      )}
+
+                      <LabelBadges labels={labels} className="mt-2" />
+                      <TaskChecklistPreview
+                        items={task.checklistItems}
+                        interactive={canViewTasks}
+                        onToggleItem={
+                          canViewTasks
+                            ? (itemId, isDone) =>
+                                handleChecklistItemToggle(
+                                  task.id,
+                                  itemId,
+                                  isDone,
+                                )
+                            : undefined
+                        }
+                      />
+
+                      <div className="mt-3 flex flex-col gap-1 text-xs text-gray-500 sm:flex-row sm:flex-wrap sm:items-center sm:gap-3">
+                        <AssigneeDisplay
+                          task={task}
+                          memberColorMap={memberColorMap}
+                        />
+                        {task.dueDate && (
+                          <span
+                            className={
+                              isDueDateOverdue(task.dueDate)
+                                ? 'font-medium text-red-600'
+                                : undefined
+                            }
+                          >
+                            {t('tasks.duePrefix', {
+                              date: formatDueDate(task.dueDate, locale),
+                            })}
+                          </span>
+                        )}
+                      </div>
+                    </div>
                   </div>
                 </div>
               </div>
-            </div>
             );
           })
         )}
