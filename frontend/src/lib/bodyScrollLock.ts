@@ -2,7 +2,7 @@ let lockCount = 0;
 let savedScrollY = 0;
 
 function getScrollbarGap(): number {
-  return window.innerWidth - document.documentElement.clientWidth;
+  return Math.max(0, window.innerWidth - document.documentElement.clientWidth);
 }
 
 export function lockBodyScroll(): void {
@@ -17,10 +17,10 @@ export function lockBodyScroll(): void {
       '--app-scroll-lock-top',
       `-${savedScrollY}px`,
     );
-
-    if (scrollbarGap > 0) {
-      document.body.style.paddingRight = `${scrollbarGap}px`;
-    }
+    document.documentElement.style.setProperty(
+      '--app-scroll-lock-gap',
+      `${scrollbarGap}px`,
+    );
   }
 
   lockCount += 1;
@@ -34,6 +34,6 @@ export function unlockBodyScroll(): void {
 
   document.documentElement.classList.remove('app-scroll-locked');
   document.documentElement.style.removeProperty('--app-scroll-lock-top');
-  document.body.style.paddingRight = '';
+  document.documentElement.style.removeProperty('--app-scroll-lock-gap');
   window.scrollTo(0, savedScrollY);
 }

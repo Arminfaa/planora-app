@@ -8,7 +8,12 @@
     --foreground: 222.2 84% 4.9%;
   }
 
+  /*
+   * Always reserve vertical scrollbar space so centered max-width pages
+   * (e.g. project All Tasks) do not jump sideways when filters shorten content.
+   */
   html {
+    overflow-y: scroll;
     scrollbar-gutter: stable;
   }
 
@@ -254,10 +259,17 @@ html.app-scroll-locked body {
   overscroll-behavior: none;
 }
 
+html.app-scroll-locked {
+  /* Keep the reserved gutter while modal lock hides overflow. */
+  scrollbar-gutter: stable;
+}
+
 html.app-scroll-locked body {
   position: fixed;
   top: var(--app-scroll-lock-top, 0);
   width: 100%;
+  box-sizing: border-box;
+  padding-inline-end: var(--app-scroll-lock-gap, 0px);
 }
 
 /* AppModal — full width & height below Tailwind sm (640px) */
