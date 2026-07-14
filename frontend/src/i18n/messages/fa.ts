@@ -517,6 +517,8 @@ export const faMessages = {
     personCompletionsMemberPlaceholder: 'یک یا چند عضو را انتخاب کنید',
     personCompletionsMemberLimit: 'حداکثر {count} عضو می‌توانید مقایسه کنید.',
     personCompletionsUnknownMember: 'عضو',
+    personCompletionsChartBar: 'میله‌ای',
+    personCompletionsChartLine: 'خطی',
     personCompletionsRange: 'بازه زمانی',
     personCompletionsPickMember:
       'برای دیدن نمودار حداقل یک عضو تیم را انتخاب کنید.',

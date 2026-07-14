@@ -1,6 +1,6 @@
 'use client';
 
-import { Select } from 'antd';
+import { Select, Segmented } from 'antd';
 import { useEffect, useMemo, useState } from 'react';
 import {
   Bar,
@@ -8,6 +8,8 @@ import {
   CartesianGrid,
   Cell,
   Legend,
+  Line,
+  LineChart,
   ResponsiveContainer,
   Tooltip,
   XAxis,
@@ -36,6 +38,8 @@ import { LoadingSpinner } from '@/shared/components/feedback/LoadingSpinner';
 import { cn } from '@/lib/utils';
 
 const MAX_SELECTED_MEMBERS = 6;
+
+type ChartType = 'bar' | 'line';
 
 const COLORS = {
   working: '#0f766e',
@@ -150,6 +154,7 @@ export function PersonCompletionsChart({
   const { stats: progressStats } = useProjectProgress(projectId, true);
   const projectMinDate = toApiDateOnly(projectCreatedAt);
   const [userIds, setUserIds] = useState<string[]>([]);
+  const [chartType, setChartType] = useState<ChartType>('bar');
   const [range, setRange] = useState(() =>
     defaultApiDateRange(29, { minDate: projectCreatedAt }),
   );
@@ -363,15 +368,133 @@ export function PersonCompletionsChart({
     ? loadedCount > 0 && multiChartDays.length > 0
     : Boolean(primaryStats);
 
+  const memberSeriesName = (userId: string) =>
+    memberNameById.get(userId) ||
+    statsByUserId.get(userId)?.userName ||
+    t('projects.personCompletionsUnknownMember');
+
+  const renderMultiTooltip = ({
+    active,
+    payload,
+    label,
+  }: {
+    active?: boolean;
+    // Recharts tooltip payload typing is looser than our render needs.
+    payload?: ReadonlyArray<{
+      dataKey?: unknown;
+      name?: unknown;
+      value?: unknown;
+      color?: string;
+      payload?: { date?: string };
+    }>;
+    label?: unknown;
+  }) => {
+    if (!active || !payload?.length) return null;
+    const date = payload[0]?.payload?.date;
+    return (
+      <div className="rounded-lg border border-gray-200 bg-white px-3 py-2 text-xs shadow-lg">
+        <p className="font-semibold text-gray-900">
+          {date
+            ? formatLocaleDate(date, locale, {
+                year: 'numeric',
+                month: 'long',
+                day: 'numeric',
+              })
+            : String(label ?? '')}
+        </p>
+        <ul className="mt-1 space-y-0.5">
+          {payload.map((item) => (
+            <li
+              key={String(item.dataKey)}
+              className="flex items-center gap-2 text-gray-700"
+            >
+              <span
+                className="inline-block h-2 w-2 rounded-sm"
+                style={{ backgroundColor: String(item.color) }}
+              />
+              <span>
+                {String(item.name)}: {Number(item.value)}
+              </span>
+            </li>
+          ))}
+        </ul>
+      </div>
+    );
+  };
+
+  const renderSingleTooltip = ({
+    active,
+    payload,
+  }: {
+    active?: boolean;
+    payload?: ReadonlyArray<{ payload?: ChartDay }>;
+  }) => {
+    if (!active || !payload?.[0]?.payload) return null;
+    const day = payload[0].payload;
+    const holiday = holidayLabel(day, locale);
+    return (
+      <div className="rounded-lg border border-gray-200 bg-white px-3 py-2 text-xs shadow-lg">
+        <p className="font-semibold text-gray-900">
+          {formatLocaleDate(day.date, locale, {
+            year: 'numeric',
+            month: 'long',
+            day: 'numeric',
+          })}
+        </p>
+        <p className="mt-1 text-gray-700">
+          {t('projects.personCompletionsTotal')}: {day.completedCount}
+        </p>
+        {!day.effectiveReason && day.completedCount === 0 ? (
+          <p className="mt-0.5 text-teal-700">
+            {t('projects.personCompletionsLegendWorkingEmpty')}
+          </p>
+        ) : null}
+        {day.effectiveReason === 'weekend' ? (
+          <p className="mt-0.5 text-slate-600">
+            {t('projects.personCompletionsLegendWeekend')}
+          </p>
+        ) : null}
+        {day.effectiveReason === 'holiday' ? (
+          <p className="mt-0.5 text-amber-700">
+            {t('projects.personCompletionsLegendHoliday')}
+            {holiday ? ` — ${holiday}` : ''}
+          </p>
+        ) : null}
+        {day.effectiveReason === 'leave' ? (
+          <p className="mt-0.5 text-rose-600">
+            {t('projects.personCompletionsLegendLeave')}
+          </p>
+        ) : null}
+      </div>
+    );
+  };
+
   return (
     <section className="rounded-xl border border-white/60 bg-white/80 p-5 shadow-sm backdrop-blur-md">
-      <div className="min-w-0">
-        <h3 className="text-base font-semibold text-gray-900">
-          {t('projects.personCompletionsTitle')}
-        </h3>
-        <p className="mt-0.5 text-sm text-gray-500">
-          {t('projects.personCompletionsSubtitle')}
-        </p>
+      <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+        <div className="min-w-0">
+          <h3 className="text-base font-semibold text-gray-900">
+            {t('projects.personCompletionsTitle')}
+          </h3>
+          <p className="mt-0.5 text-sm text-gray-500">
+            {t('projects.personCompletionsSubtitle')}
+          </p>
+        </div>
+        <Segmented
+          className="shrink-0 self-start"
+          value={chartType}
+          onChange={(value) => setChartType(value as ChartType)}
+          options={[
+            {
+              label: t('projects.personCompletionsChartBar'),
+              value: 'bar',
+            },
+            {
+              label: t('projects.personCompletionsChartLine'),
+              value: 'line',
+            },
+          ]}
+        />
       </div>
 
       <div className="mt-4 grid gap-3 sm:grid-cols-2">
@@ -571,8 +694,80 @@ export function PersonCompletionsChart({
           >
             <ResponsiveContainer width="100%" height="100%">
               {isMulti ? (
-                <BarChart
-                  data={multiChartDays}
+                chartType === 'line' ? (
+                  <LineChart
+                    data={multiChartDays}
+                    margin={{ top: 8, right: 8, left: 0, bottom: 0 }}
+                  >
+                    <CartesianGrid strokeDasharray="3 3" vertical={false} />
+                    <XAxis
+                      dataKey="label"
+                      tick={{ fontSize: 11, fill: '#6b7280' }}
+                      interval="preserveStartEnd"
+                      minTickGap={24}
+                    />
+                    <YAxis
+                      allowDecimals={false}
+                      domain={[0, yMax]}
+                      width={28}
+                      tick={{ fontSize: 11, fill: '#6b7280' }}
+                    />
+                    <Tooltip
+                      cursor={{ stroke: 'rgba(15, 118, 110, 0.25)' }}
+                      content={(props) => renderMultiTooltip(props)}
+                    />
+                    <Legend wrapperStyle={{ fontSize: 12 }} />
+                    {userIds.map((userId, index) => (
+                      <Line
+                        key={userId}
+                        type="monotone"
+                        dataKey={seriesKey(userId)}
+                        name={memberSeriesName(userId)}
+                        stroke={SERIES_COLORS[index % SERIES_COLORS.length]}
+                        strokeWidth={2}
+                        dot={{ r: 3 }}
+                        activeDot={{ r: 5 }}
+                      />
+                    ))}
+                  </LineChart>
+                ) : (
+                  <BarChart
+                    data={multiChartDays}
+                    margin={{ top: 8, right: 8, left: 0, bottom: 0 }}
+                  >
+                    <CartesianGrid strokeDasharray="3 3" vertical={false} />
+                    <XAxis
+                      dataKey="label"
+                      tick={{ fontSize: 11, fill: '#6b7280' }}
+                      interval="preserveStartEnd"
+                      minTickGap={24}
+                    />
+                    <YAxis
+                      allowDecimals={false}
+                      domain={[0, yMax]}
+                      width={28}
+                      tick={{ fontSize: 11, fill: '#6b7280' }}
+                    />
+                    <Tooltip
+                      cursor={{ fill: 'rgba(15, 118, 110, 0.06)' }}
+                      content={(props) => renderMultiTooltip(props)}
+                    />
+                    <Legend wrapperStyle={{ fontSize: 12 }} />
+                    {userIds.map((userId, index) => (
+                      <Bar
+                        key={userId}
+                        dataKey={seriesKey(userId)}
+                        name={memberSeriesName(userId)}
+                        fill={SERIES_COLORS[index % SERIES_COLORS.length]}
+                        radius={[3, 3, 0, 0]}
+                        maxBarSize={18}
+                      />
+                    ))}
+                  </BarChart>
+                )
+              ) : chartType === 'line' ? (
+                <LineChart
+                  data={singleChartDays}
                   margin={{ top: 8, right: 8, left: 0, bottom: 0 }}
                 >
                   <CartesianGrid strokeDasharray="3 3" vertical={false} />
@@ -589,60 +784,19 @@ export function PersonCompletionsChart({
                     tick={{ fontSize: 11, fill: '#6b7280' }}
                   />
                   <Tooltip
-                    cursor={{ fill: 'rgba(15, 118, 110, 0.06)' }}
-                    content={({ active, payload, label }) => {
-                      if (!active || !payload?.length) return null;
-                      const date = payload[0]?.payload?.date as
-                        string | undefined;
-                      return (
-                        <div className="rounded-lg border border-gray-200 bg-white px-3 py-2 text-xs shadow-lg">
-                          <p className="font-semibold text-gray-900">
-                            {date
-                              ? formatLocaleDate(date, locale, {
-                                  year: 'numeric',
-                                  month: 'long',
-                                  day: 'numeric',
-                                })
-                              : String(label ?? '')}
-                          </p>
-                          <ul className="mt-1 space-y-0.5">
-                            {payload.map((item) => (
-                              <li
-                                key={String(item.dataKey)}
-                                className="flex items-center gap-2 text-gray-700"
-                              >
-                                <span
-                                  className="inline-block h-2 w-2 rounded-sm"
-                                  style={{
-                                    backgroundColor: String(item.color),
-                                  }}
-                                />
-                                <span>
-                                  {item.name}: {item.value as number}
-                                </span>
-                              </li>
-                            ))}
-                          </ul>
-                        </div>
-                      );
-                    }}
+                    cursor={{ stroke: 'rgba(15, 118, 110, 0.25)' }}
+                    content={(props) => renderSingleTooltip(props)}
                   />
-                  <Legend wrapperStyle={{ fontSize: 12 }} />
-                  {userIds.map((userId, index) => (
-                    <Bar
-                      key={userId}
-                      dataKey={seriesKey(userId)}
-                      name={
-                        memberNameById.get(userId) ||
-                        statsByUserId.get(userId)?.userName ||
-                        t('projects.personCompletionsUnknownMember')
-                      }
-                      fill={SERIES_COLORS[index % SERIES_COLORS.length]}
-                      radius={[3, 3, 0, 0]}
-                      maxBarSize={18}
-                    />
-                  ))}
-                </BarChart>
+                  <Line
+                    type="monotone"
+                    dataKey="completedCount"
+                    name={memberSeriesName(primaryUserId)}
+                    stroke={COLORS.working}
+                    strokeWidth={2}
+                    dot={{ r: 3, fill: COLORS.working }}
+                    activeDot={{ r: 5 }}
+                  />
+                </LineChart>
               ) : (
                 <BarChart
                   data={singleChartDays}
@@ -663,49 +817,7 @@ export function PersonCompletionsChart({
                   />
                   <Tooltip
                     cursor={{ fill: 'rgba(15, 118, 110, 0.06)' }}
-                    content={({ active, payload }) => {
-                      if (!active || !payload?.[0]) return null;
-                      const day = payload[0].payload as ChartDay;
-                      const holiday = holidayLabel(day, locale);
-                      return (
-                        <div className="rounded-lg border border-gray-200 bg-white px-3 py-2 text-xs shadow-lg">
-                          <p className="font-semibold text-gray-900">
-                            {formatLocaleDate(day.date, locale, {
-                              year: 'numeric',
-                              month: 'long',
-                              day: 'numeric',
-                            })}
-                          </p>
-                          <p className="mt-1 text-gray-700">
-                            {t('projects.personCompletionsTotal')}:{' '}
-                            {day.completedCount}
-                          </p>
-                          {!day.effectiveReason && day.completedCount === 0 ? (
-                            <p className="mt-0.5 text-teal-700">
-                              {t(
-                                'projects.personCompletionsLegendWorkingEmpty',
-                              )}
-                            </p>
-                          ) : null}
-                          {day.effectiveReason === 'weekend' ? (
-                            <p className="mt-0.5 text-slate-600">
-                              {t('projects.personCompletionsLegendWeekend')}
-                            </p>
-                          ) : null}
-                          {day.effectiveReason === 'holiday' ? (
-                            <p className="mt-0.5 text-amber-700">
-                              {t('projects.personCompletionsLegendHoliday')}
-                              {holiday ? ` — ${holiday}` : ''}
-                            </p>
-                          ) : null}
-                          {day.effectiveReason === 'leave' ? (
-                            <p className="mt-0.5 text-rose-600">
-                              {t('projects.personCompletionsLegendLeave')}
-                            </p>
-                          ) : null}
-                        </div>
-                      );
-                    }}
+                    content={(props) => renderSingleTooltip(props)}
                   />
                   <Bar
                     dataKey="displayCount"
@@ -735,7 +847,7 @@ export function PersonCompletionsChart({
             </p>
           ) : null}
 
-          {!isMulti ? (
+          {!isMulti && chartType === 'bar' ? (
             <div className="mt-4 flex flex-wrap gap-3 text-xs text-gray-600">
               <LegendDot
                 className="bg-teal-700"

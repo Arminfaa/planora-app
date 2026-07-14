@@ -516,6 +516,8 @@ export const enMessages = {
     personCompletionsMemberPlaceholder: 'Select one or more members',
     personCompletionsMemberLimit: 'You can compare up to {count} members.',
     personCompletionsUnknownMember: 'Member',
+    personCompletionsChartBar: 'Bar',
+    personCompletionsChartLine: 'Line',
     personCompletionsRange: 'Period',
     personCompletionsPickMember:
       'Select at least one team member to view the chart.',
