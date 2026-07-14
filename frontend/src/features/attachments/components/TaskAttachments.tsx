@@ -1,6 +1,13 @@
 'use client';
 
-import { useCallback, useEffect, useRef, useState } from 'react';
+import {
+  forwardRef,
+  useCallback,
+  useEffect,
+  useImperativeHandle,
+  useRef,
+  useState,
+} from 'react';
 import { attachmentService } from '../services/attachment.service';
 import type { TaskAttachment } from '../types';
 import { useLocale } from '@/i18n/LocaleProvider';
@@ -10,14 +17,44 @@ import { getAssetUrl, isImageAttachment } from '@/lib/assets';
 import { AssetImage } from '@/shared/components/ui/AssetImage';
 import { formatFileSize } from '../utils/format';
 
-interface TaskAttachmentsProps {
-  taskId: string;
+export interface TaskAttachmentsHandle {
+  persist: () => Promise<void>;
 }
 
-export function TaskAttachments({ taskId }: TaskAttachmentsProps) {
+interface DraftAttachment {
+  id: string;
+  filename: string;
+  url: string;
+  mimeType: string;
+  size: number;
+  type: TaskAttachment['type'];
+  isNew?: boolean;
+  isDeleted?: boolean;
+  file?: File;
+  previewUrl?: string;
+}
+
+interface TaskAttachmentsProps {
+  taskId: string;
+  mode?: 'immediate' | 'draft';
+}
+
+function createTempAttachmentId(): string {
+  return `temp-attachment-${crypto.randomUUID()}`;
+}
+
+function inferAttachmentType(mimeType: string): TaskAttachment['type'] {
+  return mimeType.startsWith('image/') ? 'IMAGE' : 'FILE';
+}
+
+export const TaskAttachments = forwardRef<
+  TaskAttachmentsHandle,
+  TaskAttachmentsProps
+>(function TaskAttachments({ taskId, mode = 'immediate' }, ref) {
   const { t } = useLocale();
+  const isDraft = mode === 'draft';
   const inputRef = useRef<HTMLInputElement>(null);
-  const [attachments, setAttachments] = useState<TaskAttachment[]>([]);
+  const [attachments, setAttachments] = useState<DraftAttachment[]>([]);
   const [error, setError] = useState('');
   const [isLoading, setIsLoading] = useState(true);
   const [isUploading, setIsUploading] = useState(false);
@@ -35,13 +72,77 @@ export function TaskAttachments({ taskId }: TaskAttachmentsProps) {
     }
   }, [taskId]);
 
+  const previewUrlsRef = useRef<string[]>([]);
+
   useEffect(() => {
     void loadAttachments();
   }, [loadAttachments]);
 
+  useEffect(() => {
+    const previewUrls = previewUrlsRef;
+    return () => {
+      previewUrls.current.forEach((url) => URL.revokeObjectURL(url));
+    };
+  }, []);
+
+  useImperativeHandle(
+    ref,
+    () => ({
+      persist: async () => {
+        if (!isDraft) return;
+
+        const deleted = attachments.filter(
+          (attachment) => attachment.isDeleted && !attachment.isNew,
+        );
+        const created = attachments.filter(
+          (attachment) =>
+            attachment.isNew && !attachment.isDeleted && attachment.file,
+        );
+
+        for (const attachment of deleted) {
+          await attachmentService.remove(taskId, attachment.id);
+        }
+        for (const attachment of created) {
+          if (attachment.file) {
+            await attachmentService.upload(taskId, attachment.file);
+          }
+        }
+      },
+    }),
+    [attachments, isDraft, taskId],
+  );
+
+  const visibleAttachments = attachments.filter(
+    (attachment) => !attachment.isDeleted,
+  );
+
   const handleUpload = async (file: File) => {
-    setIsUploading(true);
     setError('');
+
+    if (isDraft) {
+      const previewUrl = URL.createObjectURL(file);
+      previewUrlsRef.current.push(previewUrl);
+      setAttachments((current) => [
+        ...current,
+        {
+          id: createTempAttachmentId(),
+          filename: file.name,
+          url: previewUrl,
+          mimeType: file.type || 'application/octet-stream',
+          size: file.size,
+          type: inferAttachmentType(file.type),
+          isNew: true,
+          file,
+          previewUrl,
+        },
+      ]);
+      if (inputRef.current) {
+        inputRef.current.value = '';
+      }
+      return;
+    }
+
+    setIsUploading(true);
     try {
       await attachmentService.upload(taskId, file);
       await loadAttachments();
@@ -59,6 +160,22 @@ export function TaskAttachments({ taskId }: TaskAttachmentsProps) {
     if (!confirm(t('attachments.deleteConfirm'))) return;
 
     setError('');
+
+    if (isDraft) {
+      setAttachments((current) =>
+        current
+          .map((attachment) => {
+            if (attachment.id !== attachmentId) return attachment;
+            if (attachment.previewUrl) {
+              URL.revokeObjectURL(attachment.previewUrl);
+            }
+            return { ...attachment, isDeleted: true };
+          })
+          .filter((attachment) => !(attachment.isNew && attachment.isDeleted)),
+      );
+      return;
+    }
+
     try {
       await attachmentService.remove(taskId, attachmentId);
       await loadAttachments();
@@ -106,14 +223,15 @@ export function TaskAttachments({ taskId }: TaskAttachmentsProps) {
         <p className="text-sm text-gray-500">
           {t('attachments.loadingAttachments')}
         </p>
-      ) : attachments.length === 0 ? (
+      ) : visibleAttachments.length === 0 ? (
         <p className="text-sm text-gray-500">
           {t('attachments.noAttachments')}
         </p>
       ) : (
         <div className="space-y-2">
-          {attachments.map((attachment) => {
-            const assetUrl = getAssetUrl(attachment.url);
+          {visibleAttachments.map((attachment) => {
+            const assetUrl =
+              attachment.previewUrl ?? getAssetUrl(attachment.url);
             const isImage = isImageAttachment(
               attachment.type,
               attachment.mimeType,
@@ -175,4 +293,4 @@ export function TaskAttachments({ taskId }: TaskAttachmentsProps) {
       )}
     </div>
   );
-}
+});

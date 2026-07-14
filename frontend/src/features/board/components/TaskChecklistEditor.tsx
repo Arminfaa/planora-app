@@ -10,16 +10,25 @@ import {
   MIN_CHECKLIST_WEIGHT,
   normalizeChecklistWeight,
 } from '@/features/tasks/utils/checklistProgress';
+import {
+  createTempChecklistId,
+  type DraftChecklistItem,
+} from '@/features/tasks/utils/syncChecklistItems';
 import { useLocale } from '@/i18n/LocaleProvider';
 import { Button } from '@/shared/components/ui/Button';
 import { Input } from '@/shared/components/ui/Input';
 import { SelectField } from '@/shared/components/ui/SelectField';
 import { getApiErrorMessage } from '@/lib/api';
 
+type ChecklistItem = TaskChecklistItem | DraftChecklistItem;
+
 interface TaskChecklistEditorProps {
-  taskId: string;
-  items: TaskChecklistItem[];
-  onChange: () => Promise<void>;
+  taskId?: string;
+  items: ChecklistItem[];
+  /** Immediate mode: persist each change via API then call onChange. */
+  onChange?: () => Promise<void>;
+  /** Draft mode: only update local items. */
+  onItemsChange?: (items: DraftChecklistItem[]) => void;
   canToggle?: boolean;
   canEdit?: boolean;
   canManage?: boolean;
@@ -33,16 +42,28 @@ const WEIGHT_OPTIONS = Array.from(
   },
 );
 
+function toDraftItems(items: ChecklistItem[]): DraftChecklistItem[] {
+  return items.map((item, index) => ({
+    id: item.id,
+    title: item.title,
+    isDone: Boolean(item.isDone),
+    weight: normalizeChecklistWeight(item.weight),
+    position: item.position ?? index,
+  }));
+}
+
 export function TaskChecklistEditor({
   taskId,
   items,
   onChange,
+  onItemsChange,
   canToggle = true,
   canEdit,
   canManage = true,
 }: TaskChecklistEditorProps) {
   const { t } = useLocale();
   const canEditItems = canEdit ?? canManage;
+  const isDraft = typeof onItemsChange === 'function';
   const [newTitle, setNewTitle] = useState('');
   const [newWeight, setNewWeight] = useState(String(DEFAULT_CHECKLIST_WEIGHT));
   const [error, setError] = useState('');
@@ -52,11 +73,36 @@ export function TaskChecklistEditor({
 
   const sortedItems = [...items].sort((a, b) => a.position - b.position);
 
+  const updateDraft = (next: DraftChecklistItem[]) => {
+    onItemsChange?.(next);
+  };
+
   const handleAdd = async () => {
     const title = newTitle.trim();
     if (!title || !canManage) return;
 
     setError('');
+
+    if (isDraft) {
+      const nextPosition =
+        sortedItems.reduce((max, item) => Math.max(max, item.position), -1) + 1;
+      updateDraft([
+        ...toDraftItems(items),
+        {
+          id: createTempChecklistId(),
+          title,
+          isDone: false,
+          weight: normalizeChecklistWeight(Number(newWeight)),
+          position: nextPosition,
+        },
+      ]);
+      setNewTitle('');
+      setNewWeight(String(DEFAULT_CHECKLIST_WEIGHT));
+      return;
+    }
+
+    if (!taskId || !onChange) return;
+
     setIsSubmitting(true);
     try {
       await checklistService.create(taskId, {
@@ -73,9 +119,21 @@ export function TaskChecklistEditor({
     }
   };
 
-  const handleToggle = async (item: TaskChecklistItem) => {
+  const handleToggle = async (item: ChecklistItem) => {
     if (!canToggle) return;
     setError('');
+
+    if (isDraft) {
+      updateDraft(
+        toDraftItems(items).map((entry) =>
+          entry.id === item.id ? { ...entry, isDone: !entry.isDone } : entry,
+        ),
+      );
+      return;
+    }
+
+    if (!taskId || !onChange) return;
+
     try {
       await checklistService.update(taskId, item.id, { isDone: !item.isDone });
       await onChange();
@@ -84,12 +142,24 @@ export function TaskChecklistEditor({
     }
   };
 
-  const handleWeightChange = async (item: TaskChecklistItem, value: string) => {
+  const handleWeightChange = async (item: ChecklistItem, value: string) => {
     if (!canEditItems) return;
     const weight = normalizeChecklistWeight(Number(value));
     if (weight === normalizeChecklistWeight(item.weight)) return;
 
     setError('');
+
+    if (isDraft) {
+      updateDraft(
+        toDraftItems(items).map((entry) =>
+          entry.id === item.id ? { ...entry, weight } : entry,
+        ),
+      );
+      return;
+    }
+
+    if (!taskId || !onChange) return;
+
     try {
       await checklistService.update(taskId, item.id, { weight });
       await onChange();
@@ -101,6 +171,18 @@ export function TaskChecklistEditor({
   const handleDelete = async (itemId: string) => {
     if (!canManage) return;
     setError('');
+
+    if (isDraft) {
+      updateDraft(toDraftItems(items).filter((entry) => entry.id !== itemId));
+      if (editingId === itemId) {
+        setEditingId(null);
+        setEditTitle('');
+      }
+      return;
+    }
+
+    if (!taskId || !onChange) return;
+
     try {
       await checklistService.delete(taskId, itemId);
       if (editingId === itemId) {
@@ -113,7 +195,7 @@ export function TaskChecklistEditor({
     }
   };
 
-  const startEdit = (item: TaskChecklistItem) => {
+  const startEdit = (item: ChecklistItem) => {
     if (!canEditItems) return;
     setEditingId(item.id);
     setEditTitle(item.title);
@@ -134,6 +216,19 @@ export function TaskChecklistEditor({
     }
 
     setError('');
+
+    if (isDraft) {
+      updateDraft(
+        toDraftItems(items).map((entry) =>
+          entry.id === itemId ? { ...entry, title } : entry,
+        ),
+      );
+      cancelEdit();
+      return;
+    }
+
+    if (!taskId || !onChange) return;
+
     try {
       await checklistService.update(taskId, itemId, { title });
       cancelEdit();

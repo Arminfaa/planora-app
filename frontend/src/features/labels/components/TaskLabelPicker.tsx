@@ -10,10 +10,13 @@ import { Input } from '@/shared/components/ui/Input';
 import { getApiErrorMessage } from '@/lib/api';
 
 interface TaskLabelPickerProps {
-  taskId: string;
+  taskId?: string;
   projectLabels: ProjectLabel[];
   selectedLabels: TaskLabel[];
-  onChange: () => Promise<void>;
+  /** Immediate mode: assign/remove via API then call onChange. */
+  onChange?: () => Promise<void>;
+  /** Draft mode: only update selected labels locally. */
+  onSelectionChange?: (labels: TaskLabel[]) => void;
   onCreateLabel?: (name: string, color: string) => Promise<ProjectLabel | null>;
 }
 
@@ -22,9 +25,11 @@ export function TaskLabelPicker({
   projectLabels,
   selectedLabels,
   onChange,
+  onSelectionChange,
   onCreateLabel,
 }: TaskLabelPickerProps) {
   const { t } = useLocale();
+  const isDraft = typeof onSelectionChange === 'function';
   const [error, setError] = useState('');
   const [isBusy, setIsBusy] = useState(false);
   const [showCreate, setShowCreate] = useState(false);
@@ -35,6 +40,23 @@ export function TaskLabelPicker({
 
   const toggleLabel = async (label: ProjectLabel) => {
     setError('');
+
+    if (isDraft) {
+      if (selectedIds.has(label.id)) {
+        onSelectionChange(
+          selectedLabels.filter((entry) => entry.id !== label.id),
+        );
+      } else {
+        onSelectionChange([
+          ...selectedLabels,
+          { id: label.id, name: label.name, color: label.color },
+        ]);
+      }
+      return;
+    }
+
+    if (!taskId || !onChange) return;
+
     setIsBusy(true);
     try {
       if (selectedIds.has(label.id)) {
@@ -58,8 +80,21 @@ export function TaskLabelPicker({
     try {
       const created = await onCreateLabel(newName.trim(), newColor);
       if (created) {
-        await labelService.assign(taskId, created.id);
-        await onChange();
+        if (isDraft) {
+          if (!selectedIds.has(created.id)) {
+            onSelectionChange([
+              ...selectedLabels,
+              {
+                id: created.id,
+                name: created.name,
+                color: created.color,
+              },
+            ]);
+          }
+        } else if (taskId && onChange) {
+          await labelService.assign(taskId, created.id);
+          await onChange();
+        }
       }
       setNewName('');
       setShowCreate(false);

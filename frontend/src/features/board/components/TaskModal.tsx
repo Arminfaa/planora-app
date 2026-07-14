@@ -3,17 +3,24 @@
 import { useForm, Controller } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { Button, Slider } from 'antd';
 import { useProjectGantt } from '@/features/gantt/hooks/useProjectGantt';
 import type { BoardColumn, BoardTask } from '../types';
 import type { ProjectMember } from '@/features/projects/types';
 import { LabelBadges } from '@/features/labels/components/LabelBadges';
 import { TaskLabelPicker } from '@/features/labels/components/TaskLabelPicker';
-import { TaskComments } from '@/features/comments/components/TaskComments';
-import { TaskAttachments } from '@/features/attachments/components/TaskAttachments';
+import {
+  TaskComments,
+  type TaskCommentsHandle,
+} from '@/features/comments/components/TaskComments';
+import {
+  TaskAttachments,
+  type TaskAttachmentsHandle,
+} from '@/features/attachments/components/TaskAttachments';
 import { useProjectLabels } from '@/features/labels/hooks/useProjectLabels';
-import { normalizeTaskLabels } from '@/features/labels/types';
+import { normalizeTaskLabels, type TaskLabel } from '@/features/labels/types';
+import { syncTaskLabels } from '@/features/labels/utils/syncTaskLabels';
 import { taskService } from '@/features/tasks/services/task.service';
 import {
   getTaskAssignees,
@@ -22,6 +29,10 @@ import {
 } from '@/features/tasks/types';
 import { toDateInputValue } from '@/features/tasks/utils/dates';
 import { getTaskProgressDisplay } from '@/features/tasks/utils/checklistProgress';
+import {
+  syncChecklistItems,
+  type DraftChecklistItem,
+} from '@/features/tasks/utils/syncChecklistItems';
 import { useLocale } from '@/i18n/LocaleProvider';
 import { Input } from '@/shared/components/ui/Input';
 import { TextArea } from '@/shared/components/ui/TextArea';
@@ -46,7 +57,20 @@ type FormData = {
 
 const FORM_ID = 'task-edit-form';
 
-function getTaskFormValues(task: BoardTask): FormData {
+function toDraftChecklistItems(task: BoardTask): DraftChecklistItem[] {
+  return (task.checklistItems ?? []).map((item, index) => ({
+    id: item.id,
+    title: item.title,
+    isDone: Boolean(item.isDone),
+    weight: item.weight,
+    position: item.position ?? index,
+  }));
+}
+
+function getTaskFormValues(
+  task: BoardTask,
+  checklistItems: DraftChecklistItem[],
+): FormData {
   return {
     title: task.title,
     description: task.description ?? '',
@@ -54,7 +78,11 @@ function getTaskFormValues(task: BoardTask): FormData {
     columnId: task.columnId,
     startDate: toDateInputValue(task.startDate),
     dueDate: toDateInputValue(task.dueDate),
-    progress: getTaskProgressDisplay(task),
+    progress: getTaskProgressDisplay({
+      isCompleted: task.isCompleted,
+      progress: task.progress,
+      checklistItems,
+    }),
     parentTaskId: task.parentTaskId ?? '',
   };
 }
@@ -72,7 +100,8 @@ interface TaskModalProps {
   members: ProjectMember[];
   projectId: string;
   onClose: () => void;
-  onRefresh: () => Promise<void>;
+  /** @deprecated Unused — edit modal keeps changes in draft until Save. */
+  onRefresh?: () => Promise<void>;
   onSave: () => Promise<void>;
   onDelete: () => Promise<void>;
 }
@@ -83,7 +112,6 @@ export function TaskModal({
   members,
   projectId,
   onClose,
-  onRefresh,
   onSave,
   onDelete,
 }: TaskModalProps) {
@@ -93,13 +121,31 @@ export function TaskModal({
   const [assigneeIds, setAssigneeIds] = useState(() =>
     getTaskAssignees(task).map((assignee) => assignee.id),
   );
+  const [draftChecklist, setDraftChecklist] = useState<DraftChecklistItem[]>(
+    () => toDraftChecklistItems(task),
+  );
+  const [draftLabels, setDraftLabels] = useState<TaskLabel[]>(() =>
+    normalizeTaskLabels(task.labels),
+  );
+  const commentsRef = useRef<TaskCommentsHandle>(null);
+  const attachmentsRef = useRef<TaskAttachmentsHandle>(null);
   const { labels: projectLabels, createLabel } = useProjectLabels(projectId);
-  const taskLabels = normalizeTaskLabels(task.labels);
-  const checklistItems = task.checklistItems ?? [];
-  const hasChecklist = checklistItems.length > 0;
+  const hasChecklist = draftChecklist.length > 0;
   const progressLocked = Boolean(task.isCompleted) || hasChecklist;
-  const displayProgress = getTaskProgressDisplay(task);
+  const displayProgress = getTaskProgressDisplay({
+    isCompleted: task.isCompleted,
+    progress: task.progress,
+    checklistItems: draftChecklist,
+  });
   const { data: ganttData } = useProjectGantt(projectId, true);
+  const originalLabels = useMemo(
+    () => normalizeTaskLabels(task.labels),
+    [task.labels],
+  );
+  const originalChecklist = useMemo(
+    () => task.checklistItems ?? [],
+    [task.checklistItems],
+  );
 
   const schema = useMemo(
     () =>
@@ -138,18 +184,23 @@ export function TaskModal({
     [ganttData.scheduled, ganttData.unscheduled, task.id],
   );
 
-  useEffect(() => {
-    setAssigneeIds(getTaskAssignees(task).map((assignee) => assignee.id));
-  }, [task.id, task]);
-
   const {
     control,
     handleSubmit,
+    reset,
     formState: { errors, isSubmitting },
   } = useForm<FormData>({
     resolver: zodResolver(schema),
-    values: getTaskFormValues(task),
+    defaultValues: getTaskFormValues(task, toDraftChecklistItems(task)),
   });
+
+  useEffect(() => {
+    const nextChecklist = toDraftChecklistItems(task);
+    setAssigneeIds(getTaskAssignees(task).map((assignee) => assignee.id));
+    setDraftChecklist(nextChecklist);
+    setDraftLabels(normalizeTaskLabels(task.labels));
+    reset(getTaskFormValues(task, nextChecklist));
+  }, [reset, task]);
 
   const onSubmit = async (data: FormData) => {
     setError('');
@@ -170,7 +221,7 @@ export function TaskModal({
         : null;
       const currentParentTaskId = task.parentTaskId ?? null;
       const checklistDriven =
-        Boolean(task.isCompleted) || (task.checklistItems?.length ?? 0) > 0;
+        Boolean(task.isCompleted) || draftChecklist.length > 0;
       const currentProgress = task.isCompleted ? 100 : (task.progress ?? 0);
 
       await taskService.update(task.id, {
@@ -193,6 +244,12 @@ export function TaskModal({
           ? assigneeIds
           : undefined,
       });
+
+      await syncChecklistItems(task.id, originalChecklist, draftChecklist);
+      await syncTaskLabels(task.id, originalLabels, draftLabels);
+      await commentsRef.current?.persist();
+      await attachmentsRef.current?.persist();
+
       await onSave();
     } catch (err) {
       setError(getApiErrorMessage(err));
@@ -401,27 +458,25 @@ export function TaskModal({
         />
 
         <TaskChecklistEditor
-          taskId={task.id}
-          items={checklistItems}
-          onChange={onRefresh}
+          items={draftChecklist}
+          onItemsChange={setDraftChecklist}
         />
 
         <div className="space-y-2">
           <h3 className="text-sm font-semibold text-gray-900">
             {t('tasks.labels')}
           </h3>
-          <LabelBadges labels={taskLabels} />
+          <LabelBadges labels={draftLabels} />
           <TaskLabelPicker
-            taskId={task.id}
             projectLabels={projectLabels}
-            selectedLabels={taskLabels}
-            onChange={onRefresh}
+            selectedLabels={draftLabels}
+            onSelectionChange={setDraftLabels}
             onCreateLabel={async (name, color) => createLabel({ name, color })}
           />
         </div>
 
-        <TaskComments taskId={task.id} />
-        <TaskAttachments taskId={task.id} />
+        <TaskComments ref={commentsRef} taskId={task.id} mode="draft" />
+        <TaskAttachments ref={attachmentsRef} taskId={task.id} mode="draft" />
       </div>
     </AppModal>
   );
