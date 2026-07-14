@@ -28,6 +28,68 @@ function endOfWeek(date = new Date()): Date {
   return endOfDay(value);
 }
 
+function endOfMonth(date = new Date()): Date {
+  const value = startOfDay(date);
+  value.setMonth(value.getMonth() + 1, 0);
+  return endOfDay(value);
+}
+
+function matchesDueDateFilter(
+  task: BoardTask,
+  dueDate: TaskFilters['dueDate'],
+): boolean {
+  if (dueDate === 'all') return true;
+
+  if (!task.dueDate) {
+    return dueDate === 'none';
+  }
+
+  const due = new Date(task.dueDate);
+  const todayStart = startOfDay();
+  const todayEnd = endOfDay();
+
+  switch (dueDate) {
+    case 'none':
+      return false;
+    case 'overdue':
+      return due < todayStart;
+    case 'today':
+      return due >= todayStart && due <= todayEnd;
+    case 'week':
+      return due >= todayStart && due <= endOfWeek();
+    default:
+      return true;
+  }
+}
+
+function matchesCompleteDateFilter(
+  task: BoardTask,
+  completeDate: TaskFilters['completeDate'],
+): boolean {
+  if (completeDate === 'all') return true;
+
+  if (!task.completeDate) {
+    return completeDate === 'none';
+  }
+
+  const completedAt = new Date(task.completeDate);
+  const todayStart = startOfDay();
+  const todayEnd = endOfDay();
+
+  switch (completeDate) {
+    case 'none':
+      return false;
+    case 'today':
+      return completedAt >= todayStart && completedAt <= todayEnd;
+    case 'week':
+      return completedAt >= todayStart && completedAt <= endOfWeek();
+    case 'month':
+      return completedAt >= todayStart && completedAt <= endOfMonth();
+    default:
+      return true;
+  }
+}
+
 export function isTaskFiltersActive(
   filters: TaskFilters = defaultTaskFilters,
 ): boolean {
@@ -36,6 +98,8 @@ export function isTaskFiltersActive(
     filters.assigneeId !== null ||
     filters.dueDate !== 'all' ||
     filters.completion !== 'all' ||
+    filters.completeDate !== 'all' ||
+    filters.checklist !== 'all' ||
     filters.columnId !== null
   );
 }
@@ -74,28 +138,14 @@ export function taskMatchesFilters(
     return false;
   }
 
-  if (filters.dueDate === 'all') return true;
+  const hasChecklist = (task.checklistItems?.length ?? 0) > 0;
+  if (filters.checklist === 'with' && !hasChecklist) return false;
+  if (filters.checklist === 'without' && hasChecklist) return false;
 
-  if (!task.dueDate) {
-    return filters.dueDate === 'none';
-  }
+  if (!matchesDueDateFilter(task, filters.dueDate)) return false;
+  if (!matchesCompleteDateFilter(task, filters.completeDate)) return false;
 
-  const due = new Date(task.dueDate);
-  const todayStart = startOfDay();
-  const todayEnd = endOfDay();
-
-  switch (filters.dueDate) {
-    case 'none':
-      return false;
-    case 'overdue':
-      return due < todayStart;
-    case 'today':
-      return due >= todayStart && due <= todayEnd;
-    case 'week':
-      return due >= todayStart && due <= endOfWeek();
-    default:
-      return true;
-  }
+  return true;
 }
 
 export function taskMatchesQuery(task: BoardTask, query: string): boolean {
@@ -162,6 +212,8 @@ export function countActiveFilters(filters: TaskFilters): number {
   if (filters.assigneeId !== null) count += 1;
   if (filters.dueDate !== 'all') count += 1;
   if (filters.completion !== 'all') count += 1;
+  if (filters.completeDate !== 'all') count += 1;
+  if (filters.checklist !== 'all') count += 1;
   if (filters.columnId !== null) count += 1;
   return count;
 }

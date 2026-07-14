@@ -5,10 +5,12 @@ import { boardRepository } from '../repositories/board.repository';
 import { columnRepository } from '../repositories/column.repository';
 import { projectMemberRepository } from '../repositories/project-member.repository';
 import { taskRepository } from '../repositories/task.repository';
+import { checklistRepository } from '../repositories/checklist.repository';
 import { taskDependencyRepository } from '../repositories/task-dependency.repository';
 import { projectAccessService } from './project-access.service';
 import { projectMemberService } from './project-member.service';
 import { serializeGanttTask } from '../utils/gantt-serializer';
+import { computeChecklistProgress } from '../utils/checklist-progress';
 import {
   ensureTasksSameProject,
   wouldCreateParentCycle,
@@ -261,14 +263,30 @@ export class TaskService {
     }
 
     let normalizedInput: UpdateTaskInput = { ...input };
-    if (input.isCompleted === true && input.progress === undefined) {
-      normalizedInput = { ...normalizedInput, progress: 100 };
-    }
-    if (input.isCompleted === true && input.completeDate === undefined) {
-      normalizedInput = { ...normalizedInput, completeDate: new Date() };
-    }
-    if (input.isCompleted === false) {
-      normalizedInput = { ...normalizedInput, completeDate: null };
+
+    const checklistItems = await checklistRepository.findByTask(taskId);
+    const hasChecklist = checklistItems.length > 0;
+
+    if (input.isCompleted === true) {
+      normalizedInput = {
+        ...normalizedInput,
+        progress: 100,
+        completeDate:
+          input.completeDate === undefined ? new Date() : input.completeDate,
+      };
+    } else if (input.isCompleted === false) {
+      normalizedInput = {
+        ...normalizedInput,
+        completeDate: null,
+        ...(hasChecklist
+          ? { progress: computeChecklistProgress(checklistItems) }
+          : {}),
+      };
+    } else if (input.progress !== undefined && hasChecklist) {
+      normalizedInput = {
+        ...normalizedInput,
+        progress: computeChecklistProgress(checklistItems),
+      };
     }
 
     const isMove = input.columnId !== undefined || input.position !== undefined;

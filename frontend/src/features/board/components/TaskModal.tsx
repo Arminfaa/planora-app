@@ -21,6 +21,7 @@ import {
   getPriorityStyles,
 } from '@/features/tasks/types';
 import { toDateInputValue } from '@/features/tasks/utils/dates';
+import { getTaskProgressDisplay } from '@/features/tasks/utils/checklistProgress';
 import { useLocale } from '@/i18n/LocaleProvider';
 import { Input } from '@/shared/components/ui/Input';
 import { TextArea } from '@/shared/components/ui/TextArea';
@@ -53,7 +54,7 @@ function getTaskFormValues(task: BoardTask): FormData {
     columnId: task.columnId,
     startDate: toDateInputValue(task.startDate),
     dueDate: toDateInputValue(task.dueDate),
-    progress: task.isCompleted ? 100 : (task.progress ?? 0),
+    progress: getTaskProgressDisplay(task),
     parentTaskId: task.parentTaskId ?? '',
   };
 }
@@ -95,6 +96,9 @@ export function TaskModal({
   const { labels: projectLabels, createLabel } = useProjectLabels(projectId);
   const taskLabels = normalizeTaskLabels(task.labels);
   const checklistItems = task.checklistItems ?? [];
+  const hasChecklist = checklistItems.length > 0;
+  const progressLocked = Boolean(task.isCompleted) || hasChecklist;
+  const displayProgress = getTaskProgressDisplay(task);
   const { data: ganttData } = useProjectGantt(projectId, true);
 
   const schema = useMemo(
@@ -165,6 +169,8 @@ export function TaskModal({
         ? data.parentTaskId
         : null;
       const currentParentTaskId = task.parentTaskId ?? null;
+      const checklistDriven =
+        Boolean(task.isCompleted) || (task.checklistItems?.length ?? 0) > 0;
       const currentProgress = task.isCompleted ? 100 : (task.progress ?? 0);
 
       await taskService.update(task.id, {
@@ -175,7 +181,10 @@ export function TaskModal({
         startDate:
           nextStartDate !== currentStartDate ? nextStartDate : undefined,
         dueDate: nextDueDate !== currentDueDate ? nextDueDate : undefined,
-        progress: data.progress !== currentProgress ? data.progress : undefined,
+        progress:
+          checklistDriven || data.progress === currentProgress
+            ? undefined
+            : data.progress,
         parentTaskId:
           nextParentTaskId !== currentParentTaskId
             ? nextParentTaskId
@@ -338,14 +347,24 @@ export function TaskModal({
                 <span className="font-medium text-gray-700">
                   {t('tasks.progress')}
                 </span>
-                <span className="text-gray-500">{field.value}%</span>
+                <span className="text-gray-500">
+                  {progressLocked ? displayProgress : field.value}%
+                </span>
               </div>
               <Slider
                 min={0}
                 max={100}
-                value={field.value}
+                value={progressLocked ? displayProgress : field.value}
                 onChange={field.onChange}
+                disabled={progressLocked}
               />
+              <p className="text-xs text-gray-500">
+                {task.isCompleted
+                  ? t('tasks.progressCompletedHint')
+                  : hasChecklist
+                    ? t('tasks.progressChecklistHint')
+                    : t('tasks.progressManualHint')}
+              </p>
             </div>
           )}
         />

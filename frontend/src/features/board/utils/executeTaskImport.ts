@@ -101,7 +101,9 @@ export async function executeTaskImport({
 
       if (row.checklistItems?.length) {
         for (const item of row.checklistItems) {
-          const created = await checklistService.create(task.id, item.title);
+          const created = await checklistService.create(task.id, {
+            title: item.title,
+          });
           if (item.isDone) {
             await checklistService.update(task.id, created.id, {
               isDone: true,

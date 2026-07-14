@@ -8,7 +8,12 @@ import { TaskComments } from '@/features/comments/components/TaskComments';
 import { TaskAttachments } from '@/features/attachments/components/TaskAttachments';
 import { normalizeTaskLabels } from '@/features/labels/types';
 import { getTaskAssignees, getPriorityStyles } from '@/features/tasks/types';
-import { formatCompleteDate, formatDueDate, isDueDateOverdue } from '@/features/tasks/utils/dates';
+import {
+  formatCompleteDate,
+  formatDueDate,
+  isDueDateOverdue,
+} from '@/features/tasks/utils/dates';
+import { getTaskProgressDisplay } from '@/features/tasks/utils/checklistProgress';
 import { useLocale } from '@/i18n/LocaleProvider';
 import { AppModal } from '@/shared/components/ui/AppModal';
 import { AssigneeDisplay } from './AssigneeDisplay';
@@ -43,6 +48,7 @@ export function TaskViewModal({
     t('common.emDash');
 
   const checklistItems = task.checklistItems ?? [];
+  const progressPercent = getTaskProgressDisplay(task);
 
   return (
     <AppModal
@@ -105,13 +111,21 @@ export function TaskViewModal({
                 : 'text-gray-600'
             }`}
           >
-            {task.dueDate ? formatDueDate(task.dueDate, locale) : t('common.emDash')}
+            {task.dueDate
+              ? formatDueDate(task.dueDate, locale)
+              : t('common.emDash')}
           </p>
         </div>
         {task.completeDate && (
           <div>
             <span className="font-medium text-gray-700">
               {t('tasks.completeDate')}
+              <div>
+                <span className="font-medium text-gray-700">
+                  {t('tasks.progress')}
+                </span>
+                <p className="mt-0.5 text-gray-600">{progressPercent}%</p>
+              </div>
             </span>
             <p className="mt-0.5 text-gray-600">
               {formatCompleteDate(task.completeDate, locale)}

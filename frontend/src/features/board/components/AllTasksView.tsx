@@ -25,6 +25,10 @@ import { normalizeTaskLabels } from '@/features/labels/types';
 import { formatDueDate, isDueDateOverdue } from '@/features/tasks/utils/dates';
 import { useMemberColorMap } from '@/features/tasks/hooks/useMemberColorMap';
 import { getTaskAssigneeCardPresentation } from '@/features/tasks/utils/assigneeColors';
+import {
+  computeChecklistProgress,
+  getTaskProgressDisplay,
+} from '@/features/tasks/utils/checklistProgress';
 import { AllTasksCreateModal } from './AllTasksCreateModal';
 import { ImportTasksModal } from './ImportTasksModal';
 import { TaskChecklistPreview } from './TaskChecklistPreview';
@@ -78,6 +82,9 @@ export function AllTasksView({
   const [showImportModal, setShowImportModal] = useState(false);
   const [viewTask, setViewTask] = useState<BoardTask | null>(null);
   const [editTask, setEditTask] = useState<BoardTask | null>(null);
+  const [selectionMode, setSelectionMode] = useState<'move' | 'export' | null>(
+    null,
+  );
   const [selectedTaskIds, setSelectedTaskIds] = useState<Set<string>>(
     () => new Set(),
   );
@@ -168,17 +175,20 @@ export function AllTasksView({
     [columns],
   );
 
-  const toggleTaskSelection = useCallback((taskId: string, selected: boolean) => {
-    setSelectedTaskIds((current) => {
-      const next = new Set(current);
-      if (selected) {
-        next.add(taskId);
-      } else {
-        next.delete(taskId);
-      }
-      return next;
-    });
-  }, []);
+  const toggleTaskSelection = useCallback(
+    (taskId: string, selected: boolean) => {
+      setSelectedTaskIds((current) => {
+        const next = new Set(current);
+        if (selected) {
+          next.add(taskId);
+        } else {
+          next.delete(taskId);
+        }
+        return next;
+      });
+    },
+    [],
+  );
 
   const toggleSelectAllFiltered = useCallback(
     (selected: boolean) => {
@@ -200,9 +210,30 @@ export function AllTasksView({
     setBulkTargetColumnId('');
   }, []);
 
+  const exitSelectionMode = useCallback(() => {
+    setSelectionMode(null);
+    clearSelection();
+  }, [clearSelection]);
+
+  const enterSelectionMode = useCallback(
+    (mode: 'move' | 'export') => {
+      setSelectionMode(mode);
+      clearSelection();
+      setActionError('');
+    },
+    [clearSelection],
+  );
+
   const handleBulkMove = useCallback(async () => {
-    if (!canMoveTasks || !bulkTargetColumnId || selectedCount === 0 || !board)
+    if (
+      !canMoveTasks ||
+      selectionMode !== 'move' ||
+      !bulkTargetColumnId ||
+      selectedCount === 0 ||
+      !board
+    ) {
       return;
+    }
 
     const taskIds = Array.from(selectedTaskIds);
     setIsBulkMoving(true);
@@ -213,7 +244,7 @@ export function AllTasksView({
         taskIds,
         columnId: bulkTargetColumnId,
       });
-      clearSelection();
+      exitSelectionMode();
       await loadData();
     } catch (err) {
       if (!isForbiddenError(err)) {
@@ -226,10 +257,11 @@ export function AllTasksView({
     board,
     bulkTargetColumnId,
     canMoveTasks,
-    clearSelection,
+    exitSelectionMode,
     loadData,
     selectedCount,
     selectedTaskIds,
+    selectionMode,
   ]);
 
   const handleCreateTask = async () => {
@@ -285,9 +317,12 @@ export function AllTasksView({
     await loadData();
   };
 
-  const handleExportExcel = () => {
-    if (!board || tasks.length === 0) return;
-    exportBoardTasksToExcel(tasks, board, columns, locale);
+  const handleExportSelected = () => {
+    if (!board || selectionMode !== 'export' || selectedCount === 0) return;
+    const selectedTasks = tasks.filter((task) => selectedTaskIds.has(task.id));
+    if (selectedTasks.length === 0) return;
+    exportBoardTasksToExcel(selectedTasks, board, columns, locale);
+    exitSelectionMode();
   };
 
   const updateTaskInList = useCallback(
@@ -312,11 +347,17 @@ export function AllTasksView({
 
       const previousCompleteDate = task.completeDate ?? null;
       setActionError('');
+      const previousProgress = task.progress ?? 0;
+      const uncheckedProgress =
+        (task.checklistItems?.length ?? 0) > 0
+          ? computeChecklistProgress(task.checklistItems ?? [])
+          : previousProgress;
+
       updateTaskInList(task.id, (current) => ({
         ...current,
         isCompleted: completed,
         completeDate: completed ? new Date().toISOString() : null,
-        progress: completed ? 100 : current.progress,
+        progress: completed ? 100 : uncheckedProgress,
       }));
 
       try {
@@ -334,6 +375,7 @@ export function AllTasksView({
           ...current,
           isCompleted: Boolean(task.isCompleted),
           completeDate: previousCompleteDate,
+          progress: previousProgress,
         }));
         if (!isForbiddenError(err)) {
           setActionError(getApiErrorMessage(err));
@@ -351,12 +393,19 @@ export function AllTasksView({
       const previousItems = task?.checklistItems;
 
       setActionError('');
-      updateTaskInList(taskId, (current) => ({
-        ...current,
-        checklistItems: current.checklistItems?.map((item) =>
-          item.id === itemId ? { ...item, isDone } : item,
-        ),
-      }));
+      updateTaskInList(taskId, (current) => {
+        const nextItems =
+          current.checklistItems?.map((item) =>
+            item.id === itemId ? { ...item, isDone } : item,
+          ) ?? [];
+        return {
+          ...current,
+          checklistItems: nextItems,
+          progress: current.isCompleted
+            ? 100
+            : computeChecklistProgress(nextItems),
+        };
+      });
 
       try {
         await checklistService.update(taskId, itemId, { isDone });
@@ -365,6 +414,9 @@ export function AllTasksView({
           updateTaskInList(taskId, (current) => ({
             ...current,
             checklistItems: previousItems,
+            progress: current.isCompleted
+              ? 100
+              : computeChecklistProgress(previousItems),
           }));
         }
         if (!isForbiddenError(err)) {
@@ -434,29 +486,28 @@ export function AllTasksView({
         </div>
 
         <div className="flex flex-wrap items-center gap-2">
-          <Button
-            type="button"
-            variant="secondary"
-            onClick={handleExportExcel}
-            disabled={tasks.length === 0}
-            aria-label={t('board.exportAriaLabel')}
-          >
-            <svg
-              className="me-2 h-4 w-4"
-              fill="none"
-              viewBox="0 0 24 24"
-              stroke="currentColor"
-              aria-hidden="true"
+          {canMoveTasks && filteredTasks.length > 0 && (
+            <Button
+              type="button"
+              variant="secondary"
+              onClick={() => enterSelectionMode('move')}
+              disabled={selectionMode === 'move'}
             >
-              <path
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                strokeWidth={2}
-                d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"
-              />
-            </svg>
-            {t('board.exportExcel')}
-          </Button>
+              {t('board.selectionChangeColumn')}
+            </Button>
+          )}
+
+          {filteredTasks.length > 0 && (
+            <Button
+              type="button"
+              variant="secondary"
+              onClick={() => enterSelectionMode('export')}
+              disabled={selectionMode === 'export'}
+              aria-label={t('board.exportAriaLabel')}
+            >
+              {t('board.selectionExportExcel')}
+            </Button>
+          )}
 
           {canCreateTasks && (
             <Button
@@ -522,58 +573,79 @@ export function AllTasksView({
         </div>
       )}
 
-      {canMoveTasks && filteredTasks.length > 0 && (
-        <div className="mt-4 flex flex-col gap-3 rounded-xl border border-gray-200 bg-gray-50 p-3 sm:flex-row sm:items-center sm:justify-between">
-          <label className="flex cursor-pointer items-center gap-2 text-sm text-gray-700">
-            <Checkbox
-              checked={allFilteredSelected}
-              indeterminate={someFilteredSelected}
-              onChange={(event) =>
-                toggleSelectAllFiltered(event.target.checked)
-              }
-            />
-            <span>
-              {t('board.bulkSelectAll')}
-              {selectedCount > 0 && (
-                <span className="ms-1 font-medium text-primary-700">
-                  · {t('board.bulkSelectedCount', { count: selectedCount })}
-                </span>
-              )}
-            </span>
-          </label>
+      {selectionMode && filteredTasks.length > 0 && (
+        <div className="mt-4 flex flex-col gap-3 rounded-xl border border-gray-200 bg-gray-50 p-3">
+          <p className="text-sm text-gray-600">
+            {selectionMode === 'move'
+              ? t('board.selectionModeMoveHint')
+              : t('board.selectionModeExportHint')}
+          </p>
 
-          {selectedCount > 0 && (
+          <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+            <label className="flex cursor-pointer items-center gap-2 text-sm text-gray-700">
+              <Checkbox
+                checked={allFilteredSelected}
+                indeterminate={someFilteredSelected}
+                onChange={(event) =>
+                  toggleSelectAllFiltered(event.target.checked)
+                }
+              />
+              <span>
+                {t('board.bulkSelectAll')}
+                {selectedCount > 0 && (
+                  <span className="ms-1 font-medium text-primary-700">
+                    · {t('board.bulkSelectedCount', { count: selectedCount })}
+                  </span>
+                )}
+              </span>
+            </label>
+
             <div className="flex flex-col gap-2 sm:flex-row sm:items-end">
-              <div className="min-w-[200px]">
-                <SelectField
-                  label={t('board.bulkMoveToColumn')}
-                  value={bulkTargetColumnId}
-                  onChange={(value) => setBulkTargetColumnId(String(value))}
-                  options={columnMoveOptions}
-                  showSearch
-                  optionFilterProp="label"
-                  placeholder={t('board.bulkMoveToColumn')}
-                />
-              </div>
-              <div className="flex gap-2">
+              {selectionMode === 'move' && (
+                <>
+                  <div className="min-w-[200px]">
+                    <SelectField
+                      label={t('board.bulkMoveToColumn')}
+                      value={bulkTargetColumnId}
+                      onChange={(value) => setBulkTargetColumnId(String(value))}
+                      options={columnMoveOptions}
+                      showSearch
+                      optionFilterProp="label"
+                      placeholder={t('board.bulkMoveToColumn')}
+                    />
+                  </div>
+                  <Button
+                    type="button"
+                    onClick={() => void handleBulkMove()}
+                    disabled={
+                      selectedCount === 0 || !bulkTargetColumnId || isBulkMoving
+                    }
+                  >
+                    {isBulkMoving ? t('board.bulkMoving') : t('board.bulkMove')}
+                  </Button>
+                </>
+              )}
+
+              {selectionMode === 'export' && (
                 <Button
                   type="button"
-                  onClick={() => void handleBulkMove()}
-                  disabled={!bulkTargetColumnId || isBulkMoving}
+                  onClick={handleExportSelected}
+                  disabled={selectedCount === 0}
                 >
-                  {isBulkMoving ? t('board.bulkMoving') : t('board.bulkMove')}
+                  {t('board.selectionExportSelected', { count: selectedCount })}
                 </Button>
-                <Button
-                  type="button"
-                  variant="secondary"
-                  onClick={clearSelection}
-                  disabled={isBulkMoving}
-                >
-                  {t('board.bulkClearSelection')}
-                </Button>
-              </div>
+              )}
+
+              <Button
+                type="button"
+                variant="secondary"
+                onClick={exitSelectionMode}
+                disabled={isBulkMoving}
+              >
+                {t('board.selectionExitMode')}
+              </Button>
             </div>
-          )}
+          </div>
         </div>
       )}
 
@@ -592,6 +664,8 @@ export function AllTasksView({
             const labels = normalizeTaskLabels(task.labels);
             const isCompleted = Boolean(task.isCompleted);
             const isSelected = selectedTaskIds.has(task.id);
+            const showSelection = selectionMode !== null;
+            const progressPercent = getTaskProgressDisplay(task);
             const cardPresentation = getTaskAssigneeCardPresentation(
               task,
               memberColorMap,
@@ -603,7 +677,7 @@ export function AllTasksView({
                 key={task.id}
                 className="flex flex-col gap-2 sm:flex-row sm:items-start sm:gap-3"
               >
-                {canMoveTasks && (
+                {showSelection && (
                   <div
                     className="flex shrink-0 items-center sm:pt-4"
                     onClick={(event) => event.stopPropagation()}
@@ -732,6 +806,9 @@ export function AllTasksView({
                           task={task}
                           memberColorMap={memberColorMap}
                         />
+                        <span>
+                          {t('tasks.progress')}: {progressPercent}%
+                        </span>
                         {task.dueDate && (
                           <span
                             className={

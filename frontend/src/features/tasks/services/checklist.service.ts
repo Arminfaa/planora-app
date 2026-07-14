@@ -10,10 +10,13 @@ export const checklistService = {
     return data.data;
   },
 
-  async create(taskId: string, title: string): Promise<TaskChecklistItem> {
+  async create(
+    taskId: string,
+    input: { title: string; weight?: number },
+  ): Promise<TaskChecklistItem> {
     const { data } = await api.post<ApiSuccessResponse<TaskChecklistItem>>(
       `/tasks/${taskId}/checklist`,
-      { title },
+      input,
     );
     return data.data;
   },
@@ -21,7 +24,7 @@ export const checklistService = {
   async update(
     taskId: string,
     itemId: string,
-    input: { title?: string; isDone?: boolean },
+    input: { title?: string; isDone?: boolean; weight?: number },
   ): Promise<TaskChecklistItem> {
     const { data } = await api.patch<ApiSuccessResponse<TaskChecklistItem>>(
       `/tasks/${taskId}/checklist/${itemId}`,

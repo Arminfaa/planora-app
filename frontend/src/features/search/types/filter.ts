@@ -4,6 +4,10 @@ export type DueDateFilter = 'all' | 'overdue' | 'today' | 'week' | 'none';
 
 export type CompletionFilter = 'all' | 'completed' | 'not_completed';
 
+export type CompleteDateFilter = 'all' | 'today' | 'week' | 'month' | 'none';
+
+export type ChecklistFilter = 'all' | 'with' | 'without';
+
 export const UNASSIGNED_ASSIGNEE = '__unassigned__';
 
 export interface TaskFilters {
@@ -11,6 +15,8 @@ export interface TaskFilters {
   assigneeId: string | null;
   dueDate: DueDateFilter;
   completion: CompletionFilter;
+  completeDate: CompleteDateFilter;
+  checklist: ChecklistFilter;
   columnId: string | null;
 }
 
@@ -19,6 +25,8 @@ export const defaultTaskFilters: TaskFilters = {
   assigneeId: null,
   dueDate: 'all',
   completion: 'all',
+  completeDate: 'all',
+  checklist: 'all',
   columnId: null,
 };
 
@@ -53,6 +61,24 @@ export function getCompletionFilterOptions(t: (key: string) => string) {
       value: 'not_completed' as const,
       label: t('search.completionNotCompleted'),
     },
+  ];
+}
+
+export function getCompleteDateFilterOptions(t: (key: string) => string) {
+  return [
+    { value: 'all' as const, label: t('search.allCompleteDates') },
+    { value: 'today' as const, label: t('search.completedToday') },
+    { value: 'week' as const, label: t('search.completedThisWeek') },
+    { value: 'month' as const, label: t('search.completedThisMonth') },
+    { value: 'none' as const, label: t('search.noCompleteDate') },
+  ];
+}
+
+export function getChecklistFilterOptions(t: (key: string) => string) {
+  return [
+    { value: 'all' as const, label: t('search.allChecklist') },
+    { value: 'with' as const, label: t('search.withChecklist') },
+    { value: 'without' as const, label: t('search.withoutChecklist') },
   ];
 }
 

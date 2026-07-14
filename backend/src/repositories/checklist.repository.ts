@@ -1,4 +1,5 @@
 import { BaseRepository } from './base.repository';
+import { DEFAULT_CHECKLIST_WEIGHT } from '../utils/checklist-progress';
 
 export class ChecklistRepository extends BaseRepository {
   async findByTask(taskId: string) {
@@ -21,15 +22,25 @@ export class ChecklistRepository extends BaseRepository {
     return (last?.position ?? -1) + 1;
   }
 
-  async create(taskId: string, title: string, position: number) {
+  async create(
+    taskId: string,
+    title: string,
+    position: number,
+    weight = DEFAULT_CHECKLIST_WEIGHT,
+  ) {
     return this.db.taskChecklistItem.create({
-      data: { taskId, title, position },
+      data: { taskId, title, position, weight },
     });
   }
 
   async update(
     id: string,
-    data: { title?: string; isDone?: boolean; position?: number },
+    data: {
+      title?: string;
+      isDone?: boolean;
+      weight?: number;
+      position?: number;
+    },
   ) {
     return this.db.taskChecklistItem.update({
       where: { id },

@@ -4,9 +4,16 @@ import { useState } from 'react';
 import { Checkbox } from 'antd';
 import type { TaskChecklistItem } from '@/features/tasks/types';
 import { checklistService } from '@/features/tasks/services/checklist.service';
+import {
+  DEFAULT_CHECKLIST_WEIGHT,
+  MAX_CHECKLIST_WEIGHT,
+  MIN_CHECKLIST_WEIGHT,
+  normalizeChecklistWeight,
+} from '@/features/tasks/utils/checklistProgress';
 import { useLocale } from '@/i18n/LocaleProvider';
 import { Button } from '@/shared/components/ui/Button';
 import { Input } from '@/shared/components/ui/Input';
+import { SelectField } from '@/shared/components/ui/SelectField';
 import { getApiErrorMessage } from '@/lib/api';
 
 interface TaskChecklistEditorProps {
@@ -17,6 +24,14 @@ interface TaskChecklistEditorProps {
   canEdit?: boolean;
   canManage?: boolean;
 }
+
+const WEIGHT_OPTIONS = Array.from(
+  { length: MAX_CHECKLIST_WEIGHT - MIN_CHECKLIST_WEIGHT + 1 },
+  (_, index) => {
+    const value = String(MIN_CHECKLIST_WEIGHT + index);
+    return { value, label: value };
+  },
+);
 
 export function TaskChecklistEditor({
   taskId,
@@ -29,6 +44,7 @@ export function TaskChecklistEditor({
   const { t } = useLocale();
   const canEditItems = canEdit ?? canManage;
   const [newTitle, setNewTitle] = useState('');
+  const [newWeight, setNewWeight] = useState(String(DEFAULT_CHECKLIST_WEIGHT));
   const [error, setError] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
@@ -43,8 +59,12 @@ export function TaskChecklistEditor({
     setError('');
     setIsSubmitting(true);
     try {
-      await checklistService.create(taskId, title);
+      await checklistService.create(taskId, {
+        title,
+        weight: normalizeChecklistWeight(Number(newWeight)),
+      });
       setNewTitle('');
+      setNewWeight(String(DEFAULT_CHECKLIST_WEIGHT));
       await onChange();
     } catch (err) {
       setError(getApiErrorMessage(err));
@@ -58,6 +78,20 @@ export function TaskChecklistEditor({
     setError('');
     try {
       await checklistService.update(taskId, item.id, { isDone: !item.isDone });
+      await onChange();
+    } catch (err) {
+      setError(getApiErrorMessage(err));
+    }
+  };
+
+  const handleWeightChange = async (item: TaskChecklistItem, value: string) => {
+    if (!canEditItems) return;
+    const weight = normalizeChecklistWeight(Number(value));
+    if (weight === normalizeChecklistWeight(item.weight)) return;
+
+    setError('');
+    try {
+      await checklistService.update(taskId, item.id, { weight });
       await onChange();
     } catch (err) {
       setError(getApiErrorMessage(err));
@@ -111,9 +145,14 @@ export function TaskChecklistEditor({
 
   return (
     <div className="space-y-3">
-      <h3 className="text-sm font-semibold text-gray-900">
-        {t('tasks.checklist')}
-      </h3>
+      <div className="flex items-start justify-between gap-2">
+        <h3 className="text-sm font-semibold text-gray-900">
+          {t('tasks.checklist')}
+        </h3>
+        <p className="text-xs text-gray-500">
+          {t('tasks.checklistWeightHint')}
+        </p>
+      </div>
 
       {error && (
         <div className="rounded-lg bg-red-50 px-3 py-2 text-xs text-red-700">
@@ -126,7 +165,7 @@ export function TaskChecklistEditor({
           {sortedItems.map((item) => (
             <li
               key={item.id}
-              className="flex items-start gap-2 rounded-md border border-gray-100 bg-gray-50 px-2 py-1.5"
+              className="flex flex-wrap items-start gap-2 rounded-md border border-gray-100 bg-gray-50 px-2 py-1.5"
             >
               <Checkbox
                 checked={item.isDone}
@@ -166,6 +205,18 @@ export function TaskChecklistEditor({
                 </button>
               )}
 
+              <div className="w-20 shrink-0">
+                <SelectField
+                  value={String(normalizeChecklistWeight(item.weight))}
+                  onChange={(value) =>
+                    void handleWeightChange(item, String(value))
+                  }
+                  options={WEIGHT_OPTIONS}
+                  disabled={!canEditItems}
+                  aria-label={t('tasks.checklistWeight')}
+                />
+              </div>
+
               <div className="flex shrink-0 items-center gap-2">
                 {canEditItems && editingId !== item.id && (
                   <button
@@ -196,7 +247,7 @@ export function TaskChecklistEditor({
       )}
 
       {canManage && (
-        <div className="flex gap-2">
+        <div className="flex flex-col gap-2 sm:flex-row">
           <Input
             value={newTitle}
             onChange={(event) => setNewTitle(event.target.value)}
@@ -209,6 +260,14 @@ export function TaskChecklistEditor({
               }
             }}
           />
+          <div className="w-full sm:w-24">
+            <SelectField
+              value={newWeight}
+              onChange={(value) => setNewWeight(String(value))}
+              options={WEIGHT_OPTIONS}
+              aria-label={t('tasks.checklistWeight')}
+            />
+          </div>
           <Button
             type="button"
             variant="secondary"

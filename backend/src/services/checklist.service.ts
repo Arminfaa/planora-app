@@ -4,6 +4,11 @@ import { columnRepository } from '../repositories/column.repository';
 import { checklistRepository } from '../repositories/checklist.repository';
 import { taskRepository } from '../repositories/task.repository';
 import { projectAccessService } from './project-access.service';
+import {
+  computeChecklistProgress,
+  DEFAULT_CHECKLIST_WEIGHT,
+  normalizeChecklistWeight,
+} from '../utils/checklist-progress';
 import type {
   CreateChecklistItemInput,
   UpdateChecklistItemInput,
@@ -37,6 +42,32 @@ export class ChecklistService {
     return task;
   }
 
+  private async syncTaskProgressFromChecklist(taskId: string) {
+    const task = await taskRepository.findById(taskId);
+    if (!task) {
+      throw new ApiError(404, 'Task not found');
+    }
+
+    if (task.isCompleted) {
+      if (task.progress !== 100) {
+        return taskRepository.update(taskId, { progress: 100 });
+      }
+      return task;
+    }
+
+    const items = await checklistRepository.findByTask(taskId);
+    if (items.length === 0) {
+      return task;
+    }
+
+    const progress = computeChecklistProgress(items);
+    if (task.progress === progress) {
+      return task;
+    }
+
+    return taskRepository.update(taskId, { progress });
+  }
+
   async list(userId: string, taskId: string) {
     const projectId = await this.resolveProjectIdFromTask(taskId);
     await projectAccessService.ensurePermission(userId, projectId, 'task.view');
@@ -53,13 +84,18 @@ export class ChecklistService {
     await this.ensureTaskExists(taskId);
 
     const position = await checklistRepository.getNextPosition(taskId);
+    const weight = normalizeChecklistWeight(
+      input.weight ?? DEFAULT_CHECKLIST_WEIGHT,
+    );
     const item = await checklistRepository.create(
       taskId,
       input.title,
       position,
+      weight,
     );
 
-    return { item, task: await taskRepository.findById(taskId) };
+    const task = await this.syncTaskProgressFromChecklist(taskId);
+    return { item, task };
   }
 
   async update(
@@ -73,7 +109,8 @@ export class ChecklistService {
     const isToggleOnly =
       input.isDone !== undefined &&
       input.title === undefined &&
-      input.position === undefined;
+      input.position === undefined &&
+      input.weight === undefined;
 
     await projectAccessService.ensurePermission(
       userId,
@@ -86,10 +123,26 @@ export class ChecklistService {
       throw new ApiError(404, 'Checklist item not found');
     }
 
-    const updated = await checklistRepository.update(itemId, input);
+    const payload: {
+      title?: string;
+      isDone?: boolean;
+      weight?: number;
+      position?: number;
+    } = {};
+
+    if (input.title !== undefined) payload.title = input.title;
+    if (input.isDone !== undefined) payload.isDone = input.isDone;
+    if (input.position !== undefined) payload.position = input.position;
+    if (input.weight !== undefined) {
+      payload.weight = normalizeChecklistWeight(input.weight);
+    }
+
+    const updated = await checklistRepository.update(itemId, payload);
+    const task = await this.syncTaskProgressFromChecklist(taskId);
+
     return {
       item: updated,
-      task: await taskRepository.findById(taskId),
+      task,
       previousItem: item,
     };
   }
@@ -104,8 +157,10 @@ export class ChecklistService {
     }
 
     await checklistRepository.delete(itemId);
+    const task = await this.syncTaskProgressFromChecklist(taskId);
+
     return {
-      task: await taskRepository.findById(taskId),
+      task,
       deletedItem: item,
     };
   }

@@ -9,6 +9,8 @@ import {
 import { useLocale } from '@/i18n/LocaleProvider';
 import { SelectField } from '@/shared/components/ui/SelectField';
 import {
+  getChecklistFilterOptions,
+  getCompleteDateFilterOptions,
   getCompletionFilterOptions,
   getDueDateFilterOptions,
   UNASSIGNED_ASSIGNEE,
@@ -46,9 +48,8 @@ export function BoardFilterForm({
     onChange(togglePriorityFilter(filters, priority));
   };
 
-  const labelClass = isModal
-    ? 'text-xs font-medium uppercase tracking-wide text-gray-400'
-    : 'text-xs font-medium uppercase tracking-wide text-gray-400';
+  const labelClass =
+    'text-xs font-medium uppercase tracking-wide text-gray-400';
 
   const columnOptions = [
     { value: '', label: t('search.anyColumn') },
@@ -70,6 +71,16 @@ export function BoardFilterForm({
   }));
 
   const completionOptions = getCompletionFilterOptions(t).map((option) => ({
+    value: option.value,
+    label: option.label,
+  }));
+
+  const completeDateOptions = getCompleteDateFilterOptions(t).map((option) => ({
+    value: option.value,
+    label: option.label,
+  }));
+
+  const checklistOptions = getChecklistFilterOptions(t).map((option) => ({
     value: option.value,
     label: option.label,
   }));
@@ -163,6 +174,30 @@ export function BoardFilterForm({
             })
           }
           options={completionOptions}
+        />
+
+        <SelectField
+          label={<span className={labelClass}>{t('tasks.completeDate')}</span>}
+          value={filters.completeDate}
+          onChange={(value) =>
+            onChange({
+              ...filters,
+              completeDate: value as TaskFilters['completeDate'],
+            })
+          }
+          options={completeDateOptions}
+        />
+
+        <SelectField
+          label={<span className={labelClass}>{t('tasks.checklist')}</span>}
+          value={filters.checklist}
+          onChange={(value) =>
+            onChange({
+              ...filters,
+              checklist: value as TaskFilters['checklist'],
+            })
+          }
+          options={checklistOptions}
         />
       </div>
     </div>
