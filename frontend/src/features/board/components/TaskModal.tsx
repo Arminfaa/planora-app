@@ -200,7 +200,9 @@ export function TaskModal({
     setDraftChecklist(nextChecklist);
     setDraftLabels(normalizeTaskLabels(task.labels));
     reset(getTaskFormValues(task, nextChecklist));
-  }, [reset, task]);
+    // Seed draft state once per opened task; ignore later board refreshes.
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- intentionally keyed by task.id
+  }, [reset, task.id]);
 
   const onSubmit = async (data: FormData) => {
     setError('');
