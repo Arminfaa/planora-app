@@ -14,7 +14,8 @@ export type BulkOperationMode =
   | 'setLabels'
   | 'checklist'
   | 'delete'
-  | 'export';
+  | 'export'
+  | 'exportText';
 
 export type BulkTaskAction =
   | { type: 'move'; columnId: string }

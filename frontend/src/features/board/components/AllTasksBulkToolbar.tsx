@@ -45,6 +45,7 @@ interface AllTasksBulkToolbarProps {
   onExit: () => void;
   onApplyAction: (action: BulkTaskAction) => Promise<void>;
   onExport: () => void;
+  onExportText: () => void;
   form: BulkFormState;
   onFormChange: (patch: Partial<BulkFormState>) => void;
 }
@@ -130,6 +131,7 @@ export function AllTasksBulkToolbar({
   onExit,
   onApplyAction,
   onExport,
+  onExportText,
   form,
   onFormChange,
 }: AllTasksBulkToolbarProps) {
@@ -486,6 +488,12 @@ export function AllTasksBulkToolbar({
               </p>
             )}
 
+            {mode === 'exportText' && (
+              <p className="max-w-md text-sm text-gray-600">
+                {t('board.bulkHints.exportText')}
+              </p>
+            )}
+
             {mode === 'delete' && (
               <p className="max-w-md text-sm text-red-700">
                 {t('board.bulkHints.delete')}
@@ -502,6 +510,17 @@ export function AllTasksBulkToolbar({
                 className="rounded-xl"
               >
                 {t('board.selectionExportSelected', { count: selectedCount })}
+              </Button>
+            ) : mode === 'exportText' ? (
+              <Button
+                type="button"
+                onClick={onExportText}
+                disabled={selectedCount === 0}
+                className="rounded-xl"
+              >
+                {t('board.selectionExportTextSelected', {
+                  count: selectedCount,
+                })}
               </Button>
             ) : (
               <Button
@@ -644,6 +663,7 @@ export function AllTasksOperationsMenu({
     ...groups,
     { type: 'divider' },
     { key: 'export', label: t('board.bulkOps.export') },
+    { key: 'exportText', label: t('board.bulkOps.exportText') },
   ];
 
   return (

@@ -660,10 +660,12 @@ export const enMessages = {
       checklist: 'Add checklist item',
       delete: 'Delete tasks',
       export: 'Export Excel',
+      exportText: 'Export text report',
     },
     bulkDeleteConfirm:
       'Delete {count} selected task(s)? This cannot be undone.',
     bulkDeleteApply: 'Delete ({count})',
+    selectionExportTextSelected: 'Generate report ({count})',
     bulkHints: {
       move: 'Select tasks, then choose the destination column.',
       startDate: 'Select tasks, then set or clear the start date.',
@@ -679,7 +681,17 @@ export const enMessages = {
       setLabels: 'Select tasks, then set their labels (replaces existing).',
       checklist: 'Select tasks, then add the same checklist item to all.',
       delete: 'Selected tasks will be permanently deleted.',
+      exportText:
+        'Select tasks, then generate a plain-text work report you can copy.',
       selectTasksFirst: 'Select the tasks you want, then apply the action.',
+    },
+    workReport: {
+      title: 'Work report',
+      subtitle: 'Review the text, then copy it.',
+      header: 'Work report ({date}) ({people})',
+      checklist: 'Checklist',
+      completedOn: 'Completed on',
+      by: 'By',
     },
   },
 

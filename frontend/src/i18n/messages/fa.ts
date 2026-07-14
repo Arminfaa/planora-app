@@ -658,10 +658,12 @@ export const faMessages = {
       checklist: 'افزودن مورد چک‌لیست',
       delete: 'حذف تسک‌ها',
       export: 'خروجی اکسل',
+      exportText: 'خروجی متن گزارش کار',
     },
     bulkDeleteConfirm:
       '{count} تسک انتخاب‌شده حذف شود؟ این عمل قابل بازگشت نیست.',
     bulkDeleteApply: 'حذف ({count})',
+    selectionExportTextSelected: 'تولید گزارش ({count})',
     bulkHints: {
       move: 'تسک‌ها را انتخاب کنید، سپس ستون مقصد را مشخص کنید.',
       startDate: 'تسک‌ها را انتخاب کنید، سپس تاریخ شروع را تنظیم یا پاک کنید.',
@@ -681,8 +683,18 @@ export const faMessages = {
       checklist:
         'تسک‌ها را انتخاب کنید، سپس یک مورد چک‌لیست مشترک به همه اضافه کنید.',
       delete: 'تسک‌های انتخاب‌شده برای همیشه حذف می‌شوند.',
+      exportText:
+        'تسک‌ها را انتخاب کنید، سپس گزارش کار متنی برای کپی کردن بسازید.',
       selectTasksFirst:
         'تسک‌های موردنظر را انتخاب کنید، سپس عملیات را اعمال کنید.',
+    },
+    workReport: {
+      title: 'گزارش کار',
+      subtitle: 'متن را بررسی کنید و در صورت نیاز کپی کنید.',
+      header: 'گزارش کار ({date}) ({people})',
+      checklist: 'چک‌لیست',
+      completedOn: 'انجام شده در تاریخ',
+      by: 'توسط',
     },
   },
 

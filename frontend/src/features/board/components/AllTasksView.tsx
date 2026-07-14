@@ -41,6 +41,7 @@ import { LoadingSpinner } from '@/shared/components/feedback/LoadingSpinner';
 import { Button } from '@/shared/components/ui/Button';
 import { getApiErrorMessage, isForbiddenError } from '@/lib/api';
 import { exportBoardTasksToExcel } from '../utils/exportTasksToExcel';
+import { buildWorkReportText } from '../utils/buildWorkReportText';
 import type {
   BulkOperationMode,
   BulkTaskAction,
@@ -53,6 +54,7 @@ import {
 } from './AllTasksBulkToolbar';
 import { AllTasksPageHeader } from './AllTasksPageHeader';
 import { AllTasksSearchBar } from './AllTasksSearchBar';
+import { WorkReportModal } from './WorkReportModal';
 
 const TaskModal = dynamic(
   () => import('./TaskModal').then((mod) => ({ default: mod.TaskModal })),
@@ -110,6 +112,7 @@ export function AllTasksView({
     createEmptyBulkFormState,
   );
   const [isBulkApplying, setIsBulkApplying] = useState(false);
+  const [workReportText, setWorkReportText] = useState<string | null>(null);
 
   const { can } = useProjectPermissions(project);
   const members = useProjectMembers(project.id);
@@ -448,6 +451,15 @@ export function AllTasksView({
     exitSelectionMode();
   };
 
+  const handleExportTextSelected = () => {
+    if (selectionMode !== 'exportText' || selectedCount === 0) return;
+    const selectedTasks = tasks.filter((task) => selectedTaskIds.has(task.id));
+    if (selectedTasks.length === 0) return;
+    const text = buildWorkReportText(selectedTasks, locale, t);
+    setWorkReportText(text);
+    exitSelectionMode();
+  };
+
   const handleBulkFormChange = useCallback((patch: Partial<BulkFormState>) => {
     setBulkForm((current) => ({ ...current, ...patch }));
   }, []);
@@ -675,6 +687,7 @@ export function AllTasksView({
           onExit={exitSelectionMode}
           onApplyAction={handleBulkAction}
           onExport={handleExportSelected}
+          onExportText={handleExportTextSelected}
           form={bulkForm}
           onFormChange={handleBulkFormChange}
         />
@@ -1017,6 +1030,13 @@ export function AllTasksView({
           }}
           onSave={handleTaskSave}
           onDelete={handleTaskDelete}
+        />
+      )}
+
+      {workReportText !== null && (
+        <WorkReportModal
+          text={workReportText}
+          onClose={() => setWorkReportText(null)}
         />
       )}
     </div>
