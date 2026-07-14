@@ -2,7 +2,7 @@
 
 import { DatePicker } from 'antd';
 import type { Dayjs } from 'dayjs';
-import type { ReactNode } from 'react';
+import { useState, type ReactNode } from 'react';
 import { useLocale } from '@/i18n/LocaleProvider';
 import {
   apiDateToPickerValue,
@@ -47,6 +47,13 @@ export function DateRangeInput({
   const minPicker = apiDateToPickerValue(toApiDateOnly(minDate), locale);
   const maxPicker = apiDateToPickerValue(toApiDateOnly(maxDate), locale);
 
+  // Keep the visible (first) panel on the selected month.
+  // With dual panels, antd often shows [month-1, month]; we hide the 2nd panel,
+  // so without this the open month looks wrong (e.g. Tir selected → Khordad shown).
+  const [panelMonth, setPanelMonth] = useState<Dayjs | null>(null);
+
+  const resolveOpenMonth = (): Dayjs | null => fromValue ?? toValue ?? null;
+
   return (
     <div className="space-y-1">
       {label ? (
@@ -79,6 +86,16 @@ export function DateRangeInput({
           if (min && api < min) return true;
           if (max && api > max) return true;
           return false;
+        }}
+        defaultPickerValue={resolveOpenMonth() ?? undefined}
+        pickerValue={panelMonth ?? undefined}
+        onPickerValueChange={(dates) => {
+          setPanelMonth(dates?.[0] ?? null);
+        }}
+        onOpenChange={(open) => {
+          if (open) {
+            setPanelMonth(resolveOpenMonth());
+          }
         }}
         placeholder={
           placeholder ?? [t('search.rangeFrom'), t('search.rangeTo')]
