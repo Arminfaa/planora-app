@@ -8,7 +8,6 @@ import { Button, Slider } from 'antd';
 import { useProjectGantt } from '@/features/gantt/hooks/useProjectGantt';
 import type { BoardColumn, BoardTask } from '../types';
 import type { ProjectMember } from '@/features/projects/types';
-import { LabelBadges } from '@/features/labels/components/LabelBadges';
 import { TaskLabelPicker } from '@/features/labels/components/TaskLabelPicker';
 import {
   TaskComments,
@@ -19,8 +18,12 @@ import {
   type TaskAttachmentsHandle,
 } from '@/features/attachments/components/TaskAttachments';
 import { useProjectLabels } from '@/features/labels/hooks/useProjectLabels';
-import { normalizeTaskLabels, type TaskLabel } from '@/features/labels/types';
-import { syncTaskLabels } from '@/features/labels/utils/syncTaskLabels';
+import { normalizeTaskLabels } from '@/features/labels/types';
+import {
+  createLabelDraftState,
+  type LabelDraftState,
+} from '@/features/labels/types/draft';
+import { syncLabelDraft } from '@/features/labels/utils/syncTaskLabels';
 import { taskService } from '@/features/tasks/services/task.service';
 import {
   getTaskAssignees,
@@ -124,12 +127,14 @@ export function TaskModal({
   const [draftChecklist, setDraftChecklist] = useState<DraftChecklistItem[]>(
     () => toDraftChecklistItems(task),
   );
-  const [draftLabels, setDraftLabels] = useState<TaskLabel[]>(() =>
-    normalizeTaskLabels(task.labels),
+  const [labelDraft, setLabelDraft] = useState<LabelDraftState>(() =>
+    createLabelDraftState([], normalizeTaskLabels(task.labels)),
   );
   const commentsRef = useRef<TaskCommentsHandle>(null);
   const attachmentsRef = useRef<TaskAttachmentsHandle>(null);
-  const { labels: projectLabels, createLabel } = useProjectLabels(projectId);
+  const labelDraftTaskIdRef = useRef<string | null>(null);
+  const { labels: projectLabels, refetch: refetchLabels } =
+    useProjectLabels(projectId);
   const hasChecklist = draftChecklist.length > 0;
   const progressLocked = Boolean(task.isCompleted) || hasChecklist;
   const displayProgress = getTaskProgressDisplay({
@@ -198,11 +203,41 @@ export function TaskModal({
     const nextChecklist = toDraftChecklistItems(task);
     setAssigneeIds(getTaskAssignees(task).map((assignee) => assignee.id));
     setDraftChecklist(nextChecklist);
-    setDraftLabels(normalizeTaskLabels(task.labels));
     reset(getTaskFormValues(task, nextChecklist));
+    labelDraftTaskIdRef.current = null;
     // Seed draft state once per opened task; ignore later board refreshes.
     // eslint-disable-next-line react-hooks/exhaustive-deps -- intentionally keyed by task.id
   }, [reset, task.id]);
+
+  useEffect(() => {
+    if (labelDraftTaskIdRef.current !== task.id) {
+      setLabelDraft(
+        createLabelDraftState(projectLabels, normalizeTaskLabels(task.labels)),
+      );
+      labelDraftTaskIdRef.current = task.id;
+      return;
+    }
+
+    setLabelDraft((current) => {
+      const existingIds = new Set(current.catalog.map((label) => label.id));
+      const missing = projectLabels.filter(
+        (label) => !existingIds.has(label.id),
+      );
+      if (missing.length === 0) return current;
+
+      return {
+        ...current,
+        catalog: [
+          ...current.catalog,
+          ...missing.map((label) => ({
+            id: label.id,
+            name: label.name,
+            color: label.color,
+          })),
+        ],
+      };
+    });
+  }, [projectLabels, task.id, task.labels]);
 
   const onSubmit = async (data: FormData) => {
     setError('');
@@ -248,9 +283,10 @@ export function TaskModal({
       });
 
       await syncChecklistItems(task.id, originalChecklist, draftChecklist);
-      await syncTaskLabels(task.id, originalLabels, draftLabels);
+      await syncLabelDraft(projectId, task.id, originalLabels, labelDraft);
       await commentsRef.current?.persist();
       await attachmentsRef.current?.persist();
+      await refetchLabels();
 
       await onSave();
     } catch (err) {
@@ -464,18 +500,7 @@ export function TaskModal({
           onItemsChange={setDraftChecklist}
         />
 
-        <div className="space-y-2">
-          <h3 className="text-sm font-semibold text-gray-900">
-            {t('tasks.labels')}
-          </h3>
-          <LabelBadges labels={draftLabels} />
-          <TaskLabelPicker
-            projectLabels={projectLabels}
-            selectedLabels={draftLabels}
-            onSelectionChange={setDraftLabels}
-            onCreateLabel={async (name, color) => createLabel({ name, color })}
-          />
-        </div>
+        <TaskLabelPicker draft={labelDraft} onDraftChange={setLabelDraft} />
 
         <TaskComments ref={commentsRef} taskId={task.id} mode="draft" />
         <TaskAttachments ref={attachmentsRef} taskId={task.id} mode="draft" />

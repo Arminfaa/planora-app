@@ -9,7 +9,12 @@ import {
 } from 'react';
 import { commentService } from '../services/comment.service';
 import type { TaskComment } from '../types';
-import { Button } from '@/shared/components/ui/Button';
+import { CheckIcon } from '@/shared/components/icons/CheckIcon';
+import { EditIcon } from '@/shared/components/icons/EditIcon';
+import { PlusIcon } from '@/shared/components/icons/PlusIcon';
+import { TrashIcon } from '@/shared/components/icons/TrashIcon';
+import { XIcon } from '@/shared/components/icons/XIcon';
+import { IconActionButton } from '@/shared/components/ui/IconActionButton';
 import { TextArea } from '@/shared/components/ui/TextArea';
 import { getApiErrorMessage } from '@/lib/api';
 import { useAuth } from '@/features/auth/hooks/useAuth';
@@ -242,24 +247,23 @@ export const TaskComments = forwardRef<TaskCommentsHandle, TaskCommentsProps>(
                       </p>
                     </div>
                     {isAuthor && !isEditing && (
-                      <div className="flex gap-2 text-xs">
-                        <button
-                          type="button"
-                          className="text-primary-600 hover:text-primary-700"
+                      <div className="flex items-center">
+                        <IconActionButton
+                          label={t('comments.edit')}
                           onClick={() => {
                             setEditingId(comment.id);
                             setEditContent(comment.content);
                           }}
                         >
-                          {t('comments.edit')}
-                        </button>
-                        <button
-                          type="button"
-                          className="text-red-600 hover:text-red-700"
+                          <EditIcon className="h-3.5 w-3.5" />
+                        </IconActionButton>
+                        <IconActionButton
+                          label={t('comments.delete')}
+                          tone="danger"
                           onClick={() => void handleDelete(comment.id)}
                         >
-                          {t('comments.delete')}
-                        </button>
+                          <TrashIcon className="h-3.5 w-3.5" />
+                        </IconActionButton>
                       </div>
                     )}
                   </div>
@@ -271,23 +275,21 @@ export const TaskComments = forwardRef<TaskCommentsHandle, TaskCommentsProps>(
                         value={editContent}
                         onChange={(event) => setEditContent(event.target.value)}
                       />
-                      <div className="flex gap-2">
-                        <Button
-                          type="button"
-                          className="px-3 py-1.5 text-xs"
-                          onClick={() => void handleUpdate(comment.id)}
-                          isLoading={isSubmitting}
-                        >
-                          {t('common.save')}
-                        </Button>
-                        <Button
-                          type="button"
-                          className="px-3 py-1.5 text-xs"
-                          variant="secondary"
+                      <div className="flex justify-end gap-1">
+                        <IconActionButton
+                          label={t('common.cancel')}
                           onClick={() => setEditingId(null)}
                         >
-                          {t('common.cancel')}
-                        </Button>
+                          <XIcon className="h-3.5 w-3.5" />
+                        </IconActionButton>
+                        <IconActionButton
+                          label={t('common.save')}
+                          tone="success"
+                          disabled={!editContent.trim() || isSubmitting}
+                          onClick={() => void handleUpdate(comment.id)}
+                        >
+                          <CheckIcon className="h-3.5 w-3.5" />
+                        </IconActionButton>
                       </div>
                     </div>
                   ) : (
@@ -301,22 +303,24 @@ export const TaskComments = forwardRef<TaskCommentsHandle, TaskCommentsProps>(
           </div>
         )}
 
-        <div className="space-y-2">
-          <TextArea
-            rows={2}
-            placeholder={t('comments.addComment')}
-            value={content}
-            onChange={(event) => setContent(event.target.value)}
-          />
-          <Button
-            type="button"
-            className="px-3 py-1.5 text-xs"
+        <div className="flex items-end gap-2">
+          <div className="min-w-0 flex-1">
+            <TextArea
+              rows={2}
+              placeholder={t('comments.addComment')}
+              value={content}
+              onChange={(event) => setContent(event.target.value)}
+            />
+          </div>
+          <IconActionButton
+            label={isDraft ? t('common.add') : t('comments.post')}
+            tone="primary"
+            disabled={!content.trim() || isSubmitting}
             onClick={() => void handleCreate()}
-            isLoading={isSubmitting}
-            disabled={!content.trim()}
+            className="h-10 w-10"
           >
-            {isDraft ? t('common.add') : t('comments.post')}
-          </Button>
+            <PlusIcon className="h-4 w-4" />
+          </IconActionButton>
         </div>
       </div>
     );

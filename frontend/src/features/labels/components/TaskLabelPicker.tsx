@@ -1,196 +1,338 @@
 'use client';
 
 import { useState } from 'react';
-import type { ProjectLabel, TaskLabel } from '../types';
 import { LABEL_COLOR_OPTIONS } from '../types';
-import { labelService } from '../services/label.service';
+import {
+  createTempLabelId,
+  getSelectedDraftLabels,
+  getVisibleDraftLabels,
+  type LabelDraftState,
+} from '../types/draft';
 import { useLocale } from '@/i18n/LocaleProvider';
-import { Button } from '@/shared/components/ui/Button';
+import { CheckIcon } from '@/shared/components/icons/CheckIcon';
+import { EditIcon } from '@/shared/components/icons/EditIcon';
+import { PlusIcon } from '@/shared/components/icons/PlusIcon';
+import { TrashIcon } from '@/shared/components/icons/TrashIcon';
+import { XIcon } from '@/shared/components/icons/XIcon';
+import { IconActionButton } from '@/shared/components/ui/IconActionButton';
 import { Input } from '@/shared/components/ui/Input';
-import { getApiErrorMessage } from '@/lib/api';
+import { cn } from '@/lib/utils';
 
 interface TaskLabelPickerProps {
-  taskId?: string;
-  projectLabels: ProjectLabel[];
-  selectedLabels: TaskLabel[];
-  /** Immediate mode: assign/remove via API then call onChange. */
-  onChange?: () => Promise<void>;
-  /** Draft mode: only update selected labels locally. */
-  onSelectionChange?: (labels: TaskLabel[]) => void;
-  onCreateLabel?: (name: string, color: string) => Promise<ProjectLabel | null>;
+  draft: LabelDraftState;
+  onDraftChange: (draft: LabelDraftState) => void;
+  canManage?: boolean;
+}
+
+function ColorSwatches({
+  value,
+  onChange,
+}: {
+  value: string;
+  onChange: (color: string) => void;
+}) {
+  return (
+    <div className="flex flex-wrap gap-1.5">
+      {LABEL_COLOR_OPTIONS.map((color) => (
+        <button
+          key={color}
+          type="button"
+          aria-label={`Color ${color}`}
+          onClick={() => onChange(color)}
+          className={cn(
+            'h-6 w-6 rounded-full border-2 transition',
+            value === color
+              ? 'border-gray-900 scale-110'
+              : 'border-transparent',
+          )}
+          style={{ backgroundColor: color }}
+        />
+      ))}
+    </div>
+  );
 }
 
 export function TaskLabelPicker({
-  taskId,
-  projectLabels,
-  selectedLabels,
-  onChange,
-  onSelectionChange,
-  onCreateLabel,
+  draft,
+  onDraftChange,
+  canManage = true,
 }: TaskLabelPickerProps) {
   const { t } = useLocale();
-  const isDraft = typeof onSelectionChange === 'function';
-  const [error, setError] = useState('');
-  const [isBusy, setIsBusy] = useState(false);
   const [showCreate, setShowCreate] = useState(false);
   const [newName, setNewName] = useState('');
   const [newColor, setNewColor] = useState<string>(LABEL_COLOR_OPTIONS[0]);
+  const [editingId, setEditingId] = useState<string | null>(null);
+  const [editName, setEditName] = useState('');
+  const [editColor, setEditColor] = useState<string>(LABEL_COLOR_OPTIONS[0]);
 
-  const selectedIds = new Set(selectedLabels.map((label) => label.id));
+  const visibleLabels = getVisibleDraftLabels(draft);
+  const selectedIds = new Set(draft.selectedIds);
+  const selectedPreview = getSelectedDraftLabels(draft);
 
-  const toggleLabel = async (label: ProjectLabel) => {
-    setError('');
-
-    if (isDraft) {
-      if (selectedIds.has(label.id)) {
-        onSelectionChange(
-          selectedLabels.filter((entry) => entry.id !== label.id),
-        );
-      } else {
-        onSelectionChange([
-          ...selectedLabels,
-          { id: label.id, name: label.name, color: label.color },
-        ]);
-      }
-      return;
-    }
-
-    if (!taskId || !onChange) return;
-
-    setIsBusy(true);
-    try {
-      if (selectedIds.has(label.id)) {
-        await labelService.remove(taskId, label.id);
-      } else {
-        await labelService.assign(taskId, label.id);
-      }
-      await onChange();
-    } catch (err) {
-      setError(getApiErrorMessage(err));
-    } finally {
-      setIsBusy(false);
-    }
+  const toggleSelected = (labelId: string) => {
+    const nextSelected = selectedIds.has(labelId)
+      ? draft.selectedIds.filter((id) => id !== labelId)
+      : [...draft.selectedIds, labelId];
+    onDraftChange({ ...draft, selectedIds: nextSelected });
   };
 
-  const handleCreate = async () => {
-    if (!onCreateLabel || !newName.trim()) return;
+  const startEdit = (labelId: string) => {
+    const label = draft.catalog.find((entry) => entry.id === labelId);
+    if (!label || label.isDeleted) return;
+    setEditingId(labelId);
+    setEditName(label.name);
+    setEditColor(label.color);
+    setShowCreate(false);
+  };
 
-    setError('');
-    setIsBusy(true);
-    try {
-      const created = await onCreateLabel(newName.trim(), newColor);
-      if (created) {
-        if (isDraft) {
-          if (!selectedIds.has(created.id)) {
-            onSelectionChange([
-              ...selectedLabels,
-              {
-                id: created.id,
-                name: created.name,
-                color: created.color,
-              },
-            ]);
-          }
-        } else if (taskId && onChange) {
-          await labelService.assign(taskId, created.id);
-          await onChange();
-        }
-      }
-      setNewName('');
-      setShowCreate(false);
-    } catch (err) {
-      setError(getApiErrorMessage(err));
-    } finally {
-      setIsBusy(false);
+  const cancelEdit = () => {
+    setEditingId(null);
+    setEditName('');
+    setEditColor(LABEL_COLOR_OPTIONS[0]);
+  };
+
+  const saveEdit = () => {
+    if (!editingId || !editName.trim()) return;
+
+    onDraftChange({
+      ...draft,
+      catalog: draft.catalog.map((label) =>
+        label.id === editingId
+          ? {
+              ...label,
+              name: editName.trim(),
+              color: editColor,
+              isDirty: label.isNew ? label.isDirty : true,
+            }
+          : label,
+      ),
+    });
+    cancelEdit();
+  };
+
+  const handleDelete = (labelId: string) => {
+    if (!confirm(t('labels.deleteConfirm'))) return;
+
+    const label = draft.catalog.find((entry) => entry.id === labelId);
+    if (!label) return;
+
+    if (label.isNew) {
+      onDraftChange({
+        catalog: draft.catalog.filter((entry) => entry.id !== labelId),
+        selectedIds: draft.selectedIds.filter((id) => id !== labelId),
+      });
+    } else {
+      onDraftChange({
+        catalog: draft.catalog.map((entry) =>
+          entry.id === labelId ? { ...entry, isDeleted: true } : entry,
+        ),
+        selectedIds: draft.selectedIds.filter((id) => id !== labelId),
+      });
     }
+
+    if (editingId === labelId) cancelEdit();
+  };
+
+  const handleCreate = () => {
+    const name = newName.trim();
+    if (!name) return;
+
+    const id = createTempLabelId();
+    onDraftChange({
+      catalog: [
+        ...draft.catalog,
+        {
+          id,
+          name,
+          color: newColor,
+          isNew: true,
+        },
+      ],
+      selectedIds: [...draft.selectedIds, id],
+    });
+    setNewName('');
+    setNewColor(LABEL_COLOR_OPTIONS[0]);
+    setShowCreate(false);
   };
 
   return (
-    <div className="space-y-2">
-      <div className="flex flex-wrap gap-2">
-        {projectLabels.map((label) => {
-          const active = selectedIds.has(label.id);
-          return (
-            <button
-              key={label.id}
-              type="button"
-              disabled={isBusy}
-              onClick={() => void toggleLabel(label)}
-              className={`rounded-full px-3 py-1 text-xs font-medium transition ${
-                active
-                  ? 'text-white ring-2 ring-offset-1'
-                  : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
-              }`}
-              style={
-                active
-                  ? { backgroundColor: label.color, outlineColor: label.color }
-                  : undefined
-              }
-            >
-              {label.name}
-            </button>
-          );
-        })}
+    <div className="space-y-3">
+      <div className="flex items-center justify-between gap-2">
+        <div>
+          <h3 className="text-sm font-semibold text-gray-900">
+            {t('tasks.labels')}
+          </h3>
+          <p className="mt-0.5 text-xs text-gray-500">
+            {t('labels.draftHint')}
+          </p>
+        </div>
+        {canManage && !showCreate && (
+          <IconActionButton
+            label={t('labels.createLabel')}
+            tone="primary"
+            onClick={() => {
+              cancelEdit();
+              setShowCreate(true);
+            }}
+          >
+            <PlusIcon className="h-4 w-4" />
+          </IconActionButton>
+        )}
       </div>
 
-      {onCreateLabel && (
-        <div className="space-y-2">
-          {showCreate ? (
-            <div className="rounded-lg border border-gray-200 p-3">
-              <Input
-                label={t('labels.addLabel')}
-                value={newName}
-                onChange={(event) => setNewName(event.target.value)}
-              />
-              <div className="mt-2 flex flex-wrap gap-2">
-                {LABEL_COLOR_OPTIONS.map((color) => (
-                  <button
-                    key={color}
-                    type="button"
-                    aria-label={`Color ${color}`}
-                    onClick={() => setNewColor(color)}
-                    className={`h-6 w-6 rounded-full border-2 ${
-                      newColor === color
-                        ? 'border-gray-900'
-                        : 'border-transparent'
-                    }`}
-                    style={{ backgroundColor: color }}
-                  />
-                ))}
-              </div>
-              <div className="mt-3 flex gap-2">
-                <Button
-                  type="button"
-                  className="px-3 py-1.5 text-xs"
-                  onClick={() => void handleCreate()}
-                  isLoading={isBusy}
-                >
-                  {t('labels.addLabel')}
-                </Button>
-                <Button
-                  type="button"
-                  className="px-3 py-1.5 text-xs"
-                  variant="secondary"
-                  onClick={() => setShowCreate(false)}
-                >
-                  {t('common.cancel')}
-                </Button>
-              </div>
-            </div>
-          ) : (
-            <Button
-              type="button"
-              className="px-3 py-1.5 text-xs"
-              variant="secondary"
-              onClick={() => setShowCreate(true)}
+      {selectedPreview.length > 0 && (
+        <div className="flex flex-wrap gap-1.5">
+          {selectedPreview.map((label) => (
+            <span
+              key={label.id}
+              className="inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-medium text-white"
+              style={{ backgroundColor: label.color }}
             >
-              + {t('labels.createLabel')}
-            </Button>
-          )}
+              {label.name}
+            </span>
+          ))}
         </div>
       )}
 
-      {error && <p className="text-sm text-red-600">{error}</p>}
+      {showCreate && canManage && (
+        <div className="rounded-xl border border-gray-200 bg-white p-3 shadow-sm">
+          <Input
+            label={t('labels.labelName')}
+            value={newName}
+            onChange={(event) => setNewName(event.target.value)}
+            onKeyDown={(event) => {
+              if (event.key === 'Enter') {
+                event.preventDefault();
+                handleCreate();
+              }
+              if (event.key === 'Escape') {
+                event.preventDefault();
+                setShowCreate(false);
+              }
+            }}
+            autoFocus
+          />
+          <div className="mt-2">
+            <p className="mb-1.5 text-xs font-medium text-gray-500">
+              {t('labels.color')}
+            </p>
+            <ColorSwatches value={newColor} onChange={setNewColor} />
+          </div>
+          <div className="mt-3 flex justify-end gap-1">
+            <IconActionButton
+              label={t('common.cancel')}
+              onClick={() => setShowCreate(false)}
+            >
+              <XIcon className="h-4 w-4" />
+            </IconActionButton>
+            <IconActionButton
+              label={t('labels.createLabel')}
+              tone="success"
+              disabled={!newName.trim()}
+              onClick={handleCreate}
+            >
+              <CheckIcon className="h-4 w-4" />
+            </IconActionButton>
+          </div>
+        </div>
+      )}
+
+      {visibleLabels.length === 0 ? (
+        <p className="text-sm text-gray-500">{t('labels.noLabels')}</p>
+      ) : (
+        <ul className="space-y-1.5">
+          {visibleLabels.map((label) => {
+            const active = selectedIds.has(label.id);
+            const isEditing = editingId === label.id;
+
+            return (
+              <li
+                key={label.id}
+                className={cn(
+                  'rounded-xl border px-2.5 py-2 transition',
+                  active
+                    ? 'border-primary-200 bg-primary-50/60'
+                    : 'border-gray-100 bg-gray-50',
+                )}
+              >
+                {isEditing ? (
+                  <div className="space-y-2">
+                    <Input
+                      value={editName}
+                      onChange={(event) => setEditName(event.target.value)}
+                      onKeyDown={(event) => {
+                        if (event.key === 'Enter') {
+                          event.preventDefault();
+                          saveEdit();
+                        }
+                        if (event.key === 'Escape') {
+                          event.preventDefault();
+                          cancelEdit();
+                        }
+                      }}
+                      autoFocus
+                    />
+                    <ColorSwatches value={editColor} onChange={setEditColor} />
+                    <div className="flex justify-end gap-1">
+                      <IconActionButton
+                        label={t('common.cancel')}
+                        onClick={cancelEdit}
+                      >
+                        <XIcon className="h-4 w-4" />
+                      </IconActionButton>
+                      <IconActionButton
+                        label={t('common.save')}
+                        tone="success"
+                        disabled={!editName.trim()}
+                        onClick={saveEdit}
+                      >
+                        <CheckIcon className="h-4 w-4" />
+                      </IconActionButton>
+                    </div>
+                  </div>
+                ) : (
+                  <div className="flex items-center gap-2">
+                    <button
+                      type="button"
+                      onClick={() => toggleSelected(label.id)}
+                      className="flex min-w-0 flex-1 items-center gap-2 rounded-lg px-1 py-0.5 text-start transition hover:bg-white/70"
+                    >
+                      <span
+                        className="h-3.5 w-3.5 shrink-0 rounded-full ring-2 ring-white"
+                        style={{ backgroundColor: label.color }}
+                      />
+                      <span className="truncate text-sm font-medium text-gray-800">
+                        {label.name}
+                      </span>
+                      {active && (
+                        <CheckIcon className="ms-auto h-3.5 w-3.5 shrink-0 text-primary-600" />
+                      )}
+                    </button>
+
+                    {canManage && (
+                      <div className="flex shrink-0 items-center">
+                        <IconActionButton
+                          label={t('labels.editLabel')}
+                          onClick={() => startEdit(label.id)}
+                        >
+                          <EditIcon className="h-3.5 w-3.5" />
+                        </IconActionButton>
+                        <IconActionButton
+                          label={t('labels.deleteLabel')}
+                          tone="danger"
+                          onClick={() => handleDelete(label.id)}
+                        >
+                          <TrashIcon className="h-3.5 w-3.5" />
+                        </IconActionButton>
+                      </div>
+                    )}
+                  </div>
+                )}
+              </li>
+            );
+          })}
+        </ul>
+      )}
     </div>
   );
 }

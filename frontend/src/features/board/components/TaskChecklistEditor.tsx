@@ -15,19 +15,23 @@ import {
   type DraftChecklistItem,
 } from '@/features/tasks/utils/syncChecklistItems';
 import { useLocale } from '@/i18n/LocaleProvider';
-import { Button } from '@/shared/components/ui/Button';
+import { CheckIcon } from '@/shared/components/icons/CheckIcon';
+import { EditIcon } from '@/shared/components/icons/EditIcon';
+import { PlusIcon } from '@/shared/components/icons/PlusIcon';
+import { TrashIcon } from '@/shared/components/icons/TrashIcon';
+import { XIcon } from '@/shared/components/icons/XIcon';
+import { IconActionButton } from '@/shared/components/ui/IconActionButton';
 import { Input } from '@/shared/components/ui/Input';
 import { SelectField } from '@/shared/components/ui/SelectField';
 import { getApiErrorMessage } from '@/lib/api';
+import { cn } from '@/lib/utils';
 
 type ChecklistItem = TaskChecklistItem | DraftChecklistItem;
 
 interface TaskChecklistEditorProps {
   taskId?: string;
   items: ChecklistItem[];
-  /** Immediate mode: persist each change via API then call onChange. */
   onChange?: () => Promise<void>;
-  /** Draft mode: only update local items. */
   onItemsChange?: (items: DraftChecklistItem[]) => void;
   canToggle?: boolean;
   canEdit?: boolean;
@@ -241,12 +245,14 @@ export function TaskChecklistEditor({
   return (
     <div className="space-y-3">
       <div className="flex items-start justify-between gap-2">
-        <h3 className="text-sm font-semibold text-gray-900">
-          {t('tasks.checklist')}
-        </h3>
-        <p className="text-xs text-gray-500">
-          {t('tasks.checklistWeightHint')}
-        </p>
+        <div>
+          <h3 className="text-sm font-semibold text-gray-900">
+            {t('tasks.checklist')}
+          </h3>
+          <p className="mt-0.5 text-xs text-gray-500">
+            {t('tasks.checklistWeightHint')}
+          </p>
+        </div>
       </div>
 
       {error && (
@@ -257,105 +263,143 @@ export function TaskChecklistEditor({
 
       {sortedItems.length > 0 ? (
         <ul className="space-y-1.5">
-          {sortedItems.map((item) => (
-            <li
-              key={item.id}
-              className="flex flex-wrap items-start gap-2 rounded-md border border-gray-100 bg-gray-50 px-2 py-1.5"
-            >
-              <Checkbox
-                checked={item.isDone}
-                disabled={!canToggle}
-                onChange={() => void handleToggle(item)}
-                className="mt-0.5"
-              />
+          {sortedItems.map((item) => {
+            const isEditing = editingId === item.id;
 
-              {editingId === item.id ? (
-                <Input
-                  value={editTitle}
-                  onChange={(event) => setEditTitle(event.target.value)}
-                  autoFocus
-                  className="min-w-0 flex-1 py-0.5 text-sm"
-                  onKeyDown={(event) => {
-                    if (event.key === 'Enter') {
-                      event.preventDefault();
-                      void saveEdit(item.id);
-                    }
-                    if (event.key === 'Escape') {
-                      event.preventDefault();
-                      cancelEdit();
-                    }
-                  }}
-                  onBlur={() => void saveEdit(item.id)}
-                />
-              ) : (
-                <button
-                  type="button"
-                  disabled={!canEditItems}
-                  onDoubleClick={() => startEdit(item)}
-                  className={`min-w-0 flex-1 text-start text-sm ${
-                    item.isDone ? 'text-gray-400 line-through' : 'text-gray-700'
-                  } ${canEditItems ? 'cursor-text rounded px-1' : 'cursor-default'}`}
-                >
-                  {item.title}
-                </button>
-              )}
-
-              <div className="w-20 shrink-0">
-                <SelectField
-                  value={String(normalizeChecklistWeight(item.weight))}
-                  onChange={(value) =>
-                    void handleWeightChange(item, String(value))
-                  }
-                  options={WEIGHT_OPTIONS}
-                  disabled={!canEditItems}
-                  aria-label={t('tasks.checklistWeight')}
-                />
-              </div>
-
-              <div className="flex shrink-0 items-center gap-2">
-                {canEditItems && editingId !== item.id && (
-                  <button
-                    type="button"
-                    onMouseDown={(event) => event.preventDefault()}
-                    onClick={() => startEdit(item)}
-                    className="text-xs text-gray-500 hover:text-gray-700"
-                  >
-                    {t('common.edit')}
-                  </button>
+            return (
+              <li
+                key={item.id}
+                className={cn(
+                  'rounded-xl border px-2.5 py-2 transition',
+                  item.isDone
+                    ? 'border-gray-100 bg-white'
+                    : 'border-gray-100 bg-gray-50',
                 )}
-                {canManage && (
-                  <button
-                    type="button"
-                    onMouseDown={(event) => event.preventDefault()}
-                    onClick={() => void handleDelete(item.id)}
-                    className="text-xs text-red-500 hover:text-red-700"
-                  >
-                    {t('common.remove')}
-                  </button>
-                )}
-              </div>
-            </li>
-          ))}
+              >
+                <div className="flex items-start gap-2">
+                  <Checkbox
+                    checked={item.isDone}
+                    disabled={!canToggle || isEditing}
+                    onChange={() => void handleToggle(item)}
+                    className="mt-1"
+                  />
+
+                  <div className="min-w-0 flex-1 space-y-2">
+                    {isEditing ? (
+                      <Input
+                        value={editTitle}
+                        onChange={(event) => setEditTitle(event.target.value)}
+                        autoFocus
+                        className="py-1 text-sm"
+                        onKeyDown={(event) => {
+                          if (event.key === 'Enter') {
+                            event.preventDefault();
+                            void saveEdit(item.id);
+                          }
+                          if (event.key === 'Escape') {
+                            event.preventDefault();
+                            cancelEdit();
+                          }
+                        }}
+                      />
+                    ) : (
+                      <p
+                        className={cn(
+                          'pt-0.5 text-sm',
+                          item.isDone
+                            ? 'text-gray-400 line-through'
+                            : 'text-gray-800',
+                        )}
+                      >
+                        {item.title}
+                      </p>
+                    )}
+
+                    <div className="flex flex-wrap items-center gap-2">
+                      <div className="w-20">
+                        <SelectField
+                          value={String(normalizeChecklistWeight(item.weight))}
+                          onChange={(value) =>
+                            void handleWeightChange(item, String(value))
+                          }
+                          options={WEIGHT_OPTIONS}
+                          disabled={!canEditItems || isEditing}
+                          aria-label={t('tasks.checklistWeight')}
+                        />
+                      </div>
+                      <span className="text-[11px] text-gray-400">
+                        {t('tasks.checklistWeight')}
+                      </span>
+                    </div>
+                  </div>
+
+                  <div className="flex shrink-0 items-center">
+                    {isEditing ? (
+                      <>
+                        <IconActionButton
+                          label={t('common.cancel')}
+                          onMouseDown={(event) => event.preventDefault()}
+                          onClick={cancelEdit}
+                        >
+                          <XIcon className="h-3.5 w-3.5" />
+                        </IconActionButton>
+                        <IconActionButton
+                          label={t('common.save')}
+                          tone="success"
+                          disabled={!editTitle.trim()}
+                          onMouseDown={(event) => event.preventDefault()}
+                          onClick={() => void saveEdit(item.id)}
+                        >
+                          <CheckIcon className="h-3.5 w-3.5" />
+                        </IconActionButton>
+                      </>
+                    ) : (
+                      <>
+                        {canEditItems && (
+                          <IconActionButton
+                            label={t('common.edit')}
+                            onClick={() => startEdit(item)}
+                          >
+                            <EditIcon className="h-3.5 w-3.5" />
+                          </IconActionButton>
+                        )}
+                        {canManage && (
+                          <IconActionButton
+                            label={t('common.remove')}
+                            tone="danger"
+                            onClick={() => void handleDelete(item.id)}
+                          >
+                            <TrashIcon className="h-3.5 w-3.5" />
+                          </IconActionButton>
+                        )}
+                      </>
+                    )}
+                  </div>
+                </div>
+              </li>
+            );
+          })}
         </ul>
       ) : (
         <p className="text-sm text-gray-500">{t('tasks.noChecklistItems')}</p>
       )}
 
       {canManage && (
-        <div className="flex flex-col gap-2 sm:flex-row">
-          <Input
-            value={newTitle}
-            onChange={(event) => setNewTitle(event.target.value)}
-            placeholder={t('tasks.addChecklistPlaceholder')}
-            className="min-w-0 flex-1"
-            onKeyDown={(event) => {
-              if (event.key === 'Enter') {
-                event.preventDefault();
-                void handleAdd();
-              }
-            }}
-          />
-          <div className="w-full sm:w-24">
+        <div className="flex items-end gap-2 rounded-xl border border-dashed border-gray-200 bg-white p-2.5">
+          <div className="min-w-0 flex-1">
+            <Input
+              value={newTitle}
+              onChange={(event) => setNewTitle(event.target.value)}
+              placeholder={t('tasks.addChecklistPlaceholder')}
+              onKeyDown={(event) => {
+                if (event.key === 'Enter') {
+                  event.preventDefault();
+                  void handleAdd();
+                }
+              }}
+            />
+          </div>
+          <div className="w-20 shrink-0">
             <SelectField
               value={newWeight}
               onChange={(value) => setNewWeight(String(value))}
@@ -363,14 +407,15 @@ export function TaskChecklistEditor({
               aria-label={t('tasks.checklistWeight')}
             />
           </div>
-          <Button
-            type="button"
-            variant="secondary"
+          <IconActionButton
+            label={t('common.add')}
+            tone="primary"
+            disabled={!newTitle.trim() || isSubmitting}
             onClick={() => void handleAdd()}
-            isLoading={isSubmitting}
+            className="h-10 w-10"
           >
-            {t('common.add')}
-          </Button>
+            <PlusIcon className="h-4 w-4" />
+          </IconActionButton>
         </div>
       )}
     </div>

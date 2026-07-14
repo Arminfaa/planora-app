@@ -11,7 +11,9 @@ import {
 import { attachmentService } from '../services/attachment.service';
 import type { TaskAttachment } from '../types';
 import { useLocale } from '@/i18n/LocaleProvider';
-import { Button } from '@/shared/components/ui/Button';
+import { PlusIcon } from '@/shared/components/icons/PlusIcon';
+import { TrashIcon } from '@/shared/components/icons/TrashIcon';
+import { IconActionButton } from '@/shared/components/ui/IconActionButton';
 import { getApiErrorMessage } from '@/lib/api';
 import { getAssetUrl, isImageAttachment } from '@/lib/assets';
 import { AssetImage } from '@/shared/components/ui/AssetImage';
@@ -201,15 +203,14 @@ export const TaskAttachments = forwardRef<
               if (file) void handleUpload(file);
             }}
           />
-          <Button
-            type="button"
-            className="px-3 py-1.5 text-xs"
-            variant="secondary"
+          <IconActionButton
+            label={t('attachments.upload')}
+            tone="primary"
+            disabled={isUploading}
             onClick={() => inputRef.current?.click()}
-            isLoading={isUploading}
           >
-            {t('attachments.upload')}
-          </Button>
+            <PlusIcon className="h-4 w-4" />
+          </IconActionButton>
         </div>
       </div>
 
@@ -278,14 +279,13 @@ export const TaskAttachments = forwardRef<
                     {attachment.filename} · {formatFileSize(attachment.size)}
                   </p>
                 </div>
-                <Button
-                  type="button"
-                  variant="ghost"
-                  className="px-2 py-1 text-xs text-red-600 hover:bg-red-50"
+                <IconActionButton
+                  label={t('common.delete')}
+                  tone="danger"
                   onClick={() => void handleDelete(attachment.id)}
                 >
-                  {t('common.delete')}
-                </Button>
+                  <TrashIcon className="h-3.5 w-3.5" />
+                </IconActionButton>
               </div>
             );
           })}

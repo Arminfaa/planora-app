@@ -990,6 +990,9 @@ export const enMessages = {
     addLabel: 'Add label',
     editLabel: 'Edit label',
     deleteLabel: 'Delete label',
+    deleteConfirm:
+      'Delete this label? It will be removed from this task now and from the project when you save.',
+    draftHint: 'Label changes apply to the task only after you save.',
     labelName: 'Label name',
     color: 'Color',
     noLabels: 'No labels yet',

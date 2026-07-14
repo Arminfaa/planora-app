@@ -6,7 +6,9 @@ import {
   useTaskDependencies,
 } from '../hooks/useGanttDependencyMutations';
 import { useProjectGantt } from '../hooks/useProjectGantt';
-import { Button } from '@/shared/components/ui/Button';
+import { PlusIcon } from '@/shared/components/icons/PlusIcon';
+import { TrashIcon } from '@/shared/components/icons/TrashIcon';
+import { IconActionButton } from '@/shared/components/ui/IconActionButton';
 import { SelectField } from '@/shared/components/ui/SelectField';
 import { LoadingSpinner } from '@/shared/components/feedback/LoadingSpinner';
 import { useLocale } from '@/i18n/LocaleProvider';
@@ -85,15 +87,14 @@ export function TaskDependenciesEditor({
                     </span>
                   </span>
                   {canEdit && (
-                    <Button
-                      type="button"
-                      variant="ghost"
-                      className="text-red-600 hover:text-red-700"
+                    <IconActionButton
+                      label={t('common.remove')}
+                      tone="danger"
                       disabled={isDeleting}
                       onClick={() => void deleteDependency(dependency.id)}
                     >
-                      {t('common.remove')}
-                    </Button>
+                      <TrashIcon className="h-3.5 w-3.5" />
+                    </IconActionButton>
                   )}
                 </li>
               ))}
@@ -121,7 +122,7 @@ export function TaskDependenciesEditor({
       )}
 
       {canEdit && (
-        <div className="flex flex-wrap items-end gap-3">
+        <div className="flex flex-wrap items-end gap-2">
           <div className="min-w-[14rem] flex-1">
             <SelectField
               label={t('gantt.blockedBy')}
@@ -133,13 +134,15 @@ export function TaskDependenciesEditor({
               ]}
             />
           </div>
-          <Button
-            type="button"
-            onClick={() => void handleAddPredecessor()}
+          <IconActionButton
+            label={t('common.add')}
+            tone="primary"
             disabled={!predecessorId || isCreating}
+            onClick={() => void handleAddPredecessor()}
+            className="h-10 w-10"
           >
-            {t('common.add')}
-          </Button>
+            <PlusIcon className="h-4 w-4" />
+          </IconActionButton>
         </div>
       )}
     </section>
