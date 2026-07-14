@@ -510,6 +510,7 @@ export const faMessages = {
   board: {
     kanban: 'کانبان',
     backToProject: 'بازگشت به پروژه',
+    backToBoard: 'بازگشت به برد',
     allTasks: 'همه وظایف',
     background: 'پس‌زمینه',
     backgroundSettings: 'تنظیمات پس‌زمینه برد',
@@ -571,7 +572,12 @@ export const faMessages = {
     noViewPermission: 'شما مجوز مشاهده وظایف در این برد را ندارید.',
     newTask: 'وظیفه جدید',
     noTasksYet: 'هنوز وظیفه‌ای نیست.',
+    noTasksYetHint: 'اولین وظیفه این برد را بسازید تا شروع کنید.',
     noTasksMatch: 'وظیفه‌ای با جستجو یا فیلترهای شما مطابقت ندارد.',
+    noTasksMatchHint:
+      'جستجو و فیلترها را پاک کنید تا دوباره همه وظایف را ببینید.',
+    clearSearchAndFilters: 'پاک‌کردن جستجو و فیلترها',
+    bulkModeActive: 'در حال انتخاب · {action}',
     showingCount: 'نمایش {count}',
     taskCount: '{count} وظیفه',
     taskCountPlural: '{count} وظیفه',
@@ -622,10 +628,17 @@ export const faMessages = {
       'تسک‌هایی را که می‌خواهید در اکسل باشند انتخاب کنید.',
     selectionExportSelected: 'خروجی انتخاب‌شده‌ها ({count})',
     selectionExitMode: 'اتمام',
-    operations: 'عملیات',
+    operations: 'عملیات گروهی',
     bulkApply: 'اعمال ({count})',
     bulkApplying: 'در حال اعمال...',
     bulkClearValue: 'پاک کردن مقدار',
+    bulkGroups: {
+      placement: 'جایگاه',
+      dates: 'تاریخ‌ها',
+      status: 'افراد و وضعیت',
+      labels: 'برچسب‌ها',
+      checklist: 'چک‌لیست',
+    },
     bulkOps: {
       move: 'تغییر ستون',
       startDate: 'تغییر تاریخ شروع',
@@ -659,6 +672,8 @@ export const faMessages = {
         'تسک‌ها را انتخاب کنید، سپس برچسب‌ها را جایگزین کنید (جای همه برچسب‌های قبلی).',
       checklist:
         'تسک‌ها را انتخاب کنید، سپس یک مورد چک‌لیست مشترک به همه اضافه کنید.',
+      selectTasksFirst:
+        'تسک‌های موردنظر را انتخاب کنید، سپس عملیات را اعمال کنید.',
     },
   },
 

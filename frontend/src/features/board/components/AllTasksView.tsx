@@ -3,7 +3,6 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { useFocusListTask } from '../hooks/useFocusListTask';
 import dynamic from 'next/dynamic';
-import Link from 'next/link';
 import { Checkbox } from 'antd';
 import type { Board, BoardTask } from '../types';
 import type { Project } from '@/features/projects/types';
@@ -40,7 +39,6 @@ import { TrashIcon } from './TrashIcon';
 import { ViewIcon } from './ViewIcon';
 import { LoadingSpinner } from '@/shared/components/feedback/LoadingSpinner';
 import { Button } from '@/shared/components/ui/Button';
-import { SearchInput } from '@/shared/components/ui/SearchInput';
 import { getApiErrorMessage, isForbiddenError } from '@/lib/api';
 import { exportBoardTasksToExcel } from '../utils/exportTasksToExcel';
 import type {
@@ -48,13 +46,13 @@ import type {
   BulkTaskAction,
 } from '@/features/tasks/types/bulkActions';
 import { useLocale } from '@/i18n/LocaleProvider';
-import { BackChevronIcon } from '@/shared/components/ui/BackChevronIcon';
 import {
   AllTasksBulkToolbar,
-  AllTasksOperationsMenu,
   createEmptyBulkFormState,
   type BulkFormState,
 } from './AllTasksBulkToolbar';
+import { AllTasksPageHeader } from './AllTasksPageHeader';
+import { AllTasksSearchBar } from './AllTasksSearchBar';
 
 const TaskModal = dynamic(
   () => import('./TaskModal').then((mod) => ({ default: mod.TaskModal })),
@@ -474,111 +472,50 @@ export function AllTasksView({
     );
   }
 
+  const activeFilterCount = countActiveFilters(filters);
+  const clearActiveView = () => {
+    setSearchQuery('');
+    setFilters(defaultTaskFilters);
+  };
+
   return (
-    <div className="mx-auto max-w-4xl px-4 py-8">
-      <Link
-        href={`/dashboard/projects/${projectSlug}/boards/${boardSlug}`}
-        className="mb-4 inline-flex items-center gap-1.5 text-sm font-medium text-gray-500 transition hover:text-gray-900"
-      >
-        <BackChevronIcon />
-        {t('board.backToProject')}
-      </Link>
+    <div className="mx-auto max-w-5xl px-4 py-8 sm:px-6">
+      <AllTasksPageHeader
+        projectSlug={projectSlug}
+        boardSlug={boardSlug}
+        boardName={board.name}
+        totalTasks={tasks.length}
+        visibleTasks={filteredTasks.length}
+        hasActiveView={hasActiveView}
+        selectionMode={selectionMode}
+        canCreateTasks={canCreateTasks}
+        canMoveTasks={canMoveTasks}
+        canEditTasks={canEditTasks}
+        canAssignLabels={canAssignLabels}
+        onCreate={() => setShowCreateModal(true)}
+        onImport={() => setShowImportModal(true)}
+        onSelectOperation={enterSelectionMode}
+      />
 
-      <div className="flex flex-wrap items-end justify-between gap-4">
-        <div>
-          <h1 className="text-2xl font-bold text-gray-900">
-            {t('board.allTasks')}
-          </h1>
-          <p className="mt-1 text-sm text-gray-500">
-            {board.name} ·{' '}
-            {tasks.length === 1
-              ? t('board.taskCount', { count: tasks.length })
-              : t('board.taskCountPlural', { count: tasks.length })}
-            {hasActiveView && (
-              <span>
-                {' '}
-                · {t('board.showingCount', { count: filteredTasks.length })}
-              </span>
-            )}
-          </p>
-        </div>
-
-        <div className="flex flex-wrap items-center gap-2">
-          {filteredTasks.length > 0 && (
-            <AllTasksOperationsMenu
-              canMoveTasks={canMoveTasks}
-              canEditTasks={canEditTasks}
-              canAssignLabels={canAssignLabels}
-              disabled={selectionMode !== null}
-              onSelect={enterSelectionMode}
-            />
-          )}
-
-          {canCreateTasks && (
-            <Button
-              type="button"
-              variant="secondary"
-              onClick={() => setShowImportModal(true)}
-              aria-label={t('board.importAriaLabel')}
-            >
-              <svg
-                className="me-2 h-4 w-4"
-                fill="none"
-                viewBox="0 0 24 24"
-                stroke="currentColor"
-                aria-hidden="true"
-              >
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  strokeWidth={2}
-                  d="M4 16v2a2 2 0 002 2h12a2 2 0 002-2v-2M7 10l5-5m0 0l5 5m-5-5v12"
-                />
-              </svg>
-              {t('board.importExcel')}
-            </Button>
-          )}
-
-          {canCreateTasks && (
-            <Button type="button" onClick={() => setShowCreateModal(true)}>
-              + {t('board.newTask')}
-            </Button>
-          )}
-        </div>
-      </div>
-
-      <div className="mt-6 flex flex-col gap-3 sm:flex-row sm:items-center">
-        <div className="min-w-0 flex-1">
-          <SearchInput
-            value={searchQuery}
-            onChange={(event) => setSearchQuery(event.target.value)}
-            placeholder={t('search.searchTasks')}
-            aria-label={t('search.searchTasks')}
-            className="rounded-xl border-gray-200 bg-white shadow-sm"
-          />
-        </div>
-
-        <Button
-          type="button"
-          variant="secondary"
-          onClick={() => setShowFilterModal(true)}
-        >
-          {t('common.filter')}
-          {countActiveFilters(filters) > 0 && (
-            <span className="ms-2 rounded-full bg-primary-100 px-2 py-0.5 text-xs font-semibold text-primary-700">
-              {countActiveFilters(filters)}
-            </span>
-          )}
-        </Button>
+      <div className="mt-6">
+        <AllTasksSearchBar
+          searchQuery={searchQuery}
+          activeFilterCount={activeFilterCount}
+          hasActiveView={hasActiveView}
+          disabled={selectionMode !== null}
+          onSearchChange={setSearchQuery}
+          onOpenFilters={() => setShowFilterModal(true)}
+          onClearView={clearActiveView}
+        />
       </div>
 
       {actionError && (
-        <div className="mt-4 rounded-lg bg-red-50 px-4 py-3 text-sm text-red-700">
+        <div className="mt-4 rounded-xl border border-red-100 bg-red-50 px-4 py-3 text-sm text-red-700">
           {actionError}
         </div>
       )}
 
-      {selectionMode && filteredTasks.length > 0 && (
+      {selectionMode && (
         <AllTasksBulkToolbar
           mode={selectionMode}
           columns={columns}
@@ -602,12 +539,38 @@ export function AllTasksView({
 
       <div className="mt-6 space-y-3">
         {filteredTasks.length === 0 ? (
-          <div className="rounded-xl border border-dashed border-gray-200 bg-white py-16 text-center">
-            <p className="text-gray-600">
+          <div className="rounded-2xl border border-dashed border-gray-200 bg-gradient-to-b from-gray-50 to-white px-6 py-16 text-center">
+            <p className="text-base font-medium text-gray-800">
               {tasks.length === 0
                 ? t('board.noTasksYet')
                 : t('board.noTasksMatch')}
             </p>
+            <p className="mx-auto mt-2 max-w-sm text-sm text-gray-500">
+              {tasks.length === 0
+                ? t('board.noTasksYetHint')
+                : t('board.noTasksMatchHint')}
+            </p>
+            <div className="mt-6 flex flex-wrap items-center justify-center gap-2">
+              {tasks.length === 0 && canCreateTasks ? (
+                <Button
+                  type="button"
+                  onClick={() => setShowCreateModal(true)}
+                  className="rounded-xl"
+                >
+                  {t('board.newTask')}
+                </Button>
+              ) : null}
+              {tasks.length > 0 && hasActiveView ? (
+                <Button
+                  type="button"
+                  variant="secondary"
+                  onClick={clearActiveView}
+                  className="rounded-xl"
+                >
+                  {t('board.clearSearchAndFilters')}
+                </Button>
+              ) : null}
+            </div>
           </div>
         ) : (
           filteredTasks.map((task) => {

@@ -1,7 +1,6 @@
 'use client';
 
 import { useMemo, useState } from 'react';
-import { Button } from 'antd';
 import type { BoardColumn, BoardTask } from '../types';
 import type { ProjectMember } from '@/features/projects/types';
 import type { CreateTaskInput } from '@/features/tasks/types';
@@ -12,6 +11,7 @@ import { Input } from '@/shared/components/ui/Input';
 import { TextArea } from '@/shared/components/ui/TextArea';
 import { SelectField } from '@/shared/components/ui/SelectField';
 import { DateInput } from '@/shared/components/ui/DateInput';
+import { Button } from '@/shared/components/ui/Button';
 import { getApiErrorMessage } from '@/lib/api';
 import { AppModal } from '@/shared/components/ui/AppModal';
 import { MemberMultiSelect } from './MemberMultiSelect';
@@ -90,27 +90,34 @@ export function AllTasksCreateModal({
 
   return (
     <AppModal
-      title={t('board.newTask')}
+      title={t('board.modals.createTask')}
       subtitle={t('board.leaveColumnEmptyHint')}
       onClose={onClose}
       width={512}
       footer={
-        <>
-          <Button onClick={onClose}>{t('common.cancel')}</Button>
+        <div className="flex w-full justify-end gap-2">
           <Button
-            type="primary"
-            htmlType="submit"
+            type="button"
+            variant="secondary"
+            onClick={onClose}
+            className="rounded-xl"
+          >
+            {t('common.cancel')}
+          </Button>
+          <Button
+            type="submit"
             form={FORM_ID}
-            loading={isSubmitting}
+            isLoading={isSubmitting}
+            className="rounded-xl"
           >
             {t('board.modals.createTask')}
           </Button>
-        </>
+        </div>
       }
     >
       <form id={FORM_ID} onSubmit={(event) => void handleSubmit(event)}>
         {error && (
-          <div className="mb-4 rounded-lg bg-red-50 px-4 py-3 text-sm text-red-700">
+          <div className="mb-4 rounded-xl border border-red-100 bg-red-50 px-4 py-3 text-sm text-red-700">
             {error}
           </div>
         )}
@@ -124,28 +131,22 @@ export function AllTasksCreateModal({
             required
           />
 
-          <TextArea
-            label={t('tasks.descriptionOptional')}
-            value={description}
-            onChange={(event) => setDescription(event.target.value)}
-            rows={3}
-          />
-
-          <SelectField
-            label={t('tasks.column')}
-            value={columnId}
-            onChange={setColumnId}
-            options={columnOptions}
-          />
-
-          <SelectField
-            label={t('tasks.priority')}
-            value={priority}
-            onChange={(value) =>
-              setPriority(value as CreateTaskInput['priority'])
-            }
-            options={priorityOptions}
-          />
+          <div className="grid gap-4 sm:grid-cols-2">
+            <SelectField
+              label={t('tasks.column')}
+              value={columnId}
+              onChange={setColumnId}
+              options={columnOptions}
+            />
+            <SelectField
+              label={t('tasks.priority')}
+              value={priority}
+              onChange={(value) =>
+                setPriority(value as CreateTaskInput['priority'])
+              }
+              options={priorityOptions}
+            />
+          </div>
 
           <DateInput
             label={t('tasks.dueDateOptional')}
@@ -163,6 +164,13 @@ export function AllTasksCreateModal({
               onChange={setAssigneeIds}
             />
           </div>
+
+          <TextArea
+            label={t('tasks.descriptionOptional')}
+            value={description}
+            onChange={(event) => setDescription(event.target.value)}
+            rows={3}
+          />
         </div>
       </form>
     </AppModal>
