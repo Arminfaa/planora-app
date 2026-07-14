@@ -433,11 +433,13 @@ export class TaskService {
     const permission =
       action.type === 'move'
         ? 'task.move'
-        : action.type === 'addLabels' ||
-            action.type === 'removeLabels' ||
-            action.type === 'setLabels'
-          ? 'label.assign'
-          : 'task.edit';
+        : action.type === 'delete'
+          ? 'task.delete'
+          : action.type === 'addLabels' ||
+              action.type === 'removeLabels' ||
+              action.type === 'setLabels'
+            ? 'label.assign'
+            : 'task.edit';
 
     await projectAccessService.ensurePermission(userId, projectId, permission);
 
@@ -445,6 +447,14 @@ export class TaskService {
 
     if (action.type === 'move') {
       return this.bulkMoveToColumn(userId, boardId, uniqueIds, action.columnId);
+    }
+
+    if (action.type === 'delete') {
+      const existing = await taskRepository.findByIds(uniqueIds);
+      for (const taskId of uniqueIds) {
+        await taskRepository.delete(taskId);
+      }
+      return existing;
     }
 
     if (action.type === 'addChecklistItem') {

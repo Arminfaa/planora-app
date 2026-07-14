@@ -639,6 +639,7 @@ export const enMessages = {
       status: 'People & status',
       labels: 'Labels',
       checklist: 'Checklist',
+      danger: 'Danger zone',
     },
     bulkOps: {
       move: 'Change column',
@@ -653,8 +654,12 @@ export const enMessages = {
       removeLabels: 'Remove labels',
       setLabels: 'Replace labels',
       checklist: 'Add checklist item',
+      delete: 'Delete tasks',
       export: 'Export Excel',
     },
+    bulkDeleteConfirm:
+      'Delete {count} selected task(s)? This cannot be undone.',
+    bulkDeleteApply: 'Delete ({count})',
     bulkHints: {
       move: 'Select tasks, then choose the destination column.',
       startDate: 'Select tasks, then set or clear the start date.',
@@ -669,6 +674,7 @@ export const enMessages = {
       removeLabels: 'Select tasks, then choose labels to remove.',
       setLabels: 'Select tasks, then set their labels (replaces existing).',
       checklist: 'Select tasks, then add the same checklist item to all.',
+      delete: 'Selected tasks will be permanently deleted.',
       selectTasksFirst: 'Select the tasks you want, then apply the action.',
     },
   },

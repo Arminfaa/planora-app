@@ -13,6 +13,7 @@ export type BulkOperationMode =
   | 'removeLabels'
   | 'setLabels'
   | 'checklist'
+  | 'delete'
   | 'export';
 
 export type BulkTaskAction =
@@ -27,7 +28,8 @@ export type BulkTaskAction =
   | { type: 'addLabels'; labelIds: string[] }
   | { type: 'removeLabels'; labelIds: string[] }
   | { type: 'setLabels'; labelIds: string[] }
-  | { type: 'addChecklistItem'; title: string; weight?: number };
+  | { type: 'addChecklistItem'; title: string; weight?: number }
+  | { type: 'delete' };
 
 export interface BulkTaskActionRequest {
   taskIds: string[];

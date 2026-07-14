@@ -258,6 +258,35 @@ export const bulkBoardTaskActions = asyncHandler(
       input,
     );
 
+    if (input.action.type === 'delete') {
+      const projectId = await boardRepository.getProjectId(boardId);
+
+      for (const task of tasks) {
+        await notifyBoardTaskEvent(req.user!.userId, 'task:deleted', {
+          columnId: task.columnId ?? undefined,
+          taskId: task.id,
+          payload: {
+            task: {
+              id: task.id,
+              slug: task.slug,
+              title: task.title,
+            },
+          },
+        });
+
+        if (projectId) {
+          void projectGroupActivityService.logTaskDeleted(
+            req.user!.userId,
+            projectId,
+            { taskId: task.id, taskTitle: task.title },
+          );
+        }
+      }
+
+      ApiResponse.success(res, null, 'Tasks deleted');
+      return;
+    }
+
     const isMove = input.action.type === 'move';
     const moveColumnId =
       input.action.type === 'move' ? input.action.columnId : undefined;

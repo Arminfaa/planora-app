@@ -492,6 +492,7 @@ export function AllTasksView({
         canMoveTasks={canMoveTasks}
         canEditTasks={canEditTasks}
         canAssignLabels={canAssignLabels}
+        canDeleteTasks={canDeleteTasks}
         onCreate={() => setShowCreateModal(true)}
         onImport={() => setShowImportModal(true)}
         onSelectOperation={enterSelectionMode}
@@ -528,6 +529,7 @@ export function AllTasksView({
           canMoveTasks={canMoveTasks}
           canEditTasks={canEditTasks}
           canAssignLabels={canAssignLabels}
+          canDeleteTasks={canDeleteTasks}
           onToggleSelectAll={toggleSelectAllFiltered}
           onExit={exitSelectionMode}
           onApplyAction={handleBulkAction}
@@ -612,9 +614,31 @@ export function AllTasksView({
                 )}
 
                 <div
+                  role={showSelection ? 'button' : undefined}
+                  tabIndex={showSelection ? 0 : undefined}
+                  aria-pressed={showSelection ? isSelected : undefined}
+                  onClick={
+                    showSelection
+                      ? () => toggleTaskSelection(task.id, !isSelected)
+                      : undefined
+                  }
+                  onKeyDown={
+                    showSelection
+                      ? (event) => {
+                          if (event.key === 'Enter' || event.key === ' ') {
+                            event.preventDefault();
+                            toggleTaskSelection(task.id, !isSelected);
+                          }
+                        }
+                      : undefined
+                  }
                   className={`min-w-0 flex-1 rounded-xl p-3 shadow-sm transition duration-300 hover:border-primary-200 hover:shadow-md sm:p-4 ${
                     cardPresentation.className
-                  } ${isSelected && !isHighlighted ? 'ring-2 ring-primary-200' : ''} ${
+                  } ${showSelection ? 'cursor-pointer' : ''} ${
+                    isSelected && !isHighlighted
+                      ? 'ring-2 ring-primary-200'
+                      : ''
+                  } ${
                     isHighlighted
                       ? 'ring-2 ring-primary-400 ring-offset-2 animate-[pulse_1.2s_ease-in-out_1]'
                       : ''
@@ -641,63 +665,82 @@ export function AllTasksView({
                       )}
                     </div>
 
-                    <div className="flex shrink-0 items-center gap-0.5">
-                      <TaskListActionButton
-                        label={t('common.view')}
-                        onClick={() => setViewTask(task)}
-                      >
-                        <ViewIcon className="h-4 w-4" />
-                      </TaskListActionButton>
-                      {canEditTasks && (
+                    {!showSelection && (
+                      <div className="flex shrink-0 items-center gap-0.5">
                         <TaskListActionButton
-                          label={t('common.edit')}
-                          onClick={() => setEditTask(task)}
+                          label={t('common.view')}
+                          onClick={() => setViewTask(task)}
                         >
-                          <EditIcon className="h-4 w-4" />
+                          <ViewIcon className="h-4 w-4" />
                         </TaskListActionButton>
-                      )}
-                      {canDeleteTasks && (
-                        <TaskListActionButton
-                          label={t('common.delete')}
-                          onClick={() => void handleDeleteTask(task)}
-                          className="hover:bg-red-50 hover:text-red-600"
-                        >
-                          <TrashIcon className="h-4 w-4" />
-                        </TaskListActionButton>
-                      )}
-                    </div>
+                        {canEditTasks && (
+                          <TaskListActionButton
+                            label={t('common.edit')}
+                            onClick={() => setEditTask(task)}
+                          >
+                            <EditIcon className="h-4 w-4" />
+                          </TaskListActionButton>
+                        )}
+                        {canDeleteTasks && (
+                          <TaskListActionButton
+                            label={t('common.delete')}
+                            onClick={() => void handleDeleteTask(task)}
+                            className="hover:bg-red-50 hover:text-red-600"
+                          >
+                            <TrashIcon className="h-4 w-4" />
+                          </TaskListActionButton>
+                        )}
+                      </div>
+                    )}
                   </div>
 
                   <div className="mt-2 flex items-start gap-2 sm:mt-3 sm:gap-3">
-                    <div
-                      className="shrink-0 pt-0.5"
-                      onClick={(event) => event.stopPropagation()}
-                      onPointerDown={(event) => event.stopPropagation()}
-                    >
-                      <Checkbox
-                        checked={isCompleted}
-                        disabled={!canEditTasks}
-                        onChange={(event) =>
-                          void handleToggleComplete(task, event.target.checked)
-                        }
-                        aria-label={t('tasks.markComplete', {
-                          title: task.title,
-                        })}
-                      />
-                    </div>
+                    {!showSelection && (
+                      <div
+                        className="shrink-0 pt-0.5"
+                        onClick={(event) => event.stopPropagation()}
+                        onPointerDown={(event) => event.stopPropagation()}
+                      >
+                        <Checkbox
+                          checked={isCompleted}
+                          disabled={!canEditTasks}
+                          onChange={(event) =>
+                            void handleToggleComplete(
+                              task,
+                              event.target.checked,
+                            )
+                          }
+                          aria-label={t('tasks.markComplete', {
+                            title: task.title,
+                          })}
+                        />
+                      </div>
+                    )}
 
                     <div className="min-w-0 flex-1">
-                      <button
-                        type="button"
-                        onClick={() => setViewTask(task)}
-                        className={`block w-full text-start text-sm font-semibold hover:text-primary-700 sm:text-base ${
-                          isCompleted
-                            ? 'text-gray-500 line-through'
-                            : 'text-gray-900'
-                        }`}
-                      >
-                        {task.title}
-                      </button>
+                      {showSelection ? (
+                        <p
+                          className={`block w-full text-start text-sm font-semibold sm:text-base ${
+                            isCompleted
+                              ? 'text-gray-500 line-through'
+                              : 'text-gray-900'
+                          }`}
+                        >
+                          {task.title}
+                        </p>
+                      ) : (
+                        <button
+                          type="button"
+                          onClick={() => setViewTask(task)}
+                          className={`block w-full text-start text-sm font-semibold hover:text-primary-700 sm:text-base ${
+                            isCompleted
+                              ? 'text-gray-500 line-through'
+                              : 'text-gray-900'
+                          }`}
+                        >
+                          {task.title}
+                        </button>
+                      )}
 
                       {task.description && (
                         <p className="mt-1 line-clamp-2 text-sm text-gray-500">
@@ -708,9 +751,9 @@ export function AllTasksView({
                       <LabelBadges labels={labels} className="mt-2" />
                       <TaskChecklistPreview
                         items={task.checklistItems}
-                        interactive={canViewTasks}
+                        interactive={!showSelection && canViewTasks}
                         onToggleItem={
-                          canViewTasks
+                          !showSelection && canViewTasks
                             ? (itemId, isDone) =>
                                 handleChecklistItemToggle(
                                   task.id,

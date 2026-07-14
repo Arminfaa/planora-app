@@ -40,6 +40,7 @@ interface AllTasksBulkToolbarProps {
   canMoveTasks: boolean;
   canEditTasks: boolean;
   canAssignLabels: boolean;
+  canDeleteTasks: boolean;
   onToggleSelectAll: (selected: boolean) => void;
   onExit: () => void;
   onApplyAction: (action: BulkTaskAction) => Promise<void>;
@@ -124,6 +125,7 @@ export function AllTasksBulkToolbar({
   canMoveTasks,
   canEditTasks,
   canAssignLabels,
+  canDeleteTasks,
   onToggleSelectAll,
   onExit,
   onApplyAction,
@@ -232,6 +234,13 @@ export function AllTasksBulkToolbar({
           title: form.checklistTitle.trim(),
           weight: Number(form.checklistWeight) || DEFAULT_CHECKLIST_WEIGHT,
         });
+        break;
+      case 'delete':
+        if (!canDeleteTasks) return;
+        if (!confirm(t('board.bulkDeleteConfirm', { count: selectedCount }))) {
+          return;
+        }
+        await onApplyAction({ type: 'delete' });
         break;
       default:
         break;
@@ -476,6 +485,12 @@ export function AllTasksBulkToolbar({
                 {t('board.selectionModeExportHint')}
               </p>
             )}
+
+            {mode === 'delete' && (
+              <p className="max-w-md text-sm text-red-700">
+                {t('board.bulkHints.delete')}
+              </p>
+            )}
           </div>
 
           <div className="flex shrink-0 gap-2">
@@ -493,11 +508,17 @@ export function AllTasksBulkToolbar({
                 type="button"
                 onClick={() => void handleApply()}
                 disabled={applyDisabled}
-                className="rounded-xl"
+                className={`rounded-xl ${
+                  mode === 'delete'
+                    ? 'bg-red-600 hover:bg-red-700 focus-visible:ring-red-500'
+                    : ''
+                }`}
               >
                 {isApplying
                   ? t('board.bulkApplying')
-                  : t('board.bulkApply', { count: selectedCount })}
+                  : mode === 'delete'
+                    ? t('board.bulkDeleteApply', { count: selectedCount })
+                    : t('board.bulkApply', { count: selectedCount })}
               </Button>
             )}
             <Button
@@ -520,6 +541,7 @@ interface OperationsMenuProps {
   canMoveTasks: boolean;
   canEditTasks: boolean;
   canAssignLabels: boolean;
+  canDeleteTasks: boolean;
   activeMode?: BulkOperationMode | null;
   disabled?: boolean;
   onSelect: (mode: BulkOperationMode) => void;
@@ -548,6 +570,7 @@ export function AllTasksOperationsMenu({
   canMoveTasks,
   canEditTasks,
   canAssignLabels,
+  canDeleteTasks,
   activeMode = null,
   disabled,
   onSelect,
@@ -603,6 +626,20 @@ export function AllTasksOperationsMenu({
     });
   }
 
+  if (canDeleteTasks) {
+    groups.push({
+      type: 'group',
+      label: t('board.bulkGroups.danger'),
+      children: [
+        {
+          key: 'delete',
+          label: t('board.bulkOps.delete'),
+          danger: true,
+        },
+      ],
+    });
+  }
+
   const items: MenuProps['items'] = [
     ...groups,
     { type: 'divider' },
@@ -617,6 +654,16 @@ export function AllTasksOperationsMenu({
         selectedKeys: activeMode ? [activeMode] : [],
         onClick: ({ key }) => onSelect(key as BulkOperationMode),
         className: 'min-w-[220px]',
+        style: {
+          maxHeight: 'calc(100dvh - 225px)',
+          overflowY: 'auto',
+        },
+      }}
+      styles={{
+        root: {
+          maxHeight: 'calc(100dvh - 225px)',
+          overflowY: 'auto',
+        },
       }}
       trigger={['click']}
       disabled={disabled}

@@ -118,6 +118,9 @@ export const bulkTaskActionSchema = z.object({
         .transform(sanitizeString),
       weight: z.coerce.number().int().min(1).max(10).optional(),
     }),
+    z.object({
+      type: z.literal('delete'),
+    }),
   ]),
 });
 
