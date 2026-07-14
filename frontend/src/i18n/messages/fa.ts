@@ -510,13 +510,16 @@ export const faMessages = {
     noBoardsProgress: 'هنوز بردی نیست. برای پیگیری پیشرفت اینجا یک برد بسازید.',
     saveRolesHint:
       'نقش‌ها را اضافه یا ویرایش کنید، سپس برای اعمال تغییرات ذخیره نقش‌ها را بزنید.',
-    personCompletionsTitle: 'نمودار تحویل شخصی',
+    personCompletionsTitle: 'نمودار تحویل',
     personCompletionsSubtitle:
-      'عضو و بازه را انتخاب کنید، بعد روزهای تعطیل و مرخصی را مشخص کنید. این روزها دیده می‌شوند ولی در میانگین حساب نمی‌شوند. جمعه‌ها به‌صورت خودکار آخر هفته‌اند.',
-    personCompletionsMember: 'عضو تیم',
-    personCompletionsMemberPlaceholder: 'یک عضو را انتخاب کنید',
+      'یک یا چند عضو و بازه را انتخاب کنید. با یک نفر می‌توانید تعطیل و مرخصی را هم مشخص کنید؛ با چند نفر مقایسه گروهی دیده می‌شود. روزهای غیرکاری در میانگین حساب نمی‌شوند. جمعه‌ها به‌صورت خودکار آخر هفته‌اند.',
+    personCompletionsMember: 'اعضای تیم',
+    personCompletionsMemberPlaceholder: 'یک یا چند عضو را انتخاب کنید',
+    personCompletionsMemberLimit: 'حداکثر {count} عضو می‌توانید مقایسه کنید.',
+    personCompletionsUnknownMember: 'عضو',
     personCompletionsRange: 'بازه زمانی',
-    personCompletionsPickMember: 'برای دیدن نمودار یک عضو تیم را انتخاب کنید.',
+    personCompletionsPickMember:
+      'برای دیدن نمودار حداقل یک عضو تیم را انتخاب کنید.',
     personCompletionsTotal: 'تسک‌های تکمیل‌شده',
     personCompletionsWorkingDays: 'روزهای کاری',
     personCompletionsOnWorkingDays: 'در روزهای کاری',

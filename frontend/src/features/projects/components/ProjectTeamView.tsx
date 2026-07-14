@@ -5,6 +5,7 @@ import { useAuth } from '@/features/auth/hooks/useAuth';
 import { useProjectPermissions } from '@/features/permissions/hooks/useProjectPermissions';
 import { useProjectTeam } from '../hooks/useProjectTeam';
 import { useProjectContext } from '../context/ProjectContext';
+import { PersonCompletionsChart } from './PersonCompletionsChart';
 import { ProjectTeamPanel } from './ProjectTeamPanel';
 import type { AddProjectMemberInput } from '../types';
 import { useLocale } from '@/i18n/LocaleProvider';
@@ -14,6 +15,7 @@ export function ProjectTeamView() {
   const { user } = useAuth();
   const { project, customRoles, setMemberCount } = useProjectContext();
   const { can } = useProjectPermissions(project);
+  const canViewBoards = can('board.view');
 
   const canViewTeam = can('team.view');
   const canManageInvites = can('team.manage_invites');
@@ -62,7 +64,13 @@ export function ProjectTeamView() {
   }
 
   return (
-    <div className="mx-auto w-full max-w-7xl px-4 py-8 sm:px-6">
+    <div className="mx-auto w-full max-w-7xl space-y-6 px-4 py-8 sm:px-6">
+      {canViewBoards ? (
+        <PersonCompletionsChart
+          projectId={project.id}
+          projectCreatedAt={project.createdAt}
+        />
+      ) : null}
       <ProjectTeamPanel
         members={members}
         invites={invites}
