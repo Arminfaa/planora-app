@@ -145,7 +145,11 @@ export interface ProjectHoliday {
   id: string;
   date: string;
   title: string | null;
-  createdAt: string;
+  titleFa?: string | null;
+  titleEn?: string | null;
+  builtIn?: boolean;
+  source?: 'custom' | 'iran-solar' | 'iran-lunar' | 'gregorian';
+  createdAt: string | null;
 }
 
 export interface MemberLeave {
@@ -175,6 +179,8 @@ export interface PersonCompletionDay {
   isNonWorking: boolean;
   nonWorkingReason: NonWorkingReason | null;
   holidayTitle: string | null;
+  holidayTitleFa?: string | null;
+  holidayTitleEn?: string | null;
   leaveNote: string | null;
 }
 

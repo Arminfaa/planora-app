@@ -1,13 +1,18 @@
 import { ApiError } from '../utils/ApiError';
 import {
-  addUtcDays,
   dayCountInclusive,
   eachUtcDayInclusive,
   formatApiDate,
+  formatTehranApiDate,
   parseApiDate,
-  toUtcDayStart,
-  utcWeekday,
+  tehranRangeToUtcBounds,
+  weekdayOfApiDate,
 } from '../utils/api-dates';
+import {
+  getBuiltInHolidays,
+  pickHolidayTitle,
+  type BuiltInHoliday,
+} from '../utils/built-in-holidays';
 import { projectMemberRepository } from '../repositories/project-member.repository';
 import { workingCalendarRepository } from '../repositories/working-calendar.repository';
 import { projectMemberService } from './project-member.service';
@@ -29,7 +34,24 @@ function serializeHoliday(holiday: {
     id: holiday.id,
     date: formatApiDate(holiday.date),
     title: holiday.title,
+    titleFa: holiday.title,
+    titleEn: holiday.title,
+    builtIn: false,
+    source: 'custom' as const,
     createdAt: holiday.createdAt.toISOString(),
+  };
+}
+
+function serializeBuiltInHoliday(holiday: BuiltInHoliday) {
+  return {
+    id: `builtin:${holiday.date}:${holiday.source}`,
+    date: holiday.date,
+    title: holiday.titleFa,
+    titleFa: holiday.titleFa,
+    titleEn: holiday.titleEn,
+    builtIn: true,
+    source: holiday.source,
+    createdAt: null as string | null,
   };
 }
 
@@ -59,6 +81,37 @@ function serializeLeave(leave: {
   };
 }
 
+function mergeHolidayMaps(
+  fromApi: string,
+  toApi: string,
+  customHolidays: Array<{ date: Date; title: string | null }>,
+): Map<string, { titleFa: string; titleEn: string; builtIn: boolean }> {
+  const map = new Map<
+    string,
+    { titleFa: string; titleEn: string; builtIn: boolean }
+  >();
+
+  for (const holiday of getBuiltInHolidays(fromApi, toApi)) {
+    map.set(holiday.date, {
+      titleFa: holiday.titleFa,
+      titleEn: holiday.titleEn,
+      builtIn: true,
+    });
+  }
+
+  for (const holiday of customHolidays) {
+    const key = formatApiDate(holiday.date);
+    const title = holiday.title?.trim() || 'تعطیل';
+    map.set(key, {
+      titleFa: title,
+      titleEn: title,
+      builtIn: false,
+    });
+  }
+
+  return map;
+}
+
 export class WorkingCalendarService {
   async getCalendar(userId: string, projectIdOrSlug: string) {
     const projectId =
@@ -71,9 +124,22 @@ export class WorkingCalendarService {
       workingCalendarRepository.listLeaves(projectId),
     ]);
 
+    const today = formatTehranApiDate(new Date());
+    const yearStart = `${Number(today.slice(0, 4)) - 1}-01-01`;
+    const yearEnd = `${Number(today.slice(0, 4)) + 1}-12-31`;
+    const builtIn = getBuiltInHolidays(yearStart, yearEnd).map(
+      serializeBuiltInHoliday,
+    );
+
+    const customDates = new Set(holidays.map((h) => formatApiDate(h.date)));
+    const mergedHolidays = [
+      ...builtIn.filter((h) => !customDates.has(h.date)),
+      ...holidays.map(serializeHoliday),
+    ].sort((a, b) => a.date.localeCompare(b.date));
+
     return {
       nonWorkingWeekdays,
-      holidays: holidays.map(serializeHoliday),
+      holidays: mergedHolidays,
       leaves: leaves.map(serializeLeave),
     };
   }
@@ -126,6 +192,10 @@ export class WorkingCalendarService {
     const projectId =
       await projectMemberService.resolveProjectId(projectIdOrSlug);
     await permissionService.ensurePermission(userId, projectId, 'project.edit');
+
+    if (holidayId.startsWith('builtin:')) {
+      throw new ApiError(400, 'Built-in holidays cannot be deleted');
+    }
 
     const holiday = await workingCalendarRepository.findHolidayById(holidayId);
     if (!holiday || holiday.projectId !== projectId) {
@@ -212,7 +282,10 @@ export class WorkingCalendarService {
       throw new ApiError(400, 'User is not a member of this project');
     }
 
-    const toEndExclusive = addUtcDays(to, 1);
+    const { start, endExclusive } = tehranRangeToUtcBounds(
+      query.from,
+      query.to,
+    );
 
     const [nonWorkingWeekdays, holidays, leaves, tasks, user] =
       await Promise.all([
@@ -226,16 +299,13 @@ export class WorkingCalendarService {
         workingCalendarRepository.listCompletedTasksForAssignee({
           projectId,
           userId: query.userId,
-          from,
-          toEndExclusive,
+          from: start,
+          toEndExclusive: endExclusive,
         }),
         workingCalendarRepository.findUserBasic(query.userId),
       ]);
 
-    const holidayByDay = new Map<string, { title: string | null }>();
-    for (const holiday of holidays) {
-      holidayByDay.set(formatApiDate(holiday.date), { title: holiday.title });
-    }
+    const holidayByDay = mergeHolidayMaps(query.from, query.to, holidays);
 
     const leaveDays = new Set<string>();
     const leaveNoteByDay = new Map<string, string | null>();
@@ -253,14 +323,15 @@ export class WorkingCalendarService {
     const counts = new Map<string, number>();
     for (const task of tasks) {
       if (!task.completeDate) continue;
-      const key = formatApiDate(toUtcDayStart(task.completeDate));
+      const key = formatTehranApiDate(task.completeDate);
+      if (key < query.from || key > query.to) continue;
       counts.set(key, (counts.get(key) ?? 0) + 1);
     }
 
     const weekendSet = new Set(nonWorkingWeekdays);
     const days = eachUtcDayInclusive(from, to).map((day) => {
       const date = formatApiDate(day);
-      const weekday = utcWeekday(day);
+      const weekday = weekdayOfApiDate(date);
       const holiday = holidayByDay.get(date);
       const onLeave = leaveDays.has(date);
 
@@ -275,7 +346,9 @@ export class WorkingCalendarService {
         completedCount: counts.get(date) ?? 0,
         isNonWorking: nonWorkingReason !== null,
         nonWorkingReason,
-        holidayTitle: holiday?.title ?? null,
+        holidayTitle: pickHolidayTitle(holiday, 'fa'),
+        holidayTitleFa: holiday?.titleFa ?? null,
+        holidayTitleEn: holiday?.titleEn ?? null,
         leaveNote: onLeave ? (leaveNoteByDay.get(date) ?? null) : null,
       };
     });

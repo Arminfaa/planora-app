@@ -524,9 +524,12 @@ export const enMessages = {
     personCompletionsLegendWeekend: 'Weekend',
     personCompletionsLegendHoliday: 'Holiday',
     personCompletionsLegendLeave: 'Leave',
+    personCompletionsEmpty:
+      'No completed tasks in this period. Bars for weekends/holidays/leave are still shown.',
     workingCalendarTitle: 'Working calendar',
     workingCalendarSubtitle:
-      'Define weekends, public holidays, and member leave. These days are excluded from personal delivery averages.',
+      'Built-in Iranian and Gregorian holidays are applied automatically. Add custom holidays or leave below. Non-working days stay visible on charts but are excluded from averages.',
+    workingCalendarBuiltIn: 'Built-in',
     workingCalendarWeekends: 'Non-working weekdays',
     workingCalendarWeekendsHint:
       'Checked days are treated as weekends for everyone on this project.',

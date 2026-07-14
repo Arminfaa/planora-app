@@ -31,6 +31,7 @@ export function usePersonCompletions(
   return {
     stats: query.data ?? null,
     isLoading: query.isLoading,
+    isFetching: query.isFetching,
     error: query.error,
     refetch: query.refetch,
   };

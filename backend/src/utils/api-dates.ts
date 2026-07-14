@@ -64,3 +64,36 @@ export function dayCountInclusive(from: Date, to: Date): number {
   const end = toUtcDayStart(to).getTime();
   return Math.floor((end - start) / 86_400_000) + 1;
 }
+
+/** Asia/Tehran offset without DST (since 2022): UTC+03:30 */
+const TEHRAN_OFFSET_MS = (3 * 60 + 30) * 60 * 1000;
+
+/** Calendar day key in Asia/Tehran (YYYY-MM-DD). */
+export function formatTehranApiDate(date: Date): string {
+  return new Intl.DateTimeFormat('en-CA', {
+    timeZone: 'Asia/Tehran',
+    year: 'numeric',
+    month: '2-digit',
+    day: '2-digit',
+  }).format(date);
+}
+
+/** Tehran midnight for an API calendar day → UTC Instant. */
+export function tehranMidnightToUtc(apiDate: string): Date {
+  const date = parseApiDate(apiDate);
+  return new Date(date.getTime() - TEHRAN_OFFSET_MS);
+}
+
+export function tehranRangeToUtcBounds(
+  fromApi: string,
+  toApi: string,
+): { start: Date; endExclusive: Date } {
+  const start = tehranMidnightToUtc(fromApi);
+  const dayAfterTo = addUtcDays(parseApiDate(toApi), 1);
+  const endExclusive = tehranMidnightToUtc(formatApiDate(dayAfterTo));
+  return { start, endExclusive };
+}
+
+export function weekdayOfApiDate(apiDate: string): number {
+  return parseApiDate(apiDate).getUTCDay();
+}

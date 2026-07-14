@@ -525,9 +525,12 @@ export const faMessages = {
     personCompletionsLegendWeekend: 'آخر هفته',
     personCompletionsLegendHoliday: 'تعطیل',
     personCompletionsLegendLeave: 'مرخصی',
+    personCompletionsEmpty:
+      'در این بازه تسک تکمیل‌شده‌ای نیست. ستون‌های آخر هفته / تعطیل / مرخصی همچنان نمایش داده می‌شوند.',
     workingCalendarTitle: 'تقویم کاری',
     workingCalendarSubtitle:
-      'آخر هفته، تعطیلات رسمی و مرخصی اعضا را تعریف کنید. این روزها از میانگین تحویل شخصی حذف می‌شوند.',
+      'تعطیلات رسمی ایران و مناسبت‌های میلادی به‌صورت خودکار اعمال می‌شوند. می‌توانید تعطیل یا مرخصی سفارشی هم اضافه کنید. روزهای غیرکاری در نمودار دیده می‌شوند ولی در میانگین حساب نمی‌شوند.',
+    workingCalendarBuiltIn: 'پیش‌فرض',
     workingCalendarWeekends: 'روزهای غیرکاری هفته',
     workingCalendarWeekendsHint:
       'روزهای تیک‌خورده برای همهٔ اعضای این پروژه آخر هفته محسوب می‌شوند.',

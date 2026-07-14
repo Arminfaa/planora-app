@@ -201,49 +201,58 @@ export function WorkingCalendarPanel({
             </div>
           ) : null}
 
-          <ul className="mt-4 divide-y divide-gray-100 rounded-lg border border-gray-100">
+          <ul className="mt-4 max-h-72 divide-y divide-gray-100 overflow-y-auto rounded-lg border border-gray-100">
             {calendar.holidays.length === 0 ? (
               <li className="px-3 py-3 text-sm text-gray-500">
                 {t('projects.workingCalendarNoHolidays')}
               </li>
             ) : (
-              calendar.holidays.map((holiday) => (
-                <li
-                  key={holiday.id}
-                  className="flex items-center justify-between gap-3 px-3 py-2.5 text-sm"
-                >
-                  <div>
-                    <span className="font-medium text-gray-800">
-                      {formatLocaleDate(holiday.date, locale, {
-                        year: 'numeric',
-                        month: 'long',
-                        day: 'numeric',
-                      })}
-                    </span>
-                    {holiday.title ? (
-                      <span className="ms-2 text-gray-500">
-                        {holiday.title}
+              calendar.holidays.map((holiday) => {
+                const title =
+                  locale === 'en'
+                    ? holiday.titleEn || holiday.title
+                    : holiday.titleFa || holiday.title;
+                return (
+                  <li
+                    key={holiday.id}
+                    className="flex items-center justify-between gap-3 px-3 py-2.5 text-sm"
+                  >
+                    <div className="min-w-0">
+                      <span className="font-medium text-gray-800">
+                        {formatLocaleDate(holiday.date, locale, {
+                          year: 'numeric',
+                          month: 'long',
+                          day: 'numeric',
+                        })}
                       </span>
+                      {title ? (
+                        <span className="ms-2 text-gray-500">{title}</span>
+                      ) : null}
+                      {holiday.builtIn ? (
+                        <span className="ms-2 rounded bg-amber-50 px-1.5 py-0.5 text-[10px] font-medium text-amber-700">
+                          {t('projects.workingCalendarBuiltIn')}
+                        </span>
+                      ) : null}
+                    </div>
+                    {canEdit && !holiday.builtIn ? (
+                      <button
+                        type="button"
+                        className="shrink-0 text-xs font-medium text-red-600 hover:text-red-700"
+                        onClick={() => {
+                          setActionError('');
+                          void deleteHoliday
+                            .mutateAsync(holiday.id)
+                            .catch((err) => {
+                              setActionError(getApiErrorMessage(err));
+                            });
+                        }}
+                      >
+                        {t('common.delete')}
+                      </button>
                     ) : null}
-                  </div>
-                  {canEdit ? (
-                    <button
-                      type="button"
-                      className="text-xs font-medium text-red-600 hover:text-red-700"
-                      onClick={() => {
-                        setActionError('');
-                        void deleteHoliday
-                          .mutateAsync(holiday.id)
-                          .catch((err) => {
-                            setActionError(getApiErrorMessage(err));
-                          });
-                      }}
-                    >
-                      {t('common.delete')}
-                    </button>
-                  ) : null}
-                </li>
-              ))
+                  </li>
+                );
+              })
             )}
           </ul>
         </div>
