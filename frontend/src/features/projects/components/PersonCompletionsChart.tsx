@@ -16,7 +16,7 @@ import { useAuth } from '@/features/auth/hooks/useAuth';
 import { useProjectMembers } from '../hooks/useProjectMembers';
 import { usePersonCompletions } from '../hooks/usePersonCompletions';
 import { useProjectProgress } from '../hooks/useProjectProgress';
-import type { PersonCompletionDay } from '../types';
+import type { NonWorkingReason, PersonCompletionDay } from '../types';
 import { useLocale } from '@/i18n/LocaleProvider';
 import { defaultApiDateRange, formatLocaleDate } from '@/lib/jalali-dates';
 import { getApiErrorMessage } from '@/lib/api';
@@ -26,22 +26,23 @@ import { cn } from '@/lib/utils';
 
 const COLORS = {
   working: '#0f766e',
-  weekend: '#94a3b8',
+  workingEmpty: '#99f6e4',
+  weekend: '#64748b',
   holiday: '#f59e0b',
-  leave: '#fb7185',
-  empty: '#e5e7eb',
+  leave: '#f43f5e',
 } as const;
 
-function barFill(day: PersonCompletionDay): string {
-  if (day.completedCount <= 0) {
-    if (day.nonWorkingReason === 'holiday') return COLORS.holiday;
-    if (day.nonWorkingReason === 'leave') return COLORS.leave;
-    if (day.nonWorkingReason === 'weekend') return COLORS.weekend;
-    return COLORS.empty;
-  }
-  if (day.nonWorkingReason === 'holiday') return COLORS.holiday;
-  if (day.nonWorkingReason === 'leave') return COLORS.leave;
-  if (day.nonWorkingReason === 'weekend') return COLORS.weekend;
+type ChartDay = PersonCompletionDay & {
+  label: string;
+  displayCount: number;
+  effectiveReason: NonWorkingReason | null;
+};
+
+function barFill(day: ChartDay): string {
+  if (day.effectiveReason === 'holiday') return COLORS.holiday;
+  if (day.effectiveReason === 'leave') return COLORS.leave;
+  if (day.effectiveReason === 'weekend') return COLORS.weekend;
+  if (day.completedCount <= 0) return COLORS.workingEmpty;
   return COLORS.working;
 }
 
@@ -50,6 +51,25 @@ function holidayLabel(day: PersonCompletionDay, locale: 'en' | 'fa'): string {
     return day.holidayTitleEn || day.holidayTitle || '';
   }
   return day.holidayTitleFa || day.holidayTitle || '';
+}
+
+function computeTotals(days: ChartDay[]) {
+  const workingDays = days.filter((day) => !day.effectiveReason);
+  const completedTotal = days.reduce((sum, day) => sum + day.completedCount, 0);
+  const completedOnWorkingDays = workingDays.reduce(
+    (sum, day) => sum + day.completedCount,
+    0,
+  );
+  return {
+    completedTotal,
+    completedOnWorkingDays,
+    workingDays: workingDays.length,
+    nonWorkingDays: days.length - workingDays.length,
+    averagePerWorkingDay:
+      workingDays.length > 0
+        ? Math.round((completedOnWorkingDays / workingDays.length) * 10) / 10
+        : 0,
+  };
 }
 
 interface PersonCompletionsChartProps {
@@ -65,6 +85,9 @@ export function PersonCompletionsChart({
   const { stats: progressStats } = useProjectProgress(projectId, true);
   const [userId, setUserId] = useState('');
   const [range, setRange] = useState(() => defaultApiDateRange(29));
+  const [holidayDates, setHolidayDates] = useState<string[]>([]);
+  const [leaveDates, setLeaveDates] = useState<string[]>([]);
+  const [syncedForKey, setSyncedForKey] = useState('');
 
   const memberOptions = useMemo(() => {
     const byId = new Map<string, string>();
@@ -101,29 +124,75 @@ export function PersonCompletionsChart({
     Boolean(userId && range.from && range.to),
   );
 
-  const chartData = useMemo(() => {
+  // Prefill holiday/leave multi-selects from server marks when range/member changes.
+  useEffect(() => {
+    if (!stats) return;
+    const key = `${stats.userId}:${stats.from}:${stats.to}`;
+    if (syncedForKey === key) return;
+
+    setHolidayDates(
+      stats.days
+        .filter((day) => day.nonWorkingReason === 'holiday')
+        .map((day) => day.date),
+    );
+    setLeaveDates(
+      stats.days
+        .filter((day) => day.nonWorkingReason === 'leave')
+        .map((day) => day.date),
+    );
+    setSyncedForKey(key);
+  }, [stats, syncedForKey]);
+
+  const dayOptions = useMemo(() => {
     if (!stats) return [];
-    const peak = Math.max(1, ...stats.days.map((day) => day.completedCount));
     return stats.days.map((day) => ({
-      ...day,
+      value: day.date,
       label: formatLocaleDate(day.date, locale, {
-        month: 'numeric',
+        weekday: 'short',
+        month: 'short',
         day: 'numeric',
       }),
-      // Keep non-working / empty days visible on the axis.
-      displayCount:
-        day.completedCount > 0
-          ? day.completedCount
-          : day.isNonWorking
-            ? Math.max(0.35, peak * 0.12)
-            : Math.max(0.12, peak * 0.05),
     }));
   }, [locale, stats]);
 
+  const chartDays = useMemo(() => {
+    if (!stats) return [] as ChartDay[];
+
+    const holidaySet = new Set(holidayDates);
+    const leaveSet = new Set(leaveDates);
+    const peak = Math.max(1, ...stats.days.map((day) => day.completedCount));
+
+    return stats.days.map((day) => {
+      let effectiveReason: NonWorkingReason | null = null;
+      if (leaveSet.has(day.date)) effectiveReason = 'leave';
+      else if (holidaySet.has(day.date)) effectiveReason = 'holiday';
+      else if (day.nonWorkingReason === 'weekend') effectiveReason = 'weekend';
+
+      return {
+        ...day,
+        effectiveReason,
+        isNonWorking: effectiveReason !== null,
+        nonWorkingReason: effectiveReason,
+        label: formatLocaleDate(day.date, locale, {
+          month: 'numeric',
+          day: 'numeric',
+        }),
+        displayCount:
+          day.completedCount > 0
+            ? day.completedCount
+            : effectiveReason
+              ? Math.max(0.35, peak * 0.12)
+              : Math.max(0.15, peak * 0.06),
+      };
+    });
+  }, [holidayDates, leaveDates, locale, stats]);
+
+  const totals = useMemo(() => computeTotals(chartDays), [chartDays]);
+
   const yMax = useMemo(() => {
-    const max = Math.max(0, ...chartData.map((day) => day.completedCount));
+    const max = Math.max(0, ...chartDays.map((day) => day.completedCount));
     return Math.max(max, 1);
-  }, [chartData]);
+  }, [chartDays]);
 
   return (
     <section className="rounded-xl border border-white/60 bg-white/80 p-5 shadow-sm backdrop-blur-md">
@@ -136,7 +205,7 @@ export function PersonCompletionsChart({
         </p>
       </div>
 
-      <div className="mt-4 grid gap-3 sm:grid-cols-2 lg:grid-cols-[minmax(0,1fr)_minmax(0,1.2fr)]">
+      <div className="mt-4 grid gap-3 sm:grid-cols-2">
         <div className="space-y-1">
           <label className="block text-sm font-medium text-gray-700">
             {t('projects.personCompletionsMember')}
@@ -157,10 +226,68 @@ export function PersonCompletionsChart({
           valueFrom={range.from}
           valueTo={range.to}
           onChange={({ from, to }) => {
-            if (from && to) setRange({ from, to });
+            if (from && to) {
+              setSyncedForKey('');
+              setRange({ from, to });
+            }
           }}
         />
       </div>
+
+      {stats ? (
+        <div className="mt-3 grid gap-3 sm:grid-cols-2">
+          <div className="space-y-1">
+            <label className="block text-sm font-medium text-gray-700">
+              {t('projects.personCompletionsHolidaySelect')}
+            </label>
+            <Select
+              mode="multiple"
+              allowClear
+              className="w-full"
+              value={holidayDates}
+              onChange={(values) => {
+                const next = values as string[];
+                setHolidayDates(next);
+                setLeaveDates((prev) =>
+                  prev.filter((date) => !next.includes(date)),
+                );
+              }}
+              options={dayOptions}
+              optionFilterProp="label"
+              placeholder={t(
+                'projects.personCompletionsHolidaySelectPlaceholder',
+              )}
+              maxTagCount="responsive"
+              getPopupContainer={() => document.body}
+            />
+          </div>
+          <div className="space-y-1">
+            <label className="block text-sm font-medium text-gray-700">
+              {t('projects.personCompletionsLeaveSelect')}
+            </label>
+            <Select
+              mode="multiple"
+              allowClear
+              className="w-full"
+              value={leaveDates}
+              onChange={(values) => {
+                const next = values as string[];
+                setLeaveDates(next);
+                setHolidayDates((prev) =>
+                  prev.filter((date) => !next.includes(date)),
+                );
+              }}
+              options={dayOptions}
+              optionFilterProp="label"
+              placeholder={t(
+                'projects.personCompletionsLeaveSelectPlaceholder',
+              )}
+              maxTagCount="responsive"
+              getPopupContainer={() => document.body}
+            />
+          </div>
+        </div>
+      ) : null}
 
       {error ? (
         <div className="mt-4 rounded-lg bg-red-50 px-3 py-2 text-sm text-red-700">
@@ -183,19 +310,19 @@ export function PersonCompletionsChart({
           <div className="mt-5 grid grid-cols-2 gap-3 sm:grid-cols-4">
             <SummaryStat
               label={t('projects.personCompletionsTotal')}
-              value={String(stats.totals.completedTotal)}
+              value={String(totals.completedTotal)}
             />
             <SummaryStat
               label={t('projects.personCompletionsWorkingDays')}
-              value={String(stats.totals.workingDays)}
+              value={String(totals.workingDays)}
             />
             <SummaryStat
               label={t('projects.personCompletionsOnWorkingDays')}
-              value={String(stats.totals.completedOnWorkingDays)}
+              value={String(totals.completedOnWorkingDays)}
             />
             <SummaryStat
               label={t('projects.personCompletionsAverage')}
-              value={String(stats.totals.averagePerWorkingDay)}
+              value={String(totals.averagePerWorkingDay)}
             />
           </div>
 
@@ -207,7 +334,7 @@ export function PersonCompletionsChart({
           >
             <ResponsiveContainer width="100%" height="100%">
               <BarChart
-                data={chartData}
+                data={chartDays}
                 margin={{ top: 8, right: 8, left: 0, bottom: 0 }}
               >
                 <CartesianGrid strokeDasharray="3 3" vertical={false} />
@@ -227,9 +354,7 @@ export function PersonCompletionsChart({
                   cursor={{ fill: 'rgba(15, 118, 110, 0.06)' }}
                   content={({ active, payload }) => {
                     if (!active || !payload?.[0]) return null;
-                    const day = payload[0].payload as PersonCompletionDay & {
-                      label: string;
-                    };
+                    const day = payload[0].payload as ChartDay;
                     const holiday = holidayLabel(day, locale);
                     return (
                       <div className="rounded-lg border border-gray-200 bg-white px-3 py-2 text-xs shadow-lg">
@@ -244,21 +369,25 @@ export function PersonCompletionsChart({
                           {t('projects.personCompletionsTotal')}:{' '}
                           {day.completedCount}
                         </p>
-                        {day.nonWorkingReason === 'weekend' ? (
-                          <p className="mt-0.5 text-slate-500">
+                        {!day.effectiveReason && day.completedCount === 0 ? (
+                          <p className="mt-0.5 text-teal-700">
+                            {t('projects.personCompletionsLegendWorkingEmpty')}
+                          </p>
+                        ) : null}
+                        {day.effectiveReason === 'weekend' ? (
+                          <p className="mt-0.5 text-slate-600">
                             {t('projects.personCompletionsLegendWeekend')}
                           </p>
                         ) : null}
-                        {day.nonWorkingReason === 'holiday' ? (
+                        {day.effectiveReason === 'holiday' ? (
                           <p className="mt-0.5 text-amber-700">
                             {t('projects.personCompletionsLegendHoliday')}
                             {holiday ? ` — ${holiday}` : ''}
                           </p>
                         ) : null}
-                        {day.nonWorkingReason === 'leave' ? (
+                        {day.effectiveReason === 'leave' ? (
                           <p className="mt-0.5 text-rose-600">
                             {t('projects.personCompletionsLegendLeave')}
-                            {day.leaveNote ? ` — ${day.leaveNote}` : ''}
                           </p>
                         ) : null}
                       </div>
@@ -270,13 +399,14 @@ export function PersonCompletionsChart({
                   radius={[4, 4, 0, 0]}
                   maxBarSize={28}
                 >
-                  {chartData.map((day) => (
+                  {chartDays.map((day) => (
                     <Cell
                       key={day.date}
                       fill={barFill(day)}
-                      // Keep non-working zero-days slightly visible
                       fillOpacity={
-                        day.completedCount === 0 && day.isNonWorking ? 0.55 : 1
+                        day.completedCount === 0 && day.effectiveReason
+                          ? 0.65
+                          : 1
                       }
                     />
                   ))}
@@ -285,7 +415,7 @@ export function PersonCompletionsChart({
             </ResponsiveContainer>
           </div>
 
-          {stats.totals.completedTotal === 0 ? (
+          {totals.completedTotal === 0 ? (
             <p className="mt-2 text-center text-sm text-gray-500">
               {t('projects.personCompletionsEmpty')}
             </p>
@@ -297,7 +427,11 @@ export function PersonCompletionsChart({
               label={t('projects.personCompletionsLegendWorking')}
             />
             <LegendDot
-              className="bg-slate-400"
+              className="bg-teal-200"
+              label={t('projects.personCompletionsLegendWorkingEmpty')}
+            />
+            <LegendDot
+              className="bg-slate-500"
               label={t('projects.personCompletionsLegendWeekend')}
             />
             <LegendDot
@@ -305,7 +439,7 @@ export function PersonCompletionsChart({
               label={t('projects.personCompletionsLegendHoliday')}
             />
             <LegendDot
-              className="bg-rose-400"
+              className="bg-rose-500"
               label={t('projects.personCompletionsLegendLeave')}
             />
           </div>

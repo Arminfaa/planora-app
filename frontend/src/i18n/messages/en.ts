@@ -511,7 +511,7 @@ export const enMessages = {
     noBoardsProgress: 'No boards yet. Create a board to track progress here.',
     personCompletionsTitle: 'Personal delivery chart',
     personCompletionsSubtitle:
-      'Daily completed tasks for a team member in the selected period. Weekends, holidays, and leave days stay visible but are excluded from the average.',
+      'Pick a member and period, then mark holidays and leave days. Those days stay visible but are excluded from the average. Fridays count as weekend automatically.',
     personCompletionsMember: 'Team member',
     personCompletionsMemberPlaceholder: 'Select a member',
     personCompletionsRange: 'Period',
@@ -520,12 +520,17 @@ export const enMessages = {
     personCompletionsWorkingDays: 'Working days',
     personCompletionsOnWorkingDays: 'On working days',
     personCompletionsAverage: 'Avg / working day',
-    personCompletionsLegendWorking: 'Working day',
+    personCompletionsLegendWorking: 'Working day (with tasks)',
+    personCompletionsLegendWorkingEmpty: 'Working day (no tasks)',
     personCompletionsLegendWeekend: 'Weekend',
     personCompletionsLegendHoliday: 'Holiday',
     personCompletionsLegendLeave: 'Leave',
+    personCompletionsHolidaySelect: 'Holidays in this period',
+    personCompletionsHolidaySelectPlaceholder: 'Select holiday days',
+    personCompletionsLeaveSelect: 'Leave days in this period',
+    personCompletionsLeaveSelectPlaceholder: 'Select leave days',
     personCompletionsEmpty:
-      'No completed tasks in this period. Bars for weekends/holidays/leave are still shown.',
+      'No completed tasks in this period. Weekends/holidays/leave bars are still shown.',
     workingCalendarTitle: 'Working calendar',
     workingCalendarSubtitle:
       'Built-in Iranian and Gregorian holidays are applied automatically. Add custom holidays or leave below. Non-working days stay visible on charts but are excluded from averages.',
