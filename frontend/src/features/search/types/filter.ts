@@ -1,12 +1,12 @@
 import type { TaskPriority } from '@/features/tasks/types';
 
-export type DueDateFilter = 'all' | 'overdue' | 'today' | 'week' | 'none';
+export type DueDateFilter =
+  'all' | 'overdue' | 'today' | 'week' | 'none' | 'range';
 
 export type CompletionFilter = 'all' | 'completed' | 'not_completed';
 
-export type CompleteDateFilter = 'all' | 'today' | 'week' | 'month' | 'none';
-
-export type ChecklistFilter = 'all' | 'with' | 'without';
+export type CompleteDateFilter =
+  'all' | 'today' | 'week' | 'month' | 'none' | 'range';
 
 export const UNASSIGNED_ASSIGNEE = '__unassigned__';
 
@@ -14,9 +14,12 @@ export interface TaskFilters {
   priorities: TaskPriority[];
   assigneeId: string | null;
   dueDate: DueDateFilter;
+  dueDateFrom: string | null;
+  dueDateTo: string | null;
   completion: CompletionFilter;
   completeDate: CompleteDateFilter;
-  checklist: ChecklistFilter;
+  completeDateFrom: string | null;
+  completeDateTo: string | null;
   columnId: string | null;
 }
 
@@ -24,13 +27,16 @@ export const defaultTaskFilters: TaskFilters = {
   priorities: [],
   assigneeId: null,
   dueDate: 'all',
+  dueDateFrom: null,
+  dueDateTo: null,
   completion: 'all',
   completeDate: 'all',
-  checklist: 'all',
+  completeDateFrom: null,
+  completeDateTo: null,
   columnId: null,
 };
 
-export type ApiDueDateFilter = Exclude<DueDateFilter, 'all'>;
+export type ApiDueDateFilter = Exclude<DueDateFilter, 'all' | 'range'>;
 
 export interface SearchFilterParams {
   priority?: TaskPriority[];
@@ -49,6 +55,7 @@ export function getDueDateFilterOptions(t: (key: string) => string) {
     { value: 'overdue' as const, label: t('search.dueOverdue') },
     { value: 'today' as const, label: t('search.dueToday') },
     { value: 'week' as const, label: t('search.dueThisWeek') },
+    { value: 'range' as const, label: t('search.dateRange') },
     { value: 'none' as const, label: t('search.noDueDate') },
   ];
 }
@@ -70,15 +77,8 @@ export function getCompleteDateFilterOptions(t: (key: string) => string) {
     { value: 'today' as const, label: t('search.completedToday') },
     { value: 'week' as const, label: t('search.completedThisWeek') },
     { value: 'month' as const, label: t('search.completedThisMonth') },
+    { value: 'range' as const, label: t('search.dateRange') },
     { value: 'none' as const, label: t('search.noCompleteDate') },
-  ];
-}
-
-export function getChecklistFilterOptions(t: (key: string) => string) {
-  return [
-    { value: 'all' as const, label: t('search.allChecklist') },
-    { value: 'with' as const, label: t('search.withChecklist') },
-    { value: 'without' as const, label: t('search.withoutChecklist') },
   ];
 }
 
@@ -91,5 +91,6 @@ export const DUE_DATE_FILTER_OPTIONS: {
   { value: 'overdue', label: 'Overdue' },
   { value: 'today', label: 'Due today' },
   { value: 'week', label: 'Due this week' },
+  { value: 'range', label: 'Date range' },
   { value: 'none', label: 'No due date' },
 ];

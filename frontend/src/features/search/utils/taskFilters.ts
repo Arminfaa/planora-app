@@ -34,11 +34,42 @@ function endOfMonth(date = new Date()): Date {
   return endOfDay(value);
 }
 
-function matchesDueDateFilter(
-  task: BoardTask,
-  dueDate: TaskFilters['dueDate'],
+function parseApiDayStart(value: string): Date {
+  return startOfDay(new Date(`${value.slice(0, 10)}T00:00:00`));
+}
+
+function parseApiDayEnd(value: string): Date {
+  return endOfDay(new Date(`${value.slice(0, 10)}T00:00:00`));
+}
+
+function matchesDateRange(
+  value: string | null | undefined,
+  from: string | null,
+  to: string | null,
 ): boolean {
+  if (!value) return false;
+  if (!from && !to) return true;
+
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) return false;
+
+  if (from && date < parseApiDayStart(from)) return false;
+  if (to && date > parseApiDayEnd(to)) return false;
+  return true;
+}
+
+function matchesDueDateFilter(task: BoardTask, filters: TaskFilters): boolean {
+  const { dueDate } = filters;
   if (dueDate === 'all') return true;
+
+  if (dueDate === 'range') {
+    if (!filters.dueDateFrom && !filters.dueDateTo) return true;
+    return matchesDateRange(
+      task.dueDate,
+      filters.dueDateFrom,
+      filters.dueDateTo,
+    );
+  }
 
   if (!task.dueDate) {
     return dueDate === 'none';
@@ -64,9 +95,19 @@ function matchesDueDateFilter(
 
 function matchesCompleteDateFilter(
   task: BoardTask,
-  completeDate: TaskFilters['completeDate'],
+  filters: TaskFilters,
 ): boolean {
+  const { completeDate } = filters;
   if (completeDate === 'all') return true;
+
+  if (completeDate === 'range') {
+    if (!filters.completeDateFrom && !filters.completeDateTo) return true;
+    return matchesDateRange(
+      task.completeDate,
+      filters.completeDateFrom,
+      filters.completeDateTo,
+    );
+  }
 
   if (!task.completeDate) {
     return completeDate === 'none';
@@ -99,7 +140,6 @@ export function isTaskFiltersActive(
     filters.dueDate !== 'all' ||
     filters.completion !== 'all' ||
     filters.completeDate !== 'all' ||
-    filters.checklist !== 'all' ||
     filters.columnId !== null
   );
 }
@@ -138,12 +178,8 @@ export function taskMatchesFilters(
     return false;
   }
 
-  const hasChecklist = (task.checklistItems?.length ?? 0) > 0;
-  if (filters.checklist === 'with' && !hasChecklist) return false;
-  if (filters.checklist === 'without' && hasChecklist) return false;
-
-  if (!matchesDueDateFilter(task, filters.dueDate)) return false;
-  if (!matchesCompleteDateFilter(task, filters.completeDate)) return false;
+  if (!matchesDueDateFilter(task, filters)) return false;
+  if (!matchesCompleteDateFilter(task, filters)) return false;
 
   return true;
 }
@@ -213,7 +249,6 @@ export function countActiveFilters(filters: TaskFilters): number {
   if (filters.dueDate !== 'all') count += 1;
   if (filters.completion !== 'all') count += 1;
   if (filters.completeDate !== 'all') count += 1;
-  if (filters.checklist !== 'all') count += 1;
   if (filters.columnId !== null) count += 1;
   return count;
 }

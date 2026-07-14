@@ -7,9 +7,9 @@ import {
   type TaskPriority,
 } from '@/features/tasks/types';
 import { useLocale } from '@/i18n/LocaleProvider';
+import { DateRangeInput } from '@/shared/components/ui/DateRangeInput';
 import { SelectField } from '@/shared/components/ui/SelectField';
 import {
-  getChecklistFilterOptions,
   getCompleteDateFilterOptions,
   getCompletionFilterOptions,
   getDueDateFilterOptions,
@@ -76,11 +76,6 @@ export function BoardFilterForm({
   }));
 
   const completeDateOptions = getCompleteDateFilterOptions(t).map((option) => ({
-    value: option.value,
-    label: option.label,
-  }));
-
-  const checklistOptions = getChecklistFilterOptions(t).map((option) => ({
     value: option.value,
     label: option.label,
   }));
@@ -153,18 +148,6 @@ export function BoardFilterForm({
         />
 
         <SelectField
-          label={<span className={labelClass}>{t('tasks.dueDate')}</span>}
-          value={filters.dueDate}
-          onChange={(value) =>
-            onChange({
-              ...filters,
-              dueDate: value as TaskFilters['dueDate'],
-            })
-          }
-          options={dueDateOptions}
-        />
-
-        <SelectField
           label={<span className={labelClass}>{t('common.status')}</span>}
           value={filters.completion}
           onChange={(value) =>
@@ -177,28 +160,78 @@ export function BoardFilterForm({
         />
 
         <SelectField
-          label={<span className={labelClass}>{t('tasks.completeDate')}</span>}
-          value={filters.completeDate}
-          onChange={(value) =>
+          label={<span className={labelClass}>{t('tasks.dueDate')}</span>}
+          value={filters.dueDate}
+          onChange={(value) => {
+            const dueDate = value as TaskFilters['dueDate'];
             onChange({
               ...filters,
-              completeDate: value as TaskFilters['completeDate'],
-            })
-          }
-          options={completeDateOptions}
+              dueDate,
+              ...(dueDate === 'range'
+                ? {}
+                : { dueDateFrom: null, dueDateTo: null }),
+            });
+          }}
+          options={dueDateOptions}
         />
 
         <SelectField
-          label={<span className={labelClass}>{t('tasks.checklist')}</span>}
-          value={filters.checklist}
-          onChange={(value) =>
+          label={<span className={labelClass}>{t('tasks.completeDate')}</span>}
+          value={filters.completeDate}
+          onChange={(value) => {
+            const completeDate = value as TaskFilters['completeDate'];
             onChange({
               ...filters,
-              checklist: value as TaskFilters['checklist'],
-            })
-          }
-          options={checklistOptions}
+              completeDate,
+              ...(completeDate === 'range'
+                ? {}
+                : { completeDateFrom: null, completeDateTo: null }),
+            });
+          }}
+          options={completeDateOptions}
         />
+
+        {filters.dueDate === 'range' && (
+          <div className="sm:col-span-2">
+            <DateRangeInput
+              label={
+                <span className={labelClass}>{t('search.dueDateRange')}</span>
+              }
+              valueFrom={filters.dueDateFrom}
+              valueTo={filters.dueDateTo}
+              onChange={({ from, to }) =>
+                onChange({
+                  ...filters,
+                  dueDate: 'range',
+                  dueDateFrom: from || null,
+                  dueDateTo: to || null,
+                })
+              }
+            />
+          </div>
+        )}
+
+        {filters.completeDate === 'range' && (
+          <div className="sm:col-span-2">
+            <DateRangeInput
+              label={
+                <span className={labelClass}>
+                  {t('search.completeDateRange')}
+                </span>
+              }
+              valueFrom={filters.completeDateFrom}
+              valueTo={filters.completeDateTo}
+              onChange={({ from, to }) =>
+                onChange({
+                  ...filters,
+                  completeDate: 'range',
+                  completeDateFrom: from || null,
+                  completeDateTo: to || null,
+                })
+              }
+            />
+          </div>
+        )}
       </div>
     </div>
   );
