@@ -54,6 +54,7 @@ export function DateRangeInput({
         }}
         format={format}
         className={cn('w-full min-w-0 max-w-full', className)}
+        classNames={{ popup: { root: 'app-range-picker-dropdown' } }}
         style={{ width: '100%', maxWidth: '100%' }}
         disabled={disabled}
         allowEmpty={[true, true]}

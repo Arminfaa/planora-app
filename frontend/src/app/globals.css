@@ -239,6 +239,26 @@
   overflow: hidden;
   text-overflow: ellipsis;
 }
+
+/*
+ * RangePicker: always show a single month panel.
+ * Ant Design renders two panels by default; hide the second and restore
+ * next-month navigation on the remaining panel.
+ */
+.app-range-picker-dropdown .ant-picker-panels > *:nth-child(2) {
+  display: none !important;
+}
+
+.app-range-picker-dropdown
+  .ant-picker-panels
+  > *:first-child
+  .ant-picker-header-next-btn,
+.app-range-picker-dropdown
+  .ant-picker-panels
+  > *:first-child
+  .ant-picker-header-super-next-btn {
+  visibility: visible !important;
+}
 .ant-modal-footer {
   border-top: 1px solid #f0f0f0 !important;
   padding: 10px 24px 0 24px !important;
