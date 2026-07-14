@@ -4,6 +4,9 @@ import type { Locale } from '@/i18n/types';
 import type { Translator } from '@/i18n/utils';
 import { formatLocaleDate } from '@/lib/jalali-dates';
 
+const TASK_SEPARATOR = '························';
+const SECTION_RULE = '────────────────────────';
+
 function formatReportDate(
   value: string | Date | null | undefined,
   locale: Locale,
@@ -61,30 +64,25 @@ function collectPeople(tasks: BoardTask[]): string[] {
   return [...names];
 }
 
-function indent(text: string, spaces = 3): string {
-  const pad = ' '.repeat(spaces);
-  return text
-    .split('\n')
-    .map((line) => `${pad}${line}`)
-    .join('\n');
-}
-
-function formatChecklistSection(task: BoardTask, t: Translator): string | null {
+function appendChecklistLines(
+  lines: string[],
+  task: BoardTask,
+  t: Translator,
+): void {
   const items = task.checklistItems ?? [];
-  if (items.length === 0) return null;
+  if (items.length === 0) return;
 
   const doneCount = items.filter((item) => item.isDone).length;
-  const lines = [
+  lines.push(
     t('board.workReport.checklistProgress', {
       done: doneCount,
       total: items.length,
     }),
-    ...items.map((item) => {
-      const mark = item.isDone ? '✓' : '•';
-      return `${mark} ${item.title.trim()}`;
-    }),
-  ];
-  return lines.join('\n');
+  );
+  for (const item of items) {
+    const mark = item.isDone ? '✓' : '•';
+    lines.push(`${mark} ${item.title.trim()}`);
+  }
 }
 
 function formatTaskBlock(
@@ -94,33 +92,20 @@ function formatTaskBlock(
   t: Translator,
 ): string {
   const title = task.title.trim() || t('board.workReport.untitled');
-  const description = task.description?.trim() ?? '';
-  const checklist = formatChecklistSection(task, t);
   const assignees = getTaskAssignees(task)
     .map((assignee) => assignee.name.trim())
     .filter(Boolean);
 
   const lines: string[] = [`${index + 1}) ${title}`];
+  appendChecklistLines(lines, task, t);
 
-  if (description) {
-    lines.push('', indent(description));
-  }
-
-  if (checklist) {
-    lines.push('', indent(checklist));
-  }
-
-  const meta: string[] = [];
   if (task.completeDate) {
-    meta.push(
+    lines.push(
       `${t('board.workReport.completedOn')}: ${formatReportDate(task.completeDate, locale)}`,
     );
   }
   if (assignees.length > 0) {
-    meta.push(`${t('board.workReport.by')}: ${joinNames(assignees, locale)}`);
-  }
-  if (meta.length > 0) {
-    lines.push('', ...meta.map((line) => indent(line)));
+    lines.push(`${t('board.workReport.by')}: ${joinNames(assignees, locale)}`);
   }
 
   return lines.join('\n');
@@ -142,21 +127,18 @@ export function buildWorkReportText(
 
   const header = [
     t('board.workReport.banner'),
-    '────────────────────────',
+    SECTION_RULE,
     t('board.workReport.periodLine', { date: dateLabel }),
     t('board.workReport.teamLine', { people: peopleLabel }),
     t('board.workReport.countLine', { count: tasks.length }),
-    '────────────────────────',
+    SECTION_RULE,
   ].join('\n');
 
   const body = tasks
     .map((task, index) => formatTaskBlock(task, index, locale, t))
-    .join('\n\n························\n\n');
+    .join(`\n${TASK_SEPARATOR}\n`);
 
-  const footer = [
-    '────────────────────────',
-    t('board.workReport.footer'),
-  ].join('\n');
+  const footer = [SECTION_RULE, t('board.workReport.footer')].join('\n');
 
-  return [header, '', body, '', footer].join('\n');
+  return [header, body, footer].join('\n');
 }
