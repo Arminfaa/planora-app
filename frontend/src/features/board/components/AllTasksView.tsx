@@ -1,6 +1,7 @@
 'use client';
 
 import { useCallback, useEffect, useMemo, useState } from 'react';
+import { useFocusListTask } from '../hooks/useFocusListTask';
 import dynamic from 'next/dynamic';
 import Link from 'next/link';
 import { Checkbox } from 'antd';
@@ -113,6 +114,7 @@ export function AllTasksView({
   const canCreateLabels = can('label.create');
   const canAssignLabels = can('label.assign');
   const memberColorMap = useMemberColorMap(members, tasks);
+  const { requestFocusTask, highlightedTaskId } = useFocusListTask();
 
   const columns = board?.columns ?? [];
 
@@ -125,34 +127,43 @@ export function AllTasksView({
     [columns, tasks],
   );
 
-  const loadData = useCallback(async () => {
-    if (!canViewTasks) {
-      setTasks([]);
-      setIsLoading(false);
-      return;
-    }
+  const loadData = useCallback(
+    async (options?: { silent?: boolean }): Promise<BoardTask[]> => {
+      if (!canViewTasks) {
+        setTasks([]);
+        setIsLoading(false);
+        return [];
+      }
 
-    setIsLoading(true);
-    setError('');
-    try {
-      const boardData = await boardService.getBySlug(projectSlug, boardSlug);
-      setBoard(boardData);
-      const taskData = await taskService.listByBoard(boardData.id);
-      setTasks(taskData);
-      setViewTask((prev) =>
-        prev ? (taskData.find((task) => task.id === prev.id) ?? prev) : null,
-      );
-      setEditTask((prev) =>
-        prev ? (taskData.find((task) => task.id === prev.id) ?? prev) : null,
-      );
-    } catch (err) {
-      setError(getApiErrorMessage(err));
-      setBoard(null);
-      setTasks([]);
-    } finally {
-      setIsLoading(false);
-    }
-  }, [boardSlug, canViewTasks, projectSlug]);
+      if (!options?.silent) {
+        setIsLoading(true);
+      }
+      setError('');
+      try {
+        const boardData = await boardService.getBySlug(projectSlug, boardSlug);
+        setBoard(boardData);
+        const taskData = await taskService.listByBoard(boardData.id);
+        setTasks(taskData);
+        setViewTask((prev) =>
+          prev ? (taskData.find((task) => task.id === prev.id) ?? prev) : null,
+        );
+        setEditTask((prev) =>
+          prev ? (taskData.find((task) => task.id === prev.id) ?? prev) : null,
+        );
+        return taskData;
+      } catch (err) {
+        setError(getApiErrorMessage(err));
+        setBoard(null);
+        setTasks([]);
+        return [];
+      } finally {
+        if (!options?.silent) {
+          setIsLoading(false);
+        }
+      }
+    },
+    [boardSlug, canViewTasks, projectSlug],
+  );
 
   useEffect(() => {
     void loadData();
@@ -250,14 +261,31 @@ export function AllTasksView({
     [board, exitSelectionMode, loadData, selectedCount, selectedTaskIds],
   );
 
-  const handleCreateTask = async () => {
+  const revealAndFocusTask = useCallback(
+    (taskId: string, nextTasks: BoardTask[]) => {
+      const task = nextTasks.find((entry) => entry.id === taskId);
+      if (task && !taskIsVisible(task, searchQuery, filters)) {
+        setSearchQuery('');
+        setFilters(defaultTaskFilters);
+      }
+      requestFocusTask(taskId);
+    },
+    [filters, requestFocusTask, searchQuery],
+  );
+
+  const handleCreateTask = async (task: BoardTask) => {
+    const nextTasks = await loadData({ silent: true });
     setShowCreateModal(false);
-    await loadData();
+    revealAndFocusTask(task.id, nextTasks);
   };
 
   const handleTaskSave = async () => {
-    await loadData();
+    const taskId = editTask?.id;
+    const nextTasks = await loadData({ silent: true });
     setEditTask(null);
+    if (taskId) {
+      revealAndFocusTask(taskId, nextTasks);
+    }
   };
 
   const handleTaskDelete = async () => {
@@ -587,18 +615,20 @@ export function AllTasksView({
             const labels = normalizeTaskLabels(task.labels);
             const isCompleted = Boolean(task.isCompleted);
             const isSelected = selectedTaskIds.has(task.id);
+            const isHighlighted = highlightedTaskId === task.id;
             const showSelection = selectionMode !== null;
             const progressPercent = getTaskProgressDisplay(task);
             const cardPresentation = getTaskAssigneeCardPresentation(
               task,
               memberColorMap,
-              { isCompleted },
+              { isCompleted, isHighlighted },
             );
 
             return (
               <div
                 key={task.id}
-                className="flex flex-col gap-2 sm:flex-row sm:items-start sm:gap-3"
+                data-task-id={task.id}
+                className="flex scroll-mt-24 flex-col gap-2 sm:flex-row sm:items-start sm:gap-3"
               >
                 {showSelection && (
                   <div
@@ -619,9 +649,13 @@ export function AllTasksView({
                 )}
 
                 <div
-                  className={`min-w-0 flex-1 rounded-xl p-3 shadow-sm transition hover:border-primary-200 hover:shadow-md sm:p-4 ${
+                  className={`min-w-0 flex-1 rounded-xl p-3 shadow-sm transition duration-300 hover:border-primary-200 hover:shadow-md sm:p-4 ${
                     cardPresentation.className
-                  } ${isSelected ? 'ring-2 ring-primary-200' : ''}`}
+                  } ${isSelected && !isHighlighted ? 'ring-2 ring-primary-200' : ''} ${
+                    isHighlighted
+                      ? 'ring-2 ring-primary-400 ring-offset-2 animate-[pulse_1.2s_ease-in-out_1]'
+                      : ''
+                  }`}
                   style={cardPresentation.style}
                 >
                   <div className="flex items-start justify-between gap-2">
@@ -801,7 +835,9 @@ export function AllTasksView({
                 }
               : undefined
           }
-          onRefresh={loadData}
+          onRefresh={async () => {
+            await loadData({ silent: true });
+          }}
           canToggleChecklist={canViewTasks}
           canEditChecklist={canEditTasks}
         />
@@ -814,7 +850,9 @@ export function AllTasksView({
           members={members}
           projectId={project.id}
           onClose={() => setEditTask(null)}
-          onRefresh={loadData}
+          onRefresh={async () => {
+            await loadData({ silent: true });
+          }}
           onSave={handleTaskSave}
           onDelete={handleTaskDelete}
         />

@@ -2,7 +2,7 @@
 
 import { useMemo, useState } from 'react';
 import { Button } from 'antd';
-import type { BoardColumn } from '../types';
+import type { BoardColumn, BoardTask } from '../types';
 import type { ProjectMember } from '@/features/projects/types';
 import type { CreateTaskInput } from '@/features/tasks/types';
 import { PRIORITY_OPTIONS, getPriorityStyles } from '@/features/tasks/types';
@@ -23,7 +23,7 @@ interface AllTasksCreateModalProps {
   columns: BoardColumn[];
   members: ProjectMember[];
   onClose: () => void;
-  onCreated: () => Promise<void>;
+  onCreated: (task: BoardTask) => Promise<void>;
 }
 
 export function AllTasksCreateModal({
@@ -78,8 +78,8 @@ export function AllTasksCreateModal({
         payload.columnId = columnId;
       }
 
-      await taskService.createOnBoard(boardId, payload);
-      await onCreated();
+      const created = await taskService.createOnBoard(boardId, payload);
+      await onCreated(created);
       onClose();
     } catch (err) {
       setError(getApiErrorMessage(err));
