@@ -56,6 +56,16 @@ export const getProjectGantt = asyncHandler(
   },
 );
 
+export const getProjectTasks = asyncHandler(
+  async (req: AuthenticatedRequest, res: Response) => {
+    const result = await taskService.listByProject(
+      req.user!.userId,
+      getParam(req.params, 'id'),
+    );
+    ApiResponse.success(res, result, 'Project tasks retrieved');
+  },
+);
+
 export const createProject = asyncHandler(
   async (req: AuthenticatedRequest, res: Response) => {
     const project = await projectService.create(

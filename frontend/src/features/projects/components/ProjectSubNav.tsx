@@ -6,11 +6,13 @@ import { useProjectPermissions } from '@/features/permissions/hooks/useProjectPe
 import { useProjectContext } from '../context/ProjectContext';
 import { useLocale } from '@/i18n/LocaleProvider';
 
-type ProjectNavKey = 'overview' | 'gantt' | 'group' | 'team' | 'settings';
+type ProjectNavKey =
+  'overview' | 'tasks' | 'gantt' | 'group' | 'team' | 'settings';
 
 function getActiveKey(pathname: string, slug: string): ProjectNavKey {
   const base = `/dashboard/projects/${slug}`;
   if (pathname === base || pathname === `${base}/`) return 'overview';
+  if (pathname.startsWith(`${base}/tasks`)) return 'tasks';
   if (pathname.startsWith(`${base}/gantt`)) return 'gantt';
   if (pathname.startsWith(`${base}/group`)) return 'group';
   if (pathname.startsWith(`${base}/team`)) return 'team';
@@ -34,6 +36,12 @@ export function ProjectSubNav() {
       label: t('projects.overview'),
       href: base,
       visible: true,
+    },
+    {
+      key: 'tasks' as const,
+      label: t('projects.allTasks'),
+      href: `${base}/tasks`,
+      visible: can('task.view'),
     },
     {
       key: 'gantt' as const,

@@ -62,6 +62,30 @@ export class BoardRepository extends BaseRepository {
     });
   }
 
+  async findByProjectWithColumns(projectId: string) {
+    return this.db.board.findMany({
+      where: { projectId },
+      orderBy: { position: 'asc' },
+      select: {
+        id: true,
+        name: true,
+        slug: true,
+        projectId: true,
+        position: true,
+        columns: {
+          orderBy: { position: 'asc' as const },
+          select: {
+            id: true,
+            name: true,
+            color: true,
+            boardId: true,
+            position: true,
+          },
+        },
+      },
+    });
+  }
+
   async create(data: {
     name: string;
     slug: string;

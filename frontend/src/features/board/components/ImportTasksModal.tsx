@@ -9,10 +9,7 @@ import { formatLocaleDate } from '@/lib/jalali-dates';
 import { AppModal } from '@/shared/components/ui/AppModal';
 import { SelectField } from '@/shared/components/ui/SelectField';
 import { getPriorityStyles } from '@/features/tasks/types';
-import {
-  extractSheetData,
-  parseExcelFile,
-} from '../utils/parseExcelFile';
+import { extractSheetData, parseExcelFile } from '../utils/parseExcelFile';
 import {
   IGNORE_COLUMN_VALUE,
   buildDefaultAssigneeValueMapping,
@@ -34,7 +31,8 @@ import { executeTaskImport } from '../utils/executeTaskImport';
 type WizardStep = 'upload' | 'mapping' | 'preview' | 'importing' | 'done';
 
 interface ImportTasksModalProps {
-  boardId: string;
+  boardId?: string;
+  boards?: Array<{ id: string; name: string }>;
   projectId: string;
   members: ProjectMember[];
   projectLabels: ProjectLabel[];
@@ -49,6 +47,7 @@ const HEADER_PREVIEW_ROWS = 8;
 
 export function ImportTasksModal({
   boardId,
+  boards,
   projectId,
   members,
   projectLabels,
@@ -59,6 +58,10 @@ export function ImportTasksModal({
 }: ImportTasksModalProps) {
   const { t, locale } = useLocale();
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const [selectedBoardId, setSelectedBoardId] = useState(
+    () => boardId ?? boards?.[0]?.id ?? '',
+  );
+  const effectiveBoardId = selectedBoardId || boardId || '';
 
   const [step, setStep] = useState<WizardStep>('upload');
   const [fileName, setFileName] = useState('');
@@ -79,10 +82,7 @@ export function ImportTasksModal({
     failed: 0,
   });
 
-  const fieldDefinitions = useMemo(
-    () => getImportFieldDefinitions(t),
-    [t],
-  );
+  const fieldDefinitions = useMemo(() => getImportFieldDefinitions(t), [t]);
   const priorityLabels = useMemo(
     () =>
       Object.fromEntries(
@@ -90,10 +90,7 @@ export function ImportTasksModal({
           key,
           value.label,
         ]),
-      ) as Record<
-        import('@/features/tasks/types').TaskPriority,
-        string
-      >,
+      ) as Record<import('@/features/tasks/types').TaskPriority, string>,
     [t],
   );
 
@@ -152,7 +149,11 @@ export function ImportTasksModal({
 
   const handleHeaderRowChange = (value: string) => {
     const nextIndex = Number(value);
-    if (Number.isNaN(nextIndex) || nextIndex < 0 || nextIndex >= rawRows.length) {
+    if (
+      Number.isNaN(nextIndex) ||
+      nextIndex < 0 ||
+      nextIndex >= rawRows.length
+    ) {
       return;
     }
 
@@ -164,8 +165,7 @@ export function ImportTasksModal({
     applyHeaderRow(rawRows, nextIndex);
   };
 
-  const titleMapped =
-    columnMapping.title != null && columnMapping.title >= 0;
+  const titleMapped = columnMapping.title != null && columnMapping.title >= 0;
 
   const handleFileChange = async (
     event: React.ChangeEvent<HTMLInputElement>,
@@ -188,8 +188,7 @@ export function ImportTasksModal({
       applyHeaderRow(parsed.rawRows, 0);
       setStep('mapping');
     } catch (parseError) {
-      const code =
-        parseError instanceof Error ? parseError.message : 'parse';
+      const code = parseError instanceof Error ? parseError.message : 'parse';
       const messageKey =
         code === 'empty' ||
         code === 'noRows' ||
@@ -332,7 +331,7 @@ export function ImportTasksModal({
 
     try {
       const result = await executeTaskImport({
-        boardId,
+        boardId: effectiveBoardId,
         projectId,
         rows: freshPreview.rows,
         projectLabels,
@@ -475,6 +474,17 @@ export function ImportTasksModal({
 
       {step === 'upload' && (
         <div className="space-y-4">
+          {(boards?.length ?? 0) > 0 && (
+            <SelectField
+              label={t('board.boardName')}
+              value={selectedBoardId}
+              onChange={setSelectedBoardId}
+              options={(boards ?? []).map((board) => ({
+                value: board.id,
+                label: board.name,
+              }))}
+            />
+          )}
           <p className="text-sm text-gray-600">{t('import.uploadHint')}</p>
           <div className="rounded-xl border border-dashed border-gray-300 bg-gray-50 px-6 py-10 text-center">
             <p className="text-sm font-medium text-gray-900">
@@ -486,6 +496,7 @@ export function ImportTasksModal({
             <Button
               className="mt-4"
               type="primary"
+              disabled={!effectiveBoardId}
               onClick={() => fileInputRef.current?.click()}
             >
               {t('import.chooseFile')}
@@ -668,32 +679,37 @@ export function ImportTasksModal({
                 {t('import.statusValueMappingHint')}
               </p>
               <div className="mt-3 space-y-2">
-                {Object.entries(statusValueMapping).map(([excelValue, target]) => (
-                  <div
-                    key={`status-${excelValue || '__empty__'}`}
-                    className="grid gap-2 sm:grid-cols-2 sm:items-center"
-                  >
-                    <div className="rounded-md bg-gray-50 px-3 py-2 text-sm text-gray-700">
-                      {excelValue || t('import.emptyValue')}
+                {Object.entries(statusValueMapping).map(
+                  ([excelValue, target]) => (
+                    <div
+                      key={`status-${excelValue || '__empty__'}`}
+                      className="grid gap-2 sm:grid-cols-2 sm:items-center"
+                    >
+                      <div className="rounded-md bg-gray-50 px-3 py-2 text-sm text-gray-700">
+                        {excelValue || t('import.emptyValue')}
+                      </div>
+                      <SelectField
+                        value={target}
+                        onChange={(value) => {
+                          setStatusValueMapping((current) => ({
+                            ...current,
+                            [excelValue]: value as
+                              'completed' | 'not_completed',
+                          }));
+                        }}
+                        options={statusValueOptions}
+                      />
                     </div>
-                    <SelectField
-                      value={target}
-                      onChange={(value) => {
-                        setStatusValueMapping((current) => ({
-                          ...current,
-                          [excelValue]: value as 'completed' | 'not_completed',
-                        }));
-                      }}
-                      options={statusValueOptions}
-                    />
-                  </div>
-                ))}
+                  ),
+                )}
               </div>
             </div>
           )}
 
           <div className="flex justify-end">
-            <Button onClick={refreshPreview}>{t('import.refreshPreview')}</Button>
+            <Button onClick={refreshPreview}>
+              {t('import.refreshPreview')}
+            </Button>
           </div>
 
           <div className="max-h-[320px] overflow-auto rounded-xl border border-gray-200">

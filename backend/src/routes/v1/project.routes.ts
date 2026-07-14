@@ -11,6 +11,7 @@ import {
   getProject,
   getProjectGantt,
   getProjectProgress,
+  getProjectTasks,
   listProjects,
   updateProject,
 } from '../../controllers/project.controller';
@@ -45,6 +46,7 @@ router.get(
   getProjectProgress,
 );
 router.get('/:id/gantt', validateParams(projectParamsSchema), getProjectGantt);
+router.get('/:id/tasks', validateParams(projectParamsSchema), getProjectTasks);
 router.get(
   '/:id/dependencies',
   validateParams(projectDependencyParamsSchema),

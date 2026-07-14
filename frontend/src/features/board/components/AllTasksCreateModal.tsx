@@ -1,7 +1,7 @@
 'use client';
 
 import { useMemo, useState } from 'react';
-import type { BoardColumn, BoardTask } from '../types';
+import type { Board, BoardColumn, BoardTask } from '../types';
 import type { ProjectMember } from '@/features/projects/types';
 import type { CreateTaskInput } from '@/features/tasks/types';
 import { PRIORITY_OPTIONS, getPriorityStyles } from '@/features/tasks/types';
@@ -19,7 +19,8 @@ import { MemberMultiSelect } from './MemberMultiSelect';
 const FORM_ID = 'all-tasks-create-form';
 
 interface AllTasksCreateModalProps {
-  boardId: string;
+  boardId?: string;
+  boards?: Board[];
   columns: BoardColumn[];
   members: ProjectMember[];
   onClose: () => void;
@@ -28,12 +29,17 @@ interface AllTasksCreateModalProps {
 
 export function AllTasksCreateModal({
   boardId,
+  boards,
   columns,
   members,
   onClose,
   onCreated,
 }: AllTasksCreateModalProps) {
   const { t } = useLocale();
+  const multiBoard = (boards?.length ?? 0) > 0;
+  const [selectedBoardId, setSelectedBoardId] = useState(
+    () => boardId ?? boards?.[0]?.id ?? '',
+  );
   const [title, setTitle] = useState('');
   const [description, setDescription] = useState('');
   const [priority, setPriority] =
@@ -45,13 +51,33 @@ export function AllTasksCreateModal({
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   const priorityStyles = getPriorityStyles(t);
+  const targetBoardId = multiBoard ? selectedBoardId : (boardId ?? '');
+
+  const boardColumns = useMemo(() => {
+    if (!multiBoard) return columns;
+    return columns.filter((column) => column.boardId === selectedBoardId);
+  }, [columns, multiBoard, selectedBoardId]);
+
+  const boardOptions = useMemo(
+    () =>
+      (boards ?? []).map((board) => ({
+        value: board.id,
+        label: board.name,
+      })),
+    [boards],
+  );
 
   const columnOptions = useMemo(
     () => [
       { value: '', label: t('board.unspecifiedColumn') },
-      ...columns.map((column) => ({ value: column.id, label: column.name })),
+      ...boardColumns.map((column) => ({
+        value: column.id,
+        label: column.name.includes(' · ')
+          ? column.name.split(' · ').slice(1).join(' · ') || column.name
+          : column.name,
+      })),
     ],
-    [columns, t],
+    [boardColumns, t],
   );
 
   const priorityOptions = PRIORITY_OPTIONS.map((option) => ({
@@ -59,9 +85,14 @@ export function AllTasksCreateModal({
     label: priorityStyles[option].label,
   }));
 
+  const handleBoardChange = (value: string) => {
+    setSelectedBoardId(value);
+    setColumnId('');
+  };
+
   const handleSubmit = async (event: React.FormEvent) => {
     event.preventDefault();
-    if (!title.trim()) return;
+    if (!title.trim() || !targetBoardId) return;
 
     setError('');
     setIsSubmitting(true);
@@ -78,7 +109,7 @@ export function AllTasksCreateModal({
         payload.columnId = columnId;
       }
 
-      const created = await taskService.createOnBoard(boardId, payload);
+      const created = await taskService.createOnBoard(targetBoardId, payload);
       await onCreated(created);
       onClose();
     } catch (err) {
@@ -108,6 +139,7 @@ export function AllTasksCreateModal({
             type="submit"
             form={FORM_ID}
             isLoading={isSubmitting}
+            disabled={!targetBoardId}
             className="rounded-xl"
           >
             {t('board.modals.createTask')}
@@ -130,6 +162,15 @@ export function AllTasksCreateModal({
             autoFocus
             required
           />
+
+          {multiBoard && (
+            <SelectField
+              label={t('board.boardName')}
+              value={selectedBoardId}
+              onChange={handleBoardChange}
+              options={boardOptions}
+            />
+          )}
 
           <div className="grid gap-4 sm:grid-cols-2">
             <SelectField

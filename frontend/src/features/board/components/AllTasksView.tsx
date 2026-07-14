@@ -68,17 +68,27 @@ const TaskViewModal = dynamic(
 interface AllTasksViewProps {
   project: Project;
   projectSlug: string;
-  boardSlug: string;
+  boardSlug?: string;
+  scope?: 'board' | 'project';
+}
+
+function getTaskBoardId(task: BoardTask): string | undefined {
+  return task.boardId ?? task.board?.id;
 }
 
 export function AllTasksView({
   project,
   projectSlug,
   boardSlug,
+  scope,
 }: AllTasksViewProps) {
   const { t, locale } = useLocale();
   const priorityStylesMap = getPriorityStyles(t);
+  const viewScope: 'board' | 'project' =
+    scope ?? (boardSlug ? 'board' : 'project');
+  const isProjectScope = viewScope === 'project';
   const [board, setBoard] = useState<Board | null>(null);
+  const [projectBoards, setProjectBoards] = useState<Board[]>([]);
   const [tasks, setTasks] = useState<BoardTask[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState('');
@@ -114,7 +124,23 @@ export function AllTasksView({
   const memberColorMap = useMemberColorMap(members, tasks);
   const { requestFocusTask, highlightedTaskId } = useFocusListTask();
 
-  const columns = board?.columns ?? [];
+  const rawColumns = useMemo(() => {
+    if (isProjectScope) {
+      return projectBoards.flatMap((entry) => entry.columns ?? []);
+    }
+    return board?.columns ?? [];
+  }, [board?.columns, isProjectScope, projectBoards]);
+
+  const columns = useMemo(() => {
+    if (!isProjectScope) return rawColumns;
+    const boardNameById = new Map(
+      projectBoards.map((entry) => [entry.id, entry.name]),
+    );
+    return rawColumns.map((column) => ({
+      ...column,
+      name: `${boardNameById.get(column.boardId) ?? t('common.emDash')} · ${column.name}`,
+    }));
+  }, [isProjectScope, projectBoards, rawColumns, t]);
 
   const columnsForFilter = useMemo(
     () =>
@@ -138,8 +164,31 @@ export function AllTasksView({
       }
       setError('');
       try {
+        if (isProjectScope) {
+          const result = await taskService.listByProject(project.id);
+          setBoard(null);
+          setProjectBoards(result.boards);
+          setTasks(result.tasks);
+          setViewTask((prev) =>
+            prev
+              ? (result.tasks.find((task) => task.id === prev.id) ?? prev)
+              : null,
+          );
+          setEditTask((prev) =>
+            prev
+              ? (result.tasks.find((task) => task.id === prev.id) ?? prev)
+              : null,
+          );
+          return result.tasks;
+        }
+
+        if (!boardSlug) {
+          throw new Error(t('common.boardNotFound'));
+        }
+
         const boardData = await boardService.getBySlug(projectSlug, boardSlug);
         setBoard(boardData);
+        setProjectBoards([]);
         const taskData = await taskService.listByBoard(boardData.id);
         setTasks(taskData);
         setViewTask((prev) =>
@@ -152,6 +201,7 @@ export function AllTasksView({
       } catch (err) {
         setError(getApiErrorMessage(err));
         setBoard(null);
+        setProjectBoards([]);
         setTasks([]);
         return [];
       } finally {
@@ -160,7 +210,7 @@ export function AllTasksView({
         }
       }
     },
-    [boardSlug, canViewTasks, projectSlug],
+    [boardSlug, canViewTasks, isProjectScope, project.id, projectSlug, t],
   );
 
   useEffect(() => {
@@ -238,14 +288,54 @@ export function AllTasksView({
 
   const handleBulkAction = useCallback(
     async (action: BulkTaskAction) => {
-      if (!board || selectedCount === 0) return;
+      if (selectedCount === 0) return;
 
-      const taskIds = Array.from(selectedTaskIds);
+      const selectedTasks = tasks.filter((task) =>
+        selectedTaskIds.has(task.id),
+      );
+      if (selectedTasks.length === 0) return;
+
       setIsBulkApplying(true);
       setActionError('');
 
       try {
-        await taskService.bulkAction(board.id, { taskIds, action });
+        if (!isProjectScope) {
+          if (!board) return;
+          await taskService.bulkAction(board.id, {
+            taskIds: selectedTasks.map((task) => task.id),
+            action,
+          });
+        } else if (action.type === 'move') {
+          const targetColumn = rawColumns.find(
+            (column) => column.id === action.columnId,
+          );
+          if (!targetColumn) {
+            throw new Error(t('common.somethingWentWrong'));
+          }
+          const boardTaskIds = selectedTasks
+            .filter((task) => getTaskBoardId(task) === targetColumn.boardId)
+            .map((task) => task.id);
+          if (boardTaskIds.length === 0) {
+            throw new Error(t('board.bulkMoveWrongBoard'));
+          }
+          await taskService.bulkAction(targetColumn.boardId, {
+            taskIds: boardTaskIds,
+            action,
+          });
+        } else {
+          const byBoard = new Map<string, string[]>();
+          for (const task of selectedTasks) {
+            const taskBoardId = getTaskBoardId(task);
+            if (!taskBoardId) continue;
+            const current = byBoard.get(taskBoardId) ?? [];
+            current.push(task.id);
+            byBoard.set(taskBoardId, current);
+          }
+          for (const [taskBoardId, taskIds] of byBoard) {
+            await taskService.bulkAction(taskBoardId, { taskIds, action });
+          }
+        }
+
         exitSelectionMode();
         await loadData();
       } catch (err) {
@@ -256,7 +346,17 @@ export function AllTasksView({
         setIsBulkApplying(false);
       }
     },
-    [board, exitSelectionMode, loadData, selectedCount, selectedTaskIds],
+    [
+      board,
+      exitSelectionMode,
+      isProjectScope,
+      loadData,
+      rawColumns,
+      selectedCount,
+      selectedTaskIds,
+      t,
+      tasks,
+    ],
   );
 
   const revealAndFocusTask = useCallback(
@@ -316,12 +416,12 @@ export function AllTasksView({
 
   const getColumnName = (task: BoardTask) =>
     task.column?.name ??
-    columns.find((column) => column.id === task.columnId)?.name ??
+    rawColumns.find((column) => column.id === task.columnId)?.name ??
     t('common.emDash');
 
   const getColumnColor = (task: BoardTask) =>
     task.column?.color ??
-    columns.find((column) => column.id === task.columnId)?.color ??
+    rawColumns.find((column) => column.id === task.columnId)?.color ??
     '#6B7280';
 
   const handleImportComplete = async () => {
@@ -330,10 +430,21 @@ export function AllTasksView({
   };
 
   const handleExportSelected = () => {
-    if (!board || selectionMode !== 'export' || selectedCount === 0) return;
+    if (selectionMode !== 'export' || selectedCount === 0) return;
     const selectedTasks = tasks.filter((task) => selectedTaskIds.has(task.id));
     if (selectedTasks.length === 0) return;
-    exportBoardTasksToExcel(selectedTasks, board, columns, locale);
+    const exportBoard =
+      board ??
+      ({
+        id: project.id,
+        name: project.name,
+        slug: projectSlug,
+        projectId: project.id,
+        position: 0,
+        createdAt: '',
+        updatedAt: '',
+      } satisfies Board);
+    exportBoardTasksToExcel(selectedTasks, exportBoard, rawColumns, locale);
     exitSelectionMode();
   };
 
@@ -480,7 +591,7 @@ export function AllTasksView({
     );
   }
 
-  if (error || !board) {
+  if (error || (!isProjectScope && !board)) {
     return (
       <div className="mx-auto max-w-4xl px-4 py-8">
         <div className="rounded-lg bg-red-50 px-4 py-3 text-sm text-red-700">
@@ -510,8 +621,10 @@ export function AllTasksView({
     <div className="mx-auto max-w-5xl px-4 py-8 sm:px-6">
       <AllTasksPageHeader
         projectSlug={projectSlug}
+        scope={viewScope}
         boardSlug={boardSlug}
-        boardName={board.name}
+        boardName={board?.name}
+        projectName={project.name}
         totalTasks={tasks.length}
         visibleTasks={filteredTasks.length}
         hasActiveView={hasActiveView}
@@ -675,6 +788,11 @@ export function AllTasksView({
                 >
                   <div className="flex items-start justify-between gap-2">
                     <div className="flex min-w-0 flex-1 flex-wrap items-center gap-1.5 sm:gap-2">
+                      {isProjectScope && task.board?.name ? (
+                        <span className="inline-flex max-w-full items-center truncate rounded-full bg-slate-100 px-2.5 py-0.5 text-xs font-medium text-slate-700">
+                          {task.board.name}
+                        </span>
+                      ) : null}
                       <span
                         className="inline-flex max-w-full items-center truncate rounded-full px-2.5 py-0.5 text-xs font-medium text-white"
                         style={{ backgroundColor: getColumnColor(task) }}
@@ -834,8 +952,9 @@ export function AllTasksView({
 
       {showCreateModal && (
         <AllTasksCreateModal
-          boardId={board.id}
-          columns={columns}
+          boardId={board?.id}
+          boards={isProjectScope ? projectBoards : undefined}
+          columns={rawColumns}
           members={members}
           onClose={() => setShowCreateModal(false)}
           onCreated={handleCreateTask}
@@ -844,7 +963,8 @@ export function AllTasksView({
 
       {showImportModal && (
         <ImportTasksModal
-          boardId={board.id}
+          boardId={board?.id}
+          boards={isProjectScope ? projectBoards : undefined}
           projectId={project.id}
           members={members}
           projectLabels={projectLabels}
@@ -858,7 +978,11 @@ export function AllTasksView({
       {viewTask && (
         <TaskViewModal
           task={viewTask}
-          columns={columns}
+          columns={rawColumns.filter(
+            (column) =>
+              !getTaskBoardId(viewTask) ||
+              column.boardId === getTaskBoardId(viewTask),
+          )}
           members={members}
           onClose={() => setViewTask(null)}
           onEdit={
@@ -880,7 +1004,11 @@ export function AllTasksView({
       {editTask && canEditTasks && (
         <TaskModal
           task={editTask}
-          columns={columns}
+          columns={rawColumns.filter(
+            (column) =>
+              !getTaskBoardId(editTask) ||
+              column.boardId === getTaskBoardId(editTask),
+          )}
           members={members}
           projectId={project.id}
           onClose={() => setEditTask(null)}

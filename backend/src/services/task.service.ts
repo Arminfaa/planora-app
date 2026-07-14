@@ -146,6 +146,19 @@ export class TaskService {
     return taskRepository.findByBoard(boardId);
   }
 
+  async listByProject(userId: string, projectIdOrSlug: string) {
+    const projectId =
+      await projectMemberService.resolveProjectId(projectIdOrSlug);
+    await projectAccessService.ensurePermission(userId, projectId, 'task.view');
+
+    const [tasks, boards] = await Promise.all([
+      taskRepository.findByProject(projectId),
+      boardRepository.findByProjectWithColumns(projectId),
+    ]);
+
+    return { tasks, boards };
+  }
+
   private async resolveColumnForBoard(
     boardId: string,
     columnId?: string,

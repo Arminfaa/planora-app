@@ -17,6 +17,7 @@ export interface BoardTask {
   title: string;
   description: string | null;
   columnId: string;
+  boardId?: string;
   position: number;
   priority: TaskPriority;
   startDate: string | null;
@@ -30,6 +31,12 @@ export interface BoardTask {
     id: string;
     name: string;
     color: string | null;
+  };
+  board?: {
+    id: string;
+    name: string;
+    slug: string;
+    position?: number;
   };
   assignees?: TaskAssignee[];
   checklistItems?: TaskChecklistItem[];

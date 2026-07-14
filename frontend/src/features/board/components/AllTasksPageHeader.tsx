@@ -9,8 +9,10 @@ import type { BulkOperationMode } from '@/features/tasks/types/bulkActions';
 
 interface AllTasksPageHeaderProps {
   projectSlug: string;
-  boardSlug: string;
-  boardName: string;
+  scope: 'board' | 'project';
+  boardSlug?: string;
+  boardName?: string;
+  projectName?: string;
   totalTasks: number;
   visibleTasks: number;
   hasActiveView: boolean;
@@ -65,8 +67,10 @@ function UploadIcon({ className }: { className?: string }) {
 
 export function AllTasksPageHeader({
   projectSlug,
+  scope,
   boardSlug,
   boardName,
+  projectName,
   totalTasks,
   visibleTasks,
   hasActiveView,
@@ -82,24 +86,42 @@ export function AllTasksPageHeader({
 }: AllTasksPageHeaderProps) {
   const { t } = useLocale();
   const isSelecting = selectionMode !== null;
+  const isBoardScope = scope === 'board';
+
+  const backHref = isBoardScope
+    ? `/dashboard/projects/${projectSlug}/boards/${boardSlug}`
+    : `/dashboard/projects/${projectSlug}`;
+  const backLabel = isBoardScope
+    ? t('board.backToBoard')
+    : t('board.backToProject');
+
+  const title = isBoardScope
+    ? t('board.allTasksNamed', { name: boardName ?? '' })
+    : t('board.allTasks');
 
   return (
     <header className="space-y-5">
       <Link
-        href={`/dashboard/projects/${projectSlug}/boards/${boardSlug}`}
+        href={backHref}
         className="inline-flex items-center gap-1.5 text-sm font-medium text-gray-500 transition hover:text-gray-900"
       >
         <BackChevronIcon />
-        {t('board.backToBoard')}
+        {backLabel}
       </Link>
 
       <div className="flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
         <div className="min-w-0">
-          <p className="text-xs font-semibold uppercase tracking-[0.14em] text-gray-400">
-            {boardName}
-          </p>
-          <h1 className="mt-1 text-2xl font-bold tracking-tight text-gray-900 sm:text-3xl">
-            {t('board.allTasks')}
+          {!isBoardScope && projectName ? (
+            <p className="text-xs font-semibold uppercase tracking-[0.14em] text-gray-400">
+              {projectName}
+            </p>
+          ) : null}
+          <h1
+            className={`text-2xl font-bold tracking-tight text-gray-900 sm:text-3xl ${
+              !isBoardScope && projectName ? 'mt-1' : ''
+            }`}
+          >
+            {title}
           </h1>
           <div className="mt-2 flex flex-wrap items-center gap-2 text-sm text-gray-500">
             <span className="inline-flex items-center rounded-full bg-gray-100 px-2.5 py-0.5 text-xs font-medium text-gray-700">

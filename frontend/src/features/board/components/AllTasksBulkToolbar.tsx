@@ -655,14 +655,16 @@ export function AllTasksOperationsMenu({
         onClick: ({ key }) => onSelect(key as BulkOperationMode),
         className: 'min-w-[220px]',
         style: {
-          maxHeight: 'calc(100dvh - 225px)',
+          maxHeight: 'calc(100dvh - 250px)',
           overflowY: 'auto',
         },
       }}
       styles={{
         root: {
-          maxHeight: 'calc(100dvh - 225px)',
+          maxHeight: 'calc(100dvh - 250px)',
           overflowY: 'auto',
+          boxShadow:
+            '0 10px 28px rgba(15, 23, 42, 0.10), 0 2px 8px rgba(15, 23, 42, 0.06)',
         },
       }}
       trigger={['click']}

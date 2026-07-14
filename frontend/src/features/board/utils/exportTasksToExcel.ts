@@ -134,10 +134,12 @@ export function exportBoardTasksToExcel(
   const messages = getMessages(locale);
   const t = createTranslator(locale, messages);
   const priorityStyles = getPriorityStyles(t);
+  const includeBoardColumn = tasks.some((task) => Boolean(task.board?.name));
   const cols = {
     index: t('export.columns.index'),
     title: t('export.columns.title'),
     description: t('export.columns.description'),
+    board: t('export.columns.board'),
     column: t('export.columns.column'),
     priority: t('export.columns.priority'),
     dueDate: t('export.columns.dueDate'),
@@ -159,6 +161,7 @@ export function exportBoardTasksToExcel(
       [cols.index]: index + 1,
       [cols.title]: task.title,
       [cols.description]: task.description ?? '',
+      ...(includeBoardColumn ? { [cols.board]: task.board?.name ?? '' } : {}),
       [cols.column]: getColumnName(task, columns),
       [cols.priority]: priorityStyles[task.priority].label,
       [cols.dueDate]: task.dueDate ? formatDateTime(task.dueDate, locale) : '',

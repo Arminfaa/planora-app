@@ -98,7 +98,7 @@ export class TaskRepository extends BaseRepository {
     return this.enrichMany(tasks);
   }
 
-  async findGanttByProject(projectId: string) {
+  async findByProject(projectId: string) {
     const tasks = await this.db.task.findMany({
       where: { column: { board: { projectId } } },
       orderBy: [
@@ -117,6 +117,10 @@ export class TaskRepository extends BaseRepository {
       },
     });
     return this.enrichMany(tasks);
+  }
+
+  async findGanttByProject(projectId: string) {
+    return this.findByProject(projectId);
   }
 
   async create(data: {

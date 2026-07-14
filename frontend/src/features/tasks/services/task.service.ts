@@ -1,6 +1,6 @@
 import { api } from '@/lib/api';
 import type { ApiSuccessResponse } from '@/shared/types/api';
-import type { BoardTask } from '@/features/board/types';
+import type { Board, BoardTask } from '@/features/board/types';
 import type { CreateTaskInput, Task, UpdateTaskInput } from '../types';
 import type { BulkTaskActionRequest } from '../types/bulkActions';
 
@@ -35,6 +35,17 @@ export const taskService = {
       `/boards/${boardId}/tasks`,
       { params: { _t: Date.now() } },
     );
+    return data.data;
+  },
+
+  async listByProject(
+    projectId: string,
+  ): Promise<{ tasks: BoardTask[]; boards: Board[] }> {
+    const { data } = await api.get<
+      ApiSuccessResponse<{ tasks: BoardTask[]; boards: Board[] }>
+    >(`/projects/${projectId}/tasks`, {
+      params: { _t: Date.now() },
+    });
     return data.data;
   },
 
