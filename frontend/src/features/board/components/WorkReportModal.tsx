@@ -52,7 +52,7 @@ export function WorkReportModal({ text, onClose }: WorkReportModalProps) {
         </div>
       }
     >
-      <pre className="max-h-[min(60vh,520px)] overflow-auto whitespace-pre-wrap rounded-xl border border-gray-200 bg-gray-50 px-4 py-3 text-sm leading-7 text-gray-800">
+      <pre className="max-h-[min(60vh,520px)] overflow-auto whitespace-pre-wrap rounded-2xl border border-slate-200 bg-gradient-to-b from-slate-50 to-white px-5 py-4 font-sans text-[13.5px] leading-7 tracking-wide text-slate-800 shadow-inner">
         {text}
       </pre>
     </AppModal>

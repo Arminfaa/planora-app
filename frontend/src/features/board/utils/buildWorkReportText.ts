@@ -22,11 +22,11 @@ function toDayKey(value: string): number | null {
   return Date.UTC(date.getFullYear(), date.getMonth(), date.getDate());
 }
 
-function buildHeaderDateLabel(
-  tasks: BoardTask[],
-  locale: Locale,
-  fallback: string,
-): string {
+function joinNames(names: string[], locale: Locale): string {
+  return names.join(locale === 'fa' ? '، ' : ', ');
+}
+
+function buildHeaderDateLabel(tasks: BoardTask[], locale: Locale): string {
   const dates = tasks
     .map((task) => task.completeDate)
     .filter((value): value is string => Boolean(value))
@@ -37,7 +37,7 @@ function buildHeaderDateLabel(
     .sort((a, b) => a.key - b.key);
 
   if (dates.length === 0) {
-    return formatReportDate(new Date(), locale) || fallback;
+    return formatReportDate(new Date(), locale);
   }
 
   const first = dates[0];
@@ -49,15 +49,7 @@ function buildHeaderDateLabel(
   return `${formatReportDate(first.value, locale)} — ${formatReportDate(last.value, locale)}`;
 }
 
-function joinNames(names: string[], locale: Locale): string {
-  return names.join(locale === 'fa' ? '، ' : ', ');
-}
-
-function buildHeaderPeopleLabel(
-  tasks: BoardTask[],
-  locale: Locale,
-  fallback: string,
-): string {
+function collectPeople(tasks: BoardTask[]): string[] {
   const names = new Set<string>();
   for (const task of tasks) {
     for (const assignee of getTaskAssignees(task)) {
@@ -66,49 +58,72 @@ function buildHeaderPeopleLabel(
       }
     }
   }
-
-  if (names.size === 0) return fallback;
-  return joinNames([...names], locale);
+  return [...names];
 }
 
-function formatChecklistLines(task: BoardTask, t: Translator): string[] {
-  const items = task.checklistItems ?? [];
-  if (items.length === 0) {
-    return [`${t('board.workReport.checklist')}: ${t('common.emDash')}`];
-  }
+function indent(text: string, spaces = 3): string {
+  const pad = ' '.repeat(spaces);
+  return text
+    .split('\n')
+    .map((line) => `${pad}${line}`)
+    .join('\n');
+}
 
-  const lines = [`${t('board.workReport.checklist')}:`];
-  for (const item of items) {
-    const mark = item.isDone ? '✓' : '○';
-    lines.push(`${mark} ${item.title}`);
-  }
-  return lines;
+function formatChecklistSection(task: BoardTask, t: Translator): string | null {
+  const items = task.checklistItems ?? [];
+  if (items.length === 0) return null;
+
+  const doneCount = items.filter((item) => item.isDone).length;
+  const lines = [
+    t('board.workReport.checklistProgress', {
+      done: doneCount,
+      total: items.length,
+    }),
+    ...items.map((item) => {
+      const mark = item.isDone ? '✓' : '•';
+      return `${mark} ${item.title.trim()}`;
+    }),
+  ];
+  return lines.join('\n');
 }
 
 function formatTaskBlock(
   task: BoardTask,
+  index: number,
   locale: Locale,
   t: Translator,
 ): string {
-  const description = task.description?.trim() || t('common.emDash');
-  const completedOn = task.completeDate
-    ? formatReportDate(task.completeDate, locale)
-    : t('common.emDash');
+  const title = task.title.trim() || t('board.workReport.untitled');
+  const description = task.description?.trim() ?? '';
+  const checklist = formatChecklistSection(task, t);
   const assignees = getTaskAssignees(task)
     .map((assignee) => assignee.name.trim())
     .filter(Boolean);
-  const byPeople =
-    assignees.length > 0 ? joinNames(assignees, locale) : t('common.emDash');
 
-  return [
-    task.title.trim() || t('common.emDash'),
-    description,
-    '',
-    ...formatChecklistLines(task, t),
-    '',
-    `${t('board.workReport.completedOn')}: ${completedOn}`,
-    `${t('board.workReport.by')}: ${byPeople}`,
-  ].join('\n');
+  const lines: string[] = [`${index + 1}) ${title}`];
+
+  if (description) {
+    lines.push('', indent(description));
+  }
+
+  if (checklist) {
+    lines.push('', indent(checklist));
+  }
+
+  const meta: string[] = [];
+  if (task.completeDate) {
+    meta.push(
+      `${t('board.workReport.completedOn')}: ${formatReportDate(task.completeDate, locale)}`,
+    );
+  }
+  if (assignees.length > 0) {
+    meta.push(`${t('board.workReport.by')}: ${joinNames(assignees, locale)}`);
+  }
+  if (meta.length > 0) {
+    lines.push('', ...meta.map((line) => indent(line)));
+  }
+
+  return lines.join('\n');
 }
 
 export function buildWorkReportText(
@@ -118,17 +133,30 @@ export function buildWorkReportText(
 ): string {
   if (tasks.length === 0) return '';
 
-  const headerDate = buildHeaderDateLabel(tasks, locale, t('common.emDash'));
-  const headerPeople = buildHeaderPeopleLabel(
-    tasks,
-    locale,
-    t('common.emDash'),
-  );
-  const header = t('board.workReport.header', {
-    date: headerDate,
-    people: headerPeople,
-  });
+  const dateLabel = buildHeaderDateLabel(tasks, locale);
+  const people = collectPeople(tasks);
+  const peopleLabel =
+    people.length > 0
+      ? joinNames(people, locale)
+      : t('board.workReport.teamFallback');
 
-  const blocks = tasks.map((task) => formatTaskBlock(task, locale, t));
-  return [header, '', blocks.join('\n\n────────────────\n\n')].join('\n');
+  const header = [
+    t('board.workReport.banner'),
+    '────────────────────────',
+    t('board.workReport.periodLine', { date: dateLabel }),
+    t('board.workReport.teamLine', { people: peopleLabel }),
+    t('board.workReport.countLine', { count: tasks.length }),
+    '────────────────────────',
+  ].join('\n');
+
+  const body = tasks
+    .map((task, index) => formatTaskBlock(task, index, locale, t))
+    .join('\n\n························\n\n');
+
+  const footer = [
+    '────────────────────────',
+    t('board.workReport.footer'),
+  ].join('\n');
+
+  return [header, '', body, '', footer].join('\n');
 }
