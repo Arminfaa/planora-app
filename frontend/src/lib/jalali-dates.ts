@@ -27,6 +27,57 @@ export function normalizeDateDigits(value: string): string {
   });
 }
 
+/** Always format as Gregorian YYYY-MM-DD for API storage, regardless of UI calendar. */
+export function toApiDate(date: Dayjs | Date | null | undefined): string {
+  if (!date) return '';
+  const value = dayjs.isDayjs(date) ? date : dayjs(date);
+  if (!value.isValid()) return '';
+  return value.calendar('gregory').format(GREGORIAN_API_DATE_FORMAT);
+}
+
+export function todayApiDate(): string {
+  return toApiDate(dayjs());
+}
+
+export function shiftApiDate(apiDate: string, days: number): string {
+  const value = apiDateToPickerValue(apiDate, 'en');
+  if (!value) return '';
+  return toApiDate(value.add(days, 'day'));
+}
+
+export function defaultApiDateRange(daysBack = 29): {
+  from: string;
+  to: string;
+} {
+  const to = todayApiDate();
+  const from = shiftApiDate(to, -daysBack);
+  return { from, to };
+}
+
+function parseApiDateParts(
+  value: string | null | undefined,
+): { year: number; month: number; day: number } | null {
+  if (!value?.trim()) return null;
+  const match = /^(\d{4})-(\d{2})-(\d{2})$/.exec(
+    normalizeDateDigits(value.trim()).slice(0, 10),
+  );
+  if (!match) return null;
+
+  const year = Number(match[1]);
+  const month = Number(match[2]);
+  const day = Number(match[3]);
+  const probe = new Date(year, month - 1, day);
+  if (
+    probe.getFullYear() !== year ||
+    probe.getMonth() !== month - 1 ||
+    probe.getDate() !== day
+  ) {
+    return null;
+  }
+
+  return { year, month, day };
+}
+
 function jalaliPartsToApiDate(
   year: number,
   month: number,
@@ -37,7 +88,7 @@ function jalaliPartsToApiDate(
 
   if (!jalali.isValid()) return null;
 
-  return jalali.calendar('gregory').format(GREGORIAN_API_DATE_FORMAT);
+  return toApiDate(jalali);
 }
 
 function gregorianPartsToApiDate(
@@ -45,12 +96,16 @@ function gregorianPartsToApiDate(
   month: number,
   day: number,
 ): string | null {
-  const normalized = `${year}-${String(month).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
-  const gregorian = dayjs(normalized, GREGORIAN_API_DATE_FORMAT, true);
+  const probe = new Date(year, month - 1, day);
+  if (
+    probe.getFullYear() !== year ||
+    probe.getMonth() !== month - 1 ||
+    probe.getDate() !== day
+  ) {
+    return null;
+  }
 
-  if (!gregorian.isValid()) return null;
-
-  return gregorian.format(GREGORIAN_API_DATE_FORMAT);
+  return toApiDate(probe);
 }
 
 /** Parse Excel/import date strings (Jalali or Gregorian) to API format. */
@@ -90,16 +145,16 @@ export function parseImportDateToApiDate(value: string): string | null {
 
   const serial = Number(trimmed);
   if (Number.isFinite(serial) && serial > 20000 && serial < 60000) {
-    const excelEpoch = dayjs('1899-12-30', GREGORIAN_API_DATE_FORMAT);
+    const excelEpoch = dayjs(new Date(1899, 11, 30));
     const fromSerial = excelEpoch.add(serial, 'day');
     if (fromSerial.isValid()) {
-      return fromSerial.format(GREGORIAN_API_DATE_FORMAT);
+      return toApiDate(fromSerial);
     }
   }
 
   const native = dayjs(trimmed);
   if (native.isValid() && !/^\d{4}[/-]\d{1,2}[/-]\d{1,2}$/.test(trimmed)) {
-    return native.format(GREGORIAN_API_DATE_FORMAT);
+    return toApiDate(native);
   }
 
   return null;
@@ -118,11 +173,21 @@ export function parseImportDateTimeToIso(value: string): string | null {
     const apiDate = parseImportDateToApiDate(datePart);
     if (!apiDate) return null;
 
-    const time = timeMatch[1];
-    const format =
-      time.length > 5 ? 'YYYY-MM-DD HH:mm:ss' : 'YYYY-MM-DD HH:mm';
-    const parsed = dayjs(`${apiDate} ${time}`, format, true);
-    return parsed.isValid() ? parsed.toISOString() : null;
+    const parts = parseApiDateParts(apiDate);
+    if (!parts) return null;
+
+    const timeBits = timeMatch[1].split(':').map(Number);
+    const hours = timeBits[0] ?? 0;
+    const minutes = timeBits[1] ?? 0;
+    const seconds = timeBits[2] ?? 0;
+    return new Date(
+      parts.year,
+      parts.month - 1,
+      parts.day,
+      hours,
+      minutes,
+      seconds,
+    ).toISOString();
   }
 
   if (/T|\d{1,2}:\d{2}/.test(trimmed)) {
@@ -132,32 +197,34 @@ export function parseImportDateTimeToIso(value: string): string | null {
 
   const dateOnly = parseImportDateToApiDate(trimmed);
   if (dateOnly) {
-    return dayjs(dateOnly).startOf('day').toISOString();
+    const parts = parseApiDateParts(dateOnly);
+    if (!parts) return null;
+    return new Date(parts.year, parts.month - 1, parts.day).toISOString();
   }
 
   return null;
 }
 
+/**
+ * Convert API Gregorian YYYY-MM-DD into a Dayjs value for Ant DatePicker.
+ * UI calendar follows locale: FA → jalali, EN → gregory.
+ */
 export function apiDateToPickerValue(
   value: string | null | undefined,
   locale: Locale,
 ): Dayjs | null {
-  if (!value?.trim()) return null;
+  const parts = parseApiDateParts(value);
+  if (!parts) return null;
 
-  const gregorian = dayjs(value.slice(0, 10), GREGORIAN_API_DATE_FORMAT).calendar(
-    'gregory',
-  );
+  // Construct from local Date parts so we never re-parse YYYY-MM-DD under Jalali mode.
+  const base = dayjs(new Date(parts.year, parts.month - 1, parts.day));
+  if (!base.isValid()) return null;
 
-  if (!gregorian.isValid()) return null;
-
-  return locale === 'fa' ? gregorian.calendar('jalali') : gregorian;
+  return locale === 'fa' ? base.calendar('jalali') : base.calendar('gregory');
 }
 
-export function pickerValueToApiDate(
-  date: Dayjs | null | undefined,
-): string {
-  if (!date?.isValid()) return '';
-  return date.calendar('gregory').format(GREGORIAN_API_DATE_FORMAT);
+export function pickerValueToApiDate(date: Dayjs | null | undefined): string {
+  return toApiDate(date ?? null);
 }
 
 export function getDateInputFormat(locale: Locale): string {
@@ -172,6 +239,14 @@ export function formatLocaleDate(
   options?: Intl.DateTimeFormatOptions,
 ): string {
   if (value == null || value === '') return '';
+
+  // API dates are calendar days; prefer local-noon construction to avoid TZ day-shift.
+  if (typeof value === 'string' && /^\d{4}-\d{2}-\d{2}/.test(value.trim())) {
+    const parts = parseApiDateParts(value);
+    if (parts) {
+      value = new Date(parts.year, parts.month - 1, parts.day, 12);
+    }
+  }
 
   const date = value instanceof Date ? value : new Date(value);
   if (Number.isNaN(date.getTime())) return '';

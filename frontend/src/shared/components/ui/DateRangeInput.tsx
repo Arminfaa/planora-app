@@ -45,6 +45,7 @@ export function DateRangeInput({
         </label>
       ) : null}
       <DatePicker.RangePicker
+        key={`range-${locale}-${format}`}
         value={rangeValue}
         onChange={(dates) => {
           const from = pickerValueToApiDate(dates?.[0] ?? null);

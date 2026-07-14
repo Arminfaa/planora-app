@@ -3,9 +3,9 @@
 import { App, ConfigProvider } from 'antd';
 import enUS from 'antd/locale/en_US';
 import faIR from 'antd/locale/fa_IR';
-import JalaliProvider from 'antd-jalali-v5';
 import { useMemo, type ReactNode } from 'react';
 import { useLocale } from '@/i18n/LocaleProvider';
+import { DayjsCalendarSync } from './DayjsCalendarSync';
 import { antdTheme } from './theme';
 
 const antdLocales = {
@@ -31,7 +31,7 @@ export function AntdProvider({ children }: { children: ReactNode }) {
 
   return (
     <ConfigProvider direction={dir} locale={antdLocales[locale]} theme={theme}>
-      <JalaliProvider />
+      <DayjsCalendarSync />
       <App>{children}</App>
     </ConfigProvider>
   );

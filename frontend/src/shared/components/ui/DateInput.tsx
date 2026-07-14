@@ -38,6 +38,7 @@ export function DateInput({
   const { locale } = useLocale();
   const inputId = id ?? name;
   const status = error ? 'error' : undefined;
+  const format = getDateInputFormat(locale);
   const pickerValue = apiDateToPickerValue(value, locale);
 
   const handleChange = (date: Dayjs | null) => {
@@ -55,13 +56,14 @@ export function DateInput({
         </label>
       )}
       <DatePicker
+        key={`date-${locale}-${format}`}
         id={inputId}
         name={name}
         status={status}
         value={pickerValue}
         onChange={handleChange}
         onBlur={onBlur}
-        format={getDateInputFormat(locale)}
+        format={format}
         className={cn('w-full', className)}
         disabled={disabled}
         placeholder={placeholder}

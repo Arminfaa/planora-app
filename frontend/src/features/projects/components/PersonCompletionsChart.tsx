@@ -1,26 +1,16 @@
 'use client';
 
 import { Select } from 'antd';
-import dayjs from 'dayjs';
 import { useEffect, useMemo, useState } from 'react';
 import { useProjectMembers } from '../hooks/useProjectMembers';
 import { usePersonCompletions } from '../hooks/usePersonCompletions';
 import type { PersonCompletionDay } from '../types';
 import { useLocale } from '@/i18n/LocaleProvider';
-import { formatLocaleDate } from '@/lib/jalali-dates';
+import { defaultApiDateRange, formatLocaleDate } from '@/lib/jalali-dates';
 import { getApiErrorMessage } from '@/lib/api';
 import { DateRangeInput } from '@/shared/components/ui/DateRangeInput';
 import { LoadingSpinner } from '@/shared/components/feedback/LoadingSpinner';
 import { cn } from '@/lib/utils';
-
-function defaultRange(): { from: string; to: string } {
-  const to = dayjs();
-  const from = to.subtract(29, 'day');
-  return {
-    from: from.format('YYYY-MM-DD'),
-    to: to.format('YYYY-MM-DD'),
-  };
-}
 
 function barColor(day: PersonCompletionDay): string {
   if (day.nonWorkingReason === 'holiday') return 'bg-amber-300';
@@ -70,7 +60,7 @@ export function PersonCompletionsChart({
   const { t, locale } = useLocale();
   const members = useProjectMembers(projectId);
   const [userId, setUserId] = useState('');
-  const [range, setRange] = useState(defaultRange);
+  const [range, setRange] = useState(() => defaultApiDateRange(29));
 
   useEffect(() => {
     if (!userId && members.length > 0) {
