@@ -31,6 +31,7 @@ export interface Task {
   progress?: number;
   parentTaskId?: string | null;
   isCompleted?: boolean;
+  autoCompleteSuppressed?: boolean;
   assigneeIds: string[];
   createdById: string;
   createdAt: string;

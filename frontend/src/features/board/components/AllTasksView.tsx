@@ -362,18 +362,24 @@ export function AllTasksView({
       if (Boolean(task.isCompleted) === completed) return;
 
       const previousCompleteDate = task.completeDate ?? null;
+      const previousChecklist = task.checklistItems;
+      const previousSuppressed = Boolean(task.autoCompleteSuppressed);
       setActionError('');
       const previousProgress = task.progress ?? 0;
-      const uncheckedProgress =
-        (task.checklistItems?.length ?? 0) > 0
-          ? computeChecklistProgress(task.checklistItems ?? [])
-          : previousProgress;
+      const hasChecklist = (task.checklistItems?.length ?? 0) > 0;
+      const uncheckedProgress = hasChecklist
+        ? computeChecklistProgress(task.checklistItems ?? [])
+        : previousProgress;
 
       updateTaskInList(task.id, (current) => ({
         ...current,
         isCompleted: completed,
         completeDate: completed ? new Date().toISOString() : null,
         progress: completed ? 100 : uncheckedProgress,
+        autoCompleteSuppressed: completed ? false : hasChecklist,
+        checklistItems: completed
+          ? current.checklistItems?.map((item) => ({ ...item, isDone: true }))
+          : current.checklistItems,
       }));
 
       try {
@@ -385,6 +391,8 @@ export function AllTasksView({
           isCompleted: Boolean(updated.isCompleted),
           completeDate: updated.completeDate ?? null,
           progress: updated.progress ?? current.progress,
+          autoCompleteSuppressed: Boolean(updated.autoCompleteSuppressed),
+          checklistItems: updated.checklistItems ?? current.checklistItems,
         }));
       } catch (err) {
         updateTaskInList(task.id, (current) => ({
@@ -392,6 +400,8 @@ export function AllTasksView({
           isCompleted: Boolean(task.isCompleted),
           completeDate: previousCompleteDate,
           progress: previousProgress,
+          autoCompleteSuppressed: previousSuppressed,
+          checklistItems: previousChecklist,
         }));
         if (!isForbiddenError(err)) {
           setActionError(getApiErrorMessage(err));
@@ -407,6 +417,10 @@ export function AllTasksView({
 
       const task = tasks.find((entry) => entry.id === taskId);
       const previousItems = task?.checklistItems;
+      const previousCompleted = Boolean(task?.isCompleted);
+      const previousProgress = task?.progress ?? 0;
+      const previousCompleteDate = task?.completeDate ?? null;
+      const previousSuppressed = Boolean(task?.autoCompleteSuppressed);
 
       setActionError('');
       updateTaskInList(taskId, (current) => {
@@ -414,12 +428,25 @@ export function AllTasksView({
           current.checklistItems?.map((item) =>
             item.id === itemId ? { ...item, isDone } : item,
           ) ?? [];
+        const nextProgress = computeChecklistProgress(nextItems);
+        const shouldAutoComplete =
+          nextItems.length > 0 &&
+          nextProgress === 100 &&
+          !current.isCompleted &&
+          !current.autoCompleteSuppressed;
+
         return {
           ...current,
           checklistItems: nextItems,
-          progress: current.isCompleted
-            ? 100
-            : computeChecklistProgress(nextItems),
+          progress:
+            current.isCompleted || shouldAutoComplete ? 100 : nextProgress,
+          isCompleted: current.isCompleted || shouldAutoComplete,
+          completeDate:
+            current.isCompleted || shouldAutoComplete
+              ? (current.completeDate ?? new Date().toISOString())
+              : current.completeDate,
+          autoCompleteSuppressed:
+            nextProgress < 100 ? false : current.autoCompleteSuppressed,
         };
       });
 
@@ -427,12 +454,13 @@ export function AllTasksView({
         await checklistService.update(taskId, itemId, { isDone });
       } catch (err) {
         if (previousItems) {
-          updateTaskInList(taskId, (current) => ({
-            ...current,
+          updateTaskInList(taskId, () => ({
+            ...task!,
             checklistItems: previousItems,
-            progress: current.isCompleted
-              ? 100
-              : computeChecklistProgress(previousItems),
+            progress: previousProgress,
+            isCompleted: previousCompleted,
+            completeDate: previousCompleteDate,
+            autoCompleteSuppressed: previousSuppressed,
           }));
         }
         if (!isForbiddenError(err)) {

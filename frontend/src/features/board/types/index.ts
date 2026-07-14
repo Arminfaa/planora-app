@@ -25,6 +25,7 @@ export interface BoardTask {
   progress?: number;
   parentTaskId?: string | null;
   isCompleted?: boolean;
+  autoCompleteSuppressed?: boolean;
   column?: {
     id: string;
     name: string;

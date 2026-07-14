@@ -213,8 +213,9 @@ model Task {
   startDate    DateTime?
   dueDate      DateTime?
   completeDate DateTime?
-  progress     Int          @default(0)
-  isCompleted  Boolean      @default(false)
+  progress               Int     @default(0)
+  isCompleted            Boolean @default(false)
+  autoCompleteSuppressed Boolean @default(false)
   parentTaskId String?      @db.ObjectId
   assigneeIds  String[]     @db.ObjectId
   createdById String       @db.ObjectId

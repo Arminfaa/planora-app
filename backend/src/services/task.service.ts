@@ -269,11 +269,16 @@ export class TaskService {
     }
 
     let normalizedInput: UpdateTaskInput = { ...input };
+    let autoCompleteSuppressed: boolean | undefined;
 
     const checklistItems = await checklistRepository.findByTask(taskId);
     const hasChecklist = checklistItems.length > 0;
 
     if (input.isCompleted === true) {
+      if (hasChecklist) {
+        await checklistRepository.markAllDone(taskId);
+      }
+      autoCompleteSuppressed = false;
       normalizedInput = {
         ...normalizedInput,
         progress: 100,
@@ -281,6 +286,7 @@ export class TaskService {
           input.completeDate === undefined ? new Date() : input.completeDate,
       };
     } else if (input.isCompleted === false) {
+      autoCompleteSuppressed = hasChecklist;
       normalizedInput = {
         ...normalizedInput,
         completeDate: null,
@@ -332,9 +338,17 @@ export class TaskService {
         position: _position,
         ...rest
       } = normalizedInput;
-      if (Object.keys(rest).length > 0) {
+      if (
+        Object.keys(rest).length > 0 ||
+        autoCompleteSuppressed !== undefined
+      ) {
         const updatePayload = await this.withUpdatedSlug(existing, rest);
-        const updated = await taskRepository.update(taskId, updatePayload);
+        const updated = await taskRepository.update(taskId, {
+          ...updatePayload,
+          ...(autoCompleteSuppressed !== undefined
+            ? { autoCompleteSuppressed }
+            : {}),
+        });
         if (!updated) {
           throw new ApiError(404, 'Task not found');
         }
@@ -345,7 +359,12 @@ export class TaskService {
     }
 
     const updatePayload = await this.withUpdatedSlug(existing, normalizedInput);
-    return taskRepository.update(taskId, updatePayload);
+    return taskRepository.update(taskId, {
+      ...updatePayload,
+      ...(autoCompleteSuppressed !== undefined
+        ? { autoCompleteSuppressed }
+        : {}),
+    });
   }
 
   async bulkMoveToColumn(
@@ -475,8 +494,12 @@ export class TaskService {
 
         const items = await checklistRepository.findByTask(taskId);
         const progress = computeChecklistProgress(items);
-        if (task.progress !== progress) {
-          await taskRepository.update(taskId, { progress });
+        const clearSuppress = progress < 100 && task.autoCompleteSuppressed;
+        if (task.progress !== progress || clearSuppress) {
+          await taskRepository.update(taskId, {
+            progress,
+            ...(clearSuppress ? { autoCompleteSuppressed: false } : {}),
+          });
         }
       }
       return taskRepository.findByIds(uniqueIds);

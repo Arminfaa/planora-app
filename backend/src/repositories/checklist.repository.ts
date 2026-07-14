@@ -55,6 +55,13 @@ export class ChecklistRepository extends BaseRepository {
   async deleteByTask(taskId: string): Promise<void> {
     await this.db.taskChecklistItem.deleteMany({ where: { taskId } });
   }
+
+  async markAllDone(taskId: string): Promise<void> {
+    await this.db.taskChecklistItem.updateMany({
+      where: { taskId, isDone: false },
+      data: { isDone: true },
+    });
+  }
 }
 
 export const checklistRepository = new ChecklistRepository();

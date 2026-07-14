@@ -327,7 +327,12 @@ export class TaskRepository extends BaseRepository {
     const [tasks, boards] = await Promise.all([
       this.db.task.findMany({
         where: { column: { board: { projectId } } },
-        select: { isCompleted: true, assigneeIds: true, boardId: true },
+        select: {
+          isCompleted: true,
+          progress: true,
+          assigneeIds: true,
+          boardId: true,
+        },
       }),
       this.db.board.findMany({
         where: { projectId },
@@ -336,12 +341,23 @@ export class TaskRepository extends BaseRepository {
       }),
     ]);
 
-    const computeStats = (items: { isCompleted: boolean }[]) => {
+    const computeStats = (
+      items: { isCompleted: boolean; progress: number }[],
+    ) => {
       const totalTasks = items.length;
       const completedTasks = items.filter((task) => task.isCompleted).length;
       const inProgressTasks = totalTasks - completedTasks;
       const completionPercent =
-        totalTasks > 0 ? Math.round((completedTasks / totalTasks) * 100) : 0;
+        totalTasks > 0
+          ? Math.round(
+              items.reduce((sum, task) => {
+                const progressValue = task.isCompleted
+                  ? 100
+                  : Math.max(0, Math.min(100, task.progress ?? 0));
+                return sum + progressValue;
+              }, 0) / totalTasks,
+            )
+          : 0;
 
       return {
         totalTasks,

@@ -48,24 +48,45 @@ export class ChecklistService {
       throw new ApiError(404, 'Task not found');
     }
 
-    if (task.isCompleted) {
-      if (task.progress !== 100) {
-        return taskRepository.update(taskId, { progress: 100 });
-      }
-      return task;
-    }
-
     const items = await checklistRepository.findByTask(taskId);
     if (items.length === 0) {
       return task;
     }
 
     const progress = computeChecklistProgress(items);
-    if (task.progress === progress) {
+    const clearSuppress = progress < 100 && task.autoCompleteSuppressed;
+
+    if (task.isCompleted) {
+      const patch: { progress?: number; autoCompleteSuppressed?: boolean } = {};
+      if (task.progress !== 100) {
+        patch.progress = 100;
+      }
+      if (clearSuppress) {
+        patch.autoCompleteSuppressed = false;
+      }
+      if (Object.keys(patch).length === 0) {
+        return task;
+      }
+      return taskRepository.update(taskId, patch);
+    }
+
+    if (progress === 100 && !task.autoCompleteSuppressed) {
+      return taskRepository.update(taskId, {
+        progress: 100,
+        isCompleted: true,
+        completeDate: task.completeDate ?? new Date(),
+        autoCompleteSuppressed: false,
+      });
+    }
+
+    if (task.progress === progress && !clearSuppress) {
       return task;
     }
 
-    return taskRepository.update(taskId, { progress });
+    return taskRepository.update(taskId, {
+      progress,
+      ...(clearSuppress ? { autoCompleteSuppressed: false } : {}),
+    });
   }
 
   async list(userId: string, taskId: string) {
