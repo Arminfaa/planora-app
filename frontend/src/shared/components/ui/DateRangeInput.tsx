@@ -44,15 +44,18 @@ export function DateRangeInput({
   const rangeValue: [Dayjs | null, Dayjs | null] | null =
     fromValue || toValue ? [fromValue, toValue] : null;
 
-  const minPicker = apiDateToPickerValue(toApiDateOnly(minDate), locale);
-  const maxPicker = apiDateToPickerValue(toApiDateOnly(maxDate), locale);
-
-  // Keep the visible (first) panel on the selected month.
-  // With dual panels, antd often shows [month-1, month]; we hide the 2nd panel,
-  // so without this the open month looks wrong (e.g. Tir selected → Khordad shown).
+  // Do not pass minDate/maxDate to RangePicker: with dual panels + CSS-hidden
+  // second panel, maxDate shifts the visible month back by one (e.g. Tir → Khordad).
+  // Selection limits stay enforced via disabledDate only.
   const [panelMonth, setPanelMonth] = useState<Dayjs | null>(null);
+  const [activeField, setActiveField] = useState<'start' | 'end'>('start');
 
-  const resolveOpenMonth = (): Dayjs | null => fromValue ?? toValue ?? null;
+  const resolveOpenMonth = (): Dayjs | null => {
+    if (activeField === 'end') {
+      return toValue ?? fromValue ?? null;
+    }
+    return fromValue ?? toValue ?? null;
+  };
 
   return (
     <div className="space-y-1">
@@ -75,8 +78,6 @@ export function DateRangeInput({
         style={{ width: '100%', maxWidth: '100%' }}
         disabled={disabled}
         allowEmpty={[true, true]}
-        minDate={minPicker ?? undefined}
-        maxDate={maxPicker ?? undefined}
         disabledDate={(current) => {
           if (!current?.isValid()) return false;
           const api = pickerValueToApiDate(current);
@@ -91,6 +92,15 @@ export function DateRangeInput({
         pickerValue={panelMonth ?? undefined}
         onPickerValueChange={(dates) => {
           setPanelMonth(dates?.[0] ?? null);
+        }}
+        onFocus={(_event, info) => {
+          const next = info?.range === 'end' ? 'end' : 'start';
+          setActiveField(next);
+          const month =
+            next === 'end'
+              ? (toValue ?? fromValue ?? null)
+              : (fromValue ?? toValue ?? null);
+          setPanelMonth(month);
         }}
         onOpenChange={(open) => {
           if (open) {
