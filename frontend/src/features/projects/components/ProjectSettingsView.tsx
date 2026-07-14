@@ -9,6 +9,7 @@ import { useProjectContext } from '../context/ProjectContext';
 import { DeleteProjectModal } from './DeleteProjectModal';
 import { EditProjectModal } from './EditProjectModal';
 import { ProjectRolesPanel } from './ProjectRolesPanel';
+import { WorkingCalendarPanel } from './WorkingCalendarPanel';
 import { replaceProjectSlugInPath } from '../utils/projectPaths';
 import type { UpdateProjectInput } from '../types';
 import { getApiErrorMessage, isForbiddenError } from '@/lib/api';
@@ -119,6 +120,10 @@ export function ProjectSettingsView() {
           onRolesChange={setCustomRoles}
         />
       )}
+
+      {canEditProject ? (
+        <WorkingCalendarPanel projectId={project.id} canEdit />
+      ) : null}
 
       {canDeleteProject && (
         <section className="rounded-xl border border-red-200 bg-red-50/50 p-6">

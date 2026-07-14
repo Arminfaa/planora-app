@@ -3,11 +3,15 @@ import type { ApiSuccessResponse, PaginatedData } from '@/shared/types/api';
 import type { PermissionGroup } from '@/features/permissions/registry';
 import type {
   CreateProjectInput,
+  MemberLeave,
+  PersonCompletionsStats,
   Project,
+  ProjectHoliday,
   ProjectMember,
   ProjectProgressStats,
   ProjectRoleDefinition,
   UpdateProjectInput,
+  WorkingCalendar,
 } from '../types';
 
 export const projectService = {
@@ -79,5 +83,70 @@ export const projectService = {
 
   async delete(id: string): Promise<void> {
     await api.delete(`/projects/${id}`);
+  },
+
+  async getWorkingCalendar(projectId: string): Promise<WorkingCalendar> {
+    const { data } = await api.get<ApiSuccessResponse<WorkingCalendar>>(
+      `/projects/${projectId}/working-calendar`,
+    );
+    return data.data;
+  },
+
+  async updateWorkingWeekdays(
+    projectId: string,
+    nonWorkingWeekdays: number[],
+  ): Promise<{ nonWorkingWeekdays: number[] }> {
+    const { data } = await api.patch<
+      ApiSuccessResponse<{ nonWorkingWeekdays: number[] }>
+    >(`/projects/${projectId}/working-calendar/weekdays`, {
+      nonWorkingWeekdays,
+    });
+    return data.data;
+  },
+
+  async createHoliday(
+    projectId: string,
+    input: { date: string; title?: string },
+  ): Promise<ProjectHoliday> {
+    const { data } = await api.post<ApiSuccessResponse<ProjectHoliday>>(
+      `/projects/${projectId}/holidays`,
+      input,
+    );
+    return data.data;
+  },
+
+  async deleteHoliday(projectId: string, holidayId: string): Promise<void> {
+    await api.delete(`/projects/${projectId}/holidays/${holidayId}`);
+  },
+
+  async createLeave(
+    projectId: string,
+    input: {
+      userId: string;
+      startDate: string;
+      endDate: string;
+      note?: string;
+    },
+  ): Promise<MemberLeave> {
+    const { data } = await api.post<ApiSuccessResponse<MemberLeave>>(
+      `/projects/${projectId}/leaves`,
+      input,
+    );
+    return data.data;
+  },
+
+  async deleteLeave(projectId: string, leaveId: string): Promise<void> {
+    await api.delete(`/projects/${projectId}/leaves/${leaveId}`);
+  },
+
+  async getPersonCompletions(
+    projectId: string,
+    params: { userId: string; from: string; to: string },
+  ): Promise<PersonCompletionsStats> {
+    const { data } = await api.get<ApiSuccessResponse<PersonCompletionsStats>>(
+      `/projects/${projectId}/analytics/completions`,
+      { params },
+    );
+    return data.data;
   },
 };

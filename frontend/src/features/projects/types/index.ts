@@ -138,3 +138,58 @@ export interface CreateInviteResult {
   invite: ProjectInvite;
   project: { id: string; name: string; slug: string };
 }
+
+export type NonWorkingReason = 'weekend' | 'holiday' | 'leave';
+
+export interface ProjectHoliday {
+  id: string;
+  date: string;
+  title: string | null;
+  createdAt: string;
+}
+
+export interface MemberLeave {
+  id: string;
+  userId: string;
+  startDate: string;
+  endDate: string;
+  note: string | null;
+  createdAt: string;
+  user?: {
+    id: string;
+    name: string;
+    avatar: string | null;
+  };
+}
+
+export interface WorkingCalendar {
+  nonWorkingWeekdays: number[];
+  holidays: ProjectHoliday[];
+  leaves: MemberLeave[];
+}
+
+export interface PersonCompletionDay {
+  date: string;
+  weekday: number;
+  completedCount: number;
+  isNonWorking: boolean;
+  nonWorkingReason: NonWorkingReason | null;
+  holidayTitle: string | null;
+  leaveNote: string | null;
+}
+
+export interface PersonCompletionsStats {
+  userId: string;
+  userName: string | null;
+  from: string;
+  to: string;
+  nonWorkingWeekdays: number[];
+  days: PersonCompletionDay[];
+  totals: {
+    completedTotal: number;
+    completedOnWorkingDays: number;
+    workingDays: number;
+    nonWorkingDays: number;
+    averagePerWorkingDay: number;
+  };
+}

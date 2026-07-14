@@ -60,6 +60,8 @@ model User {
   memberships   ProjectMember[]
   sentInvites   ProjectInvite[] @relation("InviteSender")
   createdTasks  Task[]          @relation("TaskCreator")
+  memberLeaves         MemberLeave[] @relation("LeaveMember")
+  createdLeaves        MemberLeave[] @relation("LeaveCreator")
   comments            Comment[]
   projectGroupMessages ProjectGroupMessage[]
   refreshTokens        RefreshToken[]
@@ -94,6 +96,8 @@ model Project {
   description    String?
   ownerId        String         @db.ObjectId
   permissionMode PermissionMode @default(DEFAULT)
+  /// JS weekday indexes: 0=Sunday … 6=Saturday. Default Friday for Iranian teams.
+  nonWorkingWeekdays Int[]      @default([5])
   createdAt      DateTime       @default(now())
   updatedAt      DateTime       @updatedAt
 
@@ -105,8 +109,46 @@ model Project {
   roleDefinitions     ProjectRoleDefinition[]
   groupMessages       ProjectGroupMessage[]
   taskDependencies    TaskDependency[]
+  holidays            ProjectHoliday[]
+  memberLeaves        MemberLeave[]
 
   @@map("projects")
+}
+
+model ProjectHoliday {
+  id        String   @id @default(auto()) @map("_id") @db.ObjectId
+  projectId String   @db.ObjectId
+  /// Stored as UTC midnight for the calendar day (YYYY-MM-DD).
+  date      DateTime
+  title     String?
+  createdAt DateTime @default(now())
+
+  project Project @relation(fields: [projectId], references: [id], onDelete: Cascade)
+
+  @@unique([projectId, date])
+  @@index([projectId])
+  @@map("project_holidays")
+}
+
+model MemberLeave {
+  id          String   @id @default(auto()) @map("_id") @db.ObjectId
+  projectId   String   @db.ObjectId
+  userId      String   @db.ObjectId
+  /// Inclusive start day at UTC midnight.
+  startDate   DateTime
+  /// Inclusive end day at UTC midnight.
+  endDate     DateTime
+  note        String?
+  createdById String   @db.ObjectId
+  createdAt   DateTime @default(now())
+
+  project   Project @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  user      User    @relation("LeaveMember", fields: [userId], references: [id])
+  createdBy User    @relation("LeaveCreator", fields: [createdById], references: [id])
+
+  @@index([projectId, userId])
+  @@index([projectId, startDate, endDate])
+  @@map("member_leaves")
 }
 
 model ProjectRoleDefinition {

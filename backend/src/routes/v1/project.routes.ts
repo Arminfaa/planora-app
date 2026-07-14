@@ -16,6 +16,15 @@ import {
   updateProject,
 } from '../../controllers/project.controller';
 import {
+  createHoliday,
+  createLeave,
+  deleteHoliday,
+  deleteLeave,
+  getPersonCompletions,
+  getWorkingCalendar,
+  updateWorkingWeekdays,
+} from '../../controllers/working-calendar.controller';
+import {
   createTaskDependencySchema,
   projectDependencyIdParamsSchema,
   projectDependencyParamsSchema,
@@ -32,6 +41,15 @@ import {
   projectParamsSchema,
   updateProjectSchema,
 } from '../../validators/project.validator';
+import {
+  completionsQuerySchema,
+  createHolidaySchema,
+  createLeaveSchema,
+  holidayParamsSchema,
+  leaveParamsSchema,
+  updateWorkingWeekdaysSchema,
+  workingCalendarParamsSchema,
+} from '../../validators/working-calendar.validator';
 
 const router = Router();
 
@@ -44,6 +62,45 @@ router.get(
   '/:id/progress',
   validateParams(projectParamsSchema),
   getProjectProgress,
+);
+router.get(
+  '/:id/working-calendar',
+  validateParams(workingCalendarParamsSchema),
+  getWorkingCalendar,
+);
+router.patch(
+  '/:id/working-calendar/weekdays',
+  validateParams(workingCalendarParamsSchema),
+  validateBody(updateWorkingWeekdaysSchema),
+  updateWorkingWeekdays,
+);
+router.post(
+  '/:id/holidays',
+  validateParams(workingCalendarParamsSchema),
+  validateBody(createHolidaySchema),
+  createHoliday,
+);
+router.delete(
+  '/:id/holidays/:holidayId',
+  validateParams(holidayParamsSchema),
+  deleteHoliday,
+);
+router.post(
+  '/:id/leaves',
+  validateParams(workingCalendarParamsSchema),
+  validateBody(createLeaveSchema),
+  createLeave,
+);
+router.delete(
+  '/:id/leaves/:leaveId',
+  validateParams(leaveParamsSchema),
+  deleteLeave,
+);
+router.get(
+  '/:id/analytics/completions',
+  validateParams(projectParamsSchema),
+  validateQuery(completionsQuerySchema),
+  getPersonCompletions,
 );
 router.get('/:id/gantt', validateParams(projectParamsSchema), getProjectGantt);
 router.get('/:id/tasks', validateParams(projectParamsSchema), getProjectTasks);

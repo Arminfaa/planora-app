@@ -11,6 +11,7 @@ import { useProjectPermissions } from '@/features/permissions/hooks/useProjectPe
 import { useProjectContext } from '@/features/projects/context/ProjectContext';
 import { useProjectProgress } from '@/features/projects/hooks/useProjectProgress';
 import { ProjectProgressOverview } from '@/features/projects/components/ProjectProgressOverview';
+import { PersonCompletionsChart } from '@/features/projects/components/PersonCompletionsChart';
 import { useLocale } from '@/i18n/LocaleProvider';
 import { LoadingSpinner } from '@/shared/components/feedback/LoadingSpinner';
 import { Button } from '@/shared/components/ui/Button';
@@ -198,6 +199,12 @@ export function ProjectOverviewView() {
               ) : null}
             </div>
           )}
+
+          {canViewBoards ? (
+            <div className="mt-6">
+              <PersonCompletionsChart projectId={project.id} />
+            </div>
+          ) : null}
 
           <div className="mt-6 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
             <div className="min-w-0 flex-1 sm:max-w-md">

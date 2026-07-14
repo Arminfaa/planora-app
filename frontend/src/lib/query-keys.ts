@@ -11,6 +11,23 @@ export const queryKeys = {
     boards: (projectId: string) => ['projects', projectId, 'boards'] as const,
     progress: (projectId: string) =>
       ['projects', projectId, 'progress'] as const,
+    workingCalendar: (projectId: string) =>
+      ['projects', projectId, 'working-calendar'] as const,
+    personCompletions: (
+      projectId: string,
+      userId: string,
+      from: string,
+      to: string,
+    ) =>
+      [
+        'projects',
+        projectId,
+        'analytics',
+        'completions',
+        userId,
+        from,
+        to,
+      ] as const,
     gantt: (projectIdOrSlug: string) =>
       ['projects', projectIdOrSlug, 'gantt'] as const,
   },
@@ -45,6 +62,8 @@ export const STALE_TIME = {
   boards: 60_000,
   boardDetail: 30_000,
   progress: 30_000,
+  workingCalendar: 60_000,
+  personCompletions: 30_000,
   gantt: 30_000,
   searchAssignees: 300_000,
   invitePreview: 60_000,
