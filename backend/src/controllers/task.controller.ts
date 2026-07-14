@@ -19,6 +19,7 @@ import type {
   CreateTaskInput,
   UpdateTaskInput,
   BulkMoveTasksInput,
+  BulkTaskActionInput,
 } from '../validators/task.validator';
 
 export const listBoardTasks = asyncHandler(
@@ -243,6 +244,34 @@ export const bulkMoveBoardTasks = asyncHandler(
     }
 
     ApiResponse.success(res, tasks, 'Tasks moved');
+  },
+);
+
+export const bulkBoardTaskActions = asyncHandler(
+  async (req: AuthenticatedRequest, res: Response) => {
+    const boardId = getParam(req.params, 'id');
+    const input = req.body as BulkTaskActionInput;
+
+    const tasks = await taskService.bulkAction(
+      req.user!.userId,
+      boardId,
+      input,
+    );
+
+    const isMove = input.action.type === 'move';
+    const moveColumnId =
+      input.action.type === 'move' ? input.action.columnId : undefined;
+
+    await notifyBoardTaskEvent(
+      req.user!.userId,
+      isMove ? 'task:moved' : 'task:updated',
+      {
+        columnId: moveColumnId ?? tasks[0]?.columnId ?? undefined,
+        payload: { tasks },
+      },
+    );
+
+    ApiResponse.success(res, tasks, isMove ? 'Tasks moved' : 'Tasks updated');
   },
 );
 

@@ -2,6 +2,7 @@ import { api } from '@/lib/api';
 import type { ApiSuccessResponse } from '@/shared/types/api';
 import type { BoardTask } from '@/features/board/types';
 import type { CreateTaskInput, Task, UpdateTaskInput } from '../types';
+import type { BulkTaskActionRequest } from '../types/bulkActions';
 
 export const taskService = {
   async getById(id: string): Promise<Task> {
@@ -54,6 +55,17 @@ export const taskService = {
   ): Promise<BoardTask[]> {
     const { data } = await api.post<ApiSuccessResponse<BoardTask[]>>(
       `/boards/${boardId}/tasks/bulk-move`,
+      input,
+    );
+    return data.data;
+  },
+
+  async bulkAction(
+    boardId: string,
+    input: BulkTaskActionRequest,
+  ): Promise<BoardTask[]> {
+    const { data } = await api.post<ApiSuccessResponse<BoardTask[]>>(
+      `/boards/${boardId}/tasks/bulk-actions`,
       input,
     );
     return data.data;

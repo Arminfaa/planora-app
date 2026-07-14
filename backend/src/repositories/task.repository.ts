@@ -54,6 +54,15 @@ export class TaskRepository extends BaseRepository {
     });
   }
 
+  async findByIds(taskIds: string[]) {
+    if (taskIds.length === 0) return [];
+    const tasks = await this.db.task.findMany({
+      where: { id: { in: taskIds } },
+      include: taskInclude,
+    });
+    return this.enrichMany(tasks);
+  }
+
   async findByColumn(
     columnId: string,
     page: number,

@@ -6,17 +6,23 @@ import { columnRepository } from '../repositories/column.repository';
 import { projectMemberRepository } from '../repositories/project-member.repository';
 import { taskRepository } from '../repositories/task.repository';
 import { checklistRepository } from '../repositories/checklist.repository';
+import { labelRepository } from '../repositories/label.repository';
 import { taskDependencyRepository } from '../repositories/task-dependency.repository';
 import { projectAccessService } from './project-access.service';
 import { projectMemberService } from './project-member.service';
 import { serializeGanttTask } from '../utils/gantt-serializer';
-import { computeChecklistProgress } from '../utils/checklist-progress';
+import {
+  computeChecklistProgress,
+  DEFAULT_CHECKLIST_WEIGHT,
+  normalizeChecklistWeight,
+} from '../utils/checklist-progress';
 import {
   ensureTasksSameProject,
   wouldCreateParentCycle,
 } from '../utils/task-hierarchy';
 import { serializeTaskDependency } from '../utils/task-dependency-serializer';
 import type {
+  BulkTaskActionInput,
   CreateBoardTaskInput,
   CreateTaskInput,
   UpdateTaskInput,
@@ -383,6 +389,177 @@ export class TaskService {
       }
       throw error;
     }
+  }
+
+  private async ensureBoardTasks(boardId: string, taskIds: string[]) {
+    const uniqueIds = [...new Set(taskIds)];
+    if (uniqueIds.length === 0) {
+      throw new ApiError(400, 'No tasks selected');
+    }
+
+    const existingTasks = await taskRepository.findBoardMembership(uniqueIds);
+    if (existingTasks.length !== uniqueIds.length) {
+      throw new ApiError(404, 'Some tasks were not found');
+    }
+    if (existingTasks.some((task) => task.boardId !== boardId)) {
+      throw new ApiError(400, 'Some tasks do not belong to this board');
+    }
+
+    return uniqueIds;
+  }
+
+  private async ensureProjectLabels(projectId: string, labelIds: string[]) {
+    const uniqueLabelIds = [...new Set(labelIds)];
+    for (const labelId of uniqueLabelIds) {
+      const label = await labelRepository.findById(labelId);
+      if (!label || label.projectId !== projectId) {
+        throw new ApiError(400, 'Invalid label for this project');
+      }
+    }
+    return uniqueLabelIds;
+  }
+
+  async bulkAction(
+    userId: string,
+    boardId: string,
+    input: BulkTaskActionInput,
+  ) {
+    const projectId = await boardRepository.getProjectId(boardId);
+    if (!projectId) {
+      throw new ApiError(404, 'Board not found');
+    }
+
+    const { action } = input;
+    const permission =
+      action.type === 'move'
+        ? 'task.move'
+        : action.type === 'addLabels' ||
+            action.type === 'removeLabels' ||
+            action.type === 'setLabels'
+          ? 'label.assign'
+          : 'task.edit';
+
+    await projectAccessService.ensurePermission(userId, projectId, permission);
+
+    const uniqueIds = await this.ensureBoardTasks(boardId, input.taskIds);
+
+    if (action.type === 'move') {
+      return this.bulkMoveToColumn(userId, boardId, uniqueIds, action.columnId);
+    }
+
+    if (action.type === 'addChecklistItem') {
+      const weight = normalizeChecklistWeight(
+        action.weight ?? DEFAULT_CHECKLIST_WEIGHT,
+      );
+      for (const taskId of uniqueIds) {
+        const position = await checklistRepository.getNextPosition(taskId);
+        await checklistRepository.create(
+          taskId,
+          action.title,
+          position,
+          weight,
+        );
+
+        const task = await taskRepository.findById(taskId);
+        if (!task || task.isCompleted) continue;
+
+        const items = await checklistRepository.findByTask(taskId);
+        const progress = computeChecklistProgress(items);
+        if (task.progress !== progress) {
+          await taskRepository.update(taskId, { progress });
+        }
+      }
+      return taskRepository.findByIds(uniqueIds);
+    }
+
+    if (
+      action.type === 'addLabels' ||
+      action.type === 'removeLabels' ||
+      action.type === 'setLabels'
+    ) {
+      const labelIds = await this.ensureProjectLabels(
+        projectId,
+        action.labelIds,
+      );
+
+      for (const taskId of uniqueIds) {
+        if (action.type === 'setLabels') {
+          const current = await taskRepository.findById(taskId);
+          const currentIds = new Set(
+            (current?.labels ?? []).map(
+              (entry: { label: { id: string } }) => entry.label.id,
+            ),
+          );
+          for (const labelId of currentIds) {
+            if (!labelIds.includes(labelId)) {
+              await labelRepository.removeFromTask(taskId, labelId);
+            }
+          }
+          for (const labelId of labelIds) {
+            if (!currentIds.has(labelId)) {
+              await labelRepository.assignToTask(taskId, labelId);
+            }
+          }
+          continue;
+        }
+
+        for (const labelId of labelIds) {
+          if (action.type === 'addLabels') {
+            const existing = await labelRepository.findTaskLabel(
+              taskId,
+              labelId,
+            );
+            if (!existing) {
+              await labelRepository.assignToTask(taskId, labelId);
+            }
+          } else {
+            await labelRepository.removeFromTask(taskId, labelId);
+          }
+        }
+      }
+
+      return taskRepository.findByIds(uniqueIds);
+    }
+
+    let patch: UpdateTaskInput;
+    switch (action.type) {
+      case 'setDueDate':
+        patch = { dueDate: action.dueDate };
+        break;
+      case 'setStartDate':
+        patch = { startDate: action.startDate };
+        break;
+      case 'setCompleteDate':
+        patch =
+          action.completeDate === null
+            ? { completeDate: null }
+            : {
+                completeDate: action.completeDate,
+                isCompleted: true,
+                progress: 100,
+              };
+        break;
+      case 'setAssignees':
+        patch = { assigneeIds: action.assigneeIds };
+        break;
+      case 'setPriority':
+        patch = { priority: action.priority };
+        break;
+      case 'setCompleted':
+        patch = { isCompleted: action.isCompleted };
+        break;
+      case 'setProgress':
+        patch = { progress: action.progress };
+        break;
+      default:
+        throw new ApiError(400, 'Unsupported bulk action');
+    }
+
+    for (const taskId of uniqueIds) {
+      await this.update(userId, taskId, patch);
+    }
+
+    return taskRepository.findByIds(uniqueIds);
   }
 
   async delete(userId: string, taskId: string) {

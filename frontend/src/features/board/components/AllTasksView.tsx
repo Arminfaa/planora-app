@@ -40,11 +40,20 @@ import { ViewIcon } from './ViewIcon';
 import { LoadingSpinner } from '@/shared/components/feedback/LoadingSpinner';
 import { Button } from '@/shared/components/ui/Button';
 import { SearchInput } from '@/shared/components/ui/SearchInput';
-import { SelectField } from '@/shared/components/ui/SelectField';
 import { getApiErrorMessage, isForbiddenError } from '@/lib/api';
 import { exportBoardTasksToExcel } from '../utils/exportTasksToExcel';
+import type {
+  BulkOperationMode,
+  BulkTaskAction,
+} from '@/features/tasks/types/bulkActions';
 import { useLocale } from '@/i18n/LocaleProvider';
 import { BackChevronIcon } from '@/shared/components/ui/BackChevronIcon';
+import {
+  AllTasksBulkToolbar,
+  AllTasksOperationsMenu,
+  createEmptyBulkFormState,
+  type BulkFormState,
+} from './AllTasksBulkToolbar';
 
 const TaskModal = dynamic(
   () => import('./TaskModal').then((mod) => ({ default: mod.TaskModal })),
@@ -82,14 +91,16 @@ export function AllTasksView({
   const [showImportModal, setShowImportModal] = useState(false);
   const [viewTask, setViewTask] = useState<BoardTask | null>(null);
   const [editTask, setEditTask] = useState<BoardTask | null>(null);
-  const [selectionMode, setSelectionMode] = useState<'move' | 'export' | null>(
+  const [selectionMode, setSelectionMode] = useState<BulkOperationMode | null>(
     null,
   );
   const [selectedTaskIds, setSelectedTaskIds] = useState<Set<string>>(
     () => new Set(),
   );
-  const [bulkTargetColumnId, setBulkTargetColumnId] = useState('');
-  const [isBulkMoving, setIsBulkMoving] = useState(false);
+  const [bulkForm, setBulkForm] = useState<BulkFormState>(
+    createEmptyBulkFormState,
+  );
+  const [isBulkApplying, setIsBulkApplying] = useState(false);
 
   const { can } = useProjectPermissions(project);
   const members = useProjectMembers(project.id);
@@ -100,6 +111,7 @@ export function AllTasksView({
   const canViewTasks = can('task.view');
   const canMoveTasks = can('task.move');
   const canCreateLabels = can('label.create');
+  const canAssignLabels = can('label.assign');
   const memberColorMap = useMemberColorMap(members, tasks);
 
   const columns = board?.columns ?? [];
@@ -166,15 +178,6 @@ export function AllTasksView({
     filteredTaskIds.some((id) => selectedTaskIds.has(id)) &&
     !allFilteredSelected;
 
-  const columnMoveOptions = useMemo(
-    () =>
-      columns.map((column) => ({
-        value: column.id,
-        label: column.name,
-      })),
-    [columns],
-  );
-
   const toggleTaskSelection = useCallback(
     (taskId: string, selected: boolean) => {
       setSelectedTaskIds((current) => {
@@ -207,7 +210,7 @@ export function AllTasksView({
 
   const clearSelection = useCallback(() => {
     setSelectedTaskIds(new Set());
-    setBulkTargetColumnId('');
+    setBulkForm(createEmptyBulkFormState());
   }, []);
 
   const exitSelectionMode = useCallback(() => {
@@ -216,7 +219,7 @@ export function AllTasksView({
   }, [clearSelection]);
 
   const enterSelectionMode = useCallback(
-    (mode: 'move' | 'export') => {
+    (mode: BulkOperationMode) => {
       setSelectionMode(mode);
       clearSelection();
       setActionError('');
@@ -224,45 +227,28 @@ export function AllTasksView({
     [clearSelection],
   );
 
-  const handleBulkMove = useCallback(async () => {
-    if (
-      !canMoveTasks ||
-      selectionMode !== 'move' ||
-      !bulkTargetColumnId ||
-      selectedCount === 0 ||
-      !board
-    ) {
-      return;
-    }
+  const handleBulkAction = useCallback(
+    async (action: BulkTaskAction) => {
+      if (!board || selectedCount === 0) return;
 
-    const taskIds = Array.from(selectedTaskIds);
-    setIsBulkMoving(true);
-    setActionError('');
+      const taskIds = Array.from(selectedTaskIds);
+      setIsBulkApplying(true);
+      setActionError('');
 
-    try {
-      await taskService.bulkMoveToColumn(board.id, {
-        taskIds,
-        columnId: bulkTargetColumnId,
-      });
-      exitSelectionMode();
-      await loadData();
-    } catch (err) {
-      if (!isForbiddenError(err)) {
-        setActionError(getApiErrorMessage(err));
+      try {
+        await taskService.bulkAction(board.id, { taskIds, action });
+        exitSelectionMode();
+        await loadData();
+      } catch (err) {
+        if (!isForbiddenError(err)) {
+          setActionError(getApiErrorMessage(err));
+        }
+      } finally {
+        setIsBulkApplying(false);
       }
-    } finally {
-      setIsBulkMoving(false);
-    }
-  }, [
-    board,
-    bulkTargetColumnId,
-    canMoveTasks,
-    exitSelectionMode,
-    loadData,
-    selectedCount,
-    selectedTaskIds,
-    selectionMode,
-  ]);
+    },
+    [board, exitSelectionMode, loadData, selectedCount, selectedTaskIds],
+  );
 
   const handleCreateTask = async () => {
     setShowCreateModal(false);
@@ -324,6 +310,10 @@ export function AllTasksView({
     exportBoardTasksToExcel(selectedTasks, board, columns, locale);
     exitSelectionMode();
   };
+
+  const handleBulkFormChange = useCallback((patch: Partial<BulkFormState>) => {
+    setBulkForm((current) => ({ ...current, ...patch }));
+  }, []);
 
   const updateTaskInList = useCallback(
     (taskId: string, updater: (task: BoardTask) => BoardTask) => {
@@ -486,27 +476,14 @@ export function AllTasksView({
         </div>
 
         <div className="flex flex-wrap items-center gap-2">
-          {canMoveTasks && filteredTasks.length > 0 && (
-            <Button
-              type="button"
-              variant="secondary"
-              onClick={() => enterSelectionMode('move')}
-              disabled={selectionMode === 'move'}
-            >
-              {t('board.selectionChangeColumn')}
-            </Button>
-          )}
-
           {filteredTasks.length > 0 && (
-            <Button
-              type="button"
-              variant="secondary"
-              onClick={() => enterSelectionMode('export')}
-              disabled={selectionMode === 'export'}
-              aria-label={t('board.exportAriaLabel')}
-            >
-              {t('board.selectionExportExcel')}
-            </Button>
+            <AllTasksOperationsMenu
+              canMoveTasks={canMoveTasks}
+              canEditTasks={canEditTasks}
+              canAssignLabels={canAssignLabels}
+              disabled={selectionMode !== null}
+              onSelect={enterSelectionMode}
+            />
           )}
 
           {canCreateTasks && (
@@ -574,79 +551,25 @@ export function AllTasksView({
       )}
 
       {selectionMode && filteredTasks.length > 0 && (
-        <div className="mt-4 flex flex-col gap-3 rounded-xl border border-gray-200 bg-gray-50 p-3">
-          <p className="text-sm text-gray-600">
-            {selectionMode === 'move'
-              ? t('board.selectionModeMoveHint')
-              : t('board.selectionModeExportHint')}
-          </p>
-
-          <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-            <label className="flex cursor-pointer items-center gap-2 text-sm text-gray-700">
-              <Checkbox
-                checked={allFilteredSelected}
-                indeterminate={someFilteredSelected}
-                onChange={(event) =>
-                  toggleSelectAllFiltered(event.target.checked)
-                }
-              />
-              <span>
-                {t('board.bulkSelectAll')}
-                {selectedCount > 0 && (
-                  <span className="ms-1 font-medium text-primary-700">
-                    · {t('board.bulkSelectedCount', { count: selectedCount })}
-                  </span>
-                )}
-              </span>
-            </label>
-
-            <div className="flex flex-col gap-2 sm:flex-row sm:items-end">
-              {selectionMode === 'move' && (
-                <>
-                  <div className="min-w-[200px]">
-                    <SelectField
-                      label={t('board.bulkMoveToColumn')}
-                      value={bulkTargetColumnId}
-                      onChange={(value) => setBulkTargetColumnId(String(value))}
-                      options={columnMoveOptions}
-                      showSearch
-                      optionFilterProp="label"
-                      placeholder={t('board.bulkMoveToColumn')}
-                    />
-                  </div>
-                  <Button
-                    type="button"
-                    onClick={() => void handleBulkMove()}
-                    disabled={
-                      selectedCount === 0 || !bulkTargetColumnId || isBulkMoving
-                    }
-                  >
-                    {isBulkMoving ? t('board.bulkMoving') : t('board.bulkMove')}
-                  </Button>
-                </>
-              )}
-
-              {selectionMode === 'export' && (
-                <Button
-                  type="button"
-                  onClick={handleExportSelected}
-                  disabled={selectedCount === 0}
-                >
-                  {t('board.selectionExportSelected', { count: selectedCount })}
-                </Button>
-              )}
-
-              <Button
-                type="button"
-                variant="secondary"
-                onClick={exitSelectionMode}
-                disabled={isBulkMoving}
-              >
-                {t('board.selectionExitMode')}
-              </Button>
-            </div>
-          </div>
-        </div>
+        <AllTasksBulkToolbar
+          mode={selectionMode}
+          columns={columns}
+          members={members}
+          projectLabels={projectLabels}
+          selectedCount={selectedCount}
+          allFilteredSelected={allFilteredSelected}
+          someFilteredSelected={someFilteredSelected}
+          isApplying={isBulkApplying}
+          canMoveTasks={canMoveTasks}
+          canEditTasks={canEditTasks}
+          canAssignLabels={canAssignLabels}
+          onToggleSelectAll={toggleSelectAllFiltered}
+          onExit={exitSelectionMode}
+          onApplyAction={handleBulkAction}
+          onExport={handleExportSelected}
+          form={bulkForm}
+          onFormChange={handleBulkFormChange}
+        />
       )}
 
       <div className="mt-6 space-y-3">

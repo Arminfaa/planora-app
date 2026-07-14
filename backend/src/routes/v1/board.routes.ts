@@ -11,6 +11,7 @@ import {
 } from '../../controllers/board.controller';
 import {
   createBoardTask,
+  bulkBoardTaskActions,
   bulkMoveBoardTasks,
   listBoardTasks,
 } from '../../controllers/task.controller';
@@ -29,6 +30,7 @@ import {
 import {
   createBoardTaskSchema,
   bulkMoveTasksSchema,
+  bulkTaskActionSchema,
 } from '../../validators/task.validator';
 
 const router = Router({ mergeParams: true });
@@ -60,6 +62,12 @@ boardRouter.post(
   validateParams(boardIdParamSchema),
   validateBody(bulkMoveTasksSchema),
   bulkMoveBoardTasks,
+);
+boardRouter.post(
+  '/:id/tasks/bulk-actions',
+  validateParams(boardIdParamSchema),
+  validateBody(bulkTaskActionSchema),
+  bulkBoardTaskActions,
 );
 boardRouter.post(
   '/:id/tasks',

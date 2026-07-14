@@ -120,6 +120,8 @@ export const faMessages: Record<string, string> = {
   'Task created': 'کار ایجاد شد',
   'Task retrieved': 'کار دریافت شد',
   'Task updated': 'کار به‌روزرسانی شد',
+  'Tasks updated': 'کارها به‌روزرسانی شدند',
+  'Tasks moved': 'کارها جابه‌جا شدند',
   'Task deleted': 'کار حذف شد',
 
   // Search

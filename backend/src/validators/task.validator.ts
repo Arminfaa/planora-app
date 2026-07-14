@@ -60,7 +60,69 @@ export const bulkMoveTasksSchema = z.object({
   columnId: objectIdSchema,
 });
 
+const bulkTaskIdsSchema = z.array(objectIdSchema).min(1).max(500);
+
+export const bulkTaskActionSchema = z.object({
+  taskIds: bulkTaskIdsSchema,
+  action: z.discriminatedUnion('type', [
+    z.object({
+      type: z.literal('move'),
+      columnId: objectIdSchema,
+    }),
+    z.object({
+      type: z.literal('setDueDate'),
+      dueDate: z.coerce.date().nullable(),
+    }),
+    z.object({
+      type: z.literal('setStartDate'),
+      startDate: z.coerce.date().nullable(),
+    }),
+    z.object({
+      type: z.literal('setCompleteDate'),
+      completeDate: z.coerce.date().nullable(),
+    }),
+    z.object({
+      type: z.literal('setAssignees'),
+      assigneeIds: z.array(objectIdSchema),
+    }),
+    z.object({
+      type: z.literal('setPriority'),
+      priority: z.nativeEnum(TaskPriority),
+    }),
+    z.object({
+      type: z.literal('setCompleted'),
+      isCompleted: z.boolean(),
+    }),
+    z.object({
+      type: z.literal('setProgress'),
+      progress: z.coerce.number().int().min(0).max(100),
+    }),
+    z.object({
+      type: z.literal('addLabels'),
+      labelIds: z.array(objectIdSchema).min(1),
+    }),
+    z.object({
+      type: z.literal('removeLabels'),
+      labelIds: z.array(objectIdSchema).min(1),
+    }),
+    z.object({
+      type: z.literal('setLabels'),
+      labelIds: z.array(objectIdSchema),
+    }),
+    z.object({
+      type: z.literal('addChecklistItem'),
+      title: z
+        .string()
+        .min(1, 'Title is required')
+        .max(200)
+        .transform(sanitizeString),
+      weight: z.coerce.number().int().min(1).max(10).optional(),
+    }),
+  ]),
+});
+
 export type CreateTaskInput = z.infer<typeof createTaskSchema>;
 export type CreateBoardTaskInput = z.infer<typeof createBoardTaskSchema>;
 export type UpdateTaskInput = z.infer<typeof updateTaskSchema>;
 export type BulkMoveTasksInput = z.infer<typeof bulkMoveTasksSchema>;
+export type BulkTaskActionInput = z.infer<typeof bulkTaskActionSchema>;
