@@ -122,7 +122,11 @@ export function ProjectSettingsView() {
       )}
 
       {canEditProject ? (
-        <WorkingCalendarPanel projectId={project.id} canEdit />
+        <WorkingCalendarPanel
+          projectId={project.id}
+          canEdit
+          projectCreatedAt={project.createdAt}
+        />
       ) : null}
 
       {canDeleteProject && (

@@ -45,13 +45,68 @@ export function shiftApiDate(apiDate: string, days: number): string {
   return toApiDate(value.add(days, 'day'));
 }
 
-export function defaultApiDateRange(daysBack = 29): {
+/** Convert ISO/datetime or API date to Gregorian YYYY-MM-DD for comparisons. */
+export function toApiDateOnly(value: string | Date | null | undefined): string {
+  if (!value) return '';
+  if (typeof value === 'string' && /^\d{4}-\d{2}-\d{2}/.test(value.trim())) {
+    return value.trim().slice(0, 10);
+  }
+  return toApiDate(value instanceof Date ? value : new Date(value));
+}
+
+export function maxApiDate(a: string, b: string): string {
+  if (!a) return b;
+  if (!b) return a;
+  return a >= b ? a : b;
+}
+
+export function minApiDate(a: string, b: string): string {
+  if (!a) return b;
+  if (!b) return a;
+  return a <= b ? a : b;
+}
+
+export function clampApiDateRange(
+  range: { from: string; to: string },
+  options?: { minDate?: string | null; maxDate?: string | null },
+): { from: string; to: string } {
+  const minDate = options?.minDate ? toApiDateOnly(options.minDate) : '';
+  const maxDate = options?.maxDate ? toApiDateOnly(options.maxDate) : '';
+
+  let from = range.from;
+  let to = range.to;
+
+  if (minDate) {
+    if (from && from < minDate) from = minDate;
+    if (to && to < minDate) to = minDate;
+  }
+  if (maxDate) {
+    if (from && from > maxDate) from = maxDate;
+    if (to && to > maxDate) to = maxDate;
+  }
+  if (from && to && from > to) {
+    from = to;
+  }
+
+  return { from, to };
+}
+
+export function defaultApiDateRange(
+  daysBack = 29,
+  options?: { minDate?: string | null; maxDate?: string | null },
+): {
   from: string;
   to: string;
 } {
-  const to = todayApiDate();
+  const maxDate = options?.maxDate
+    ? toApiDateOnly(options.maxDate)
+    : todayApiDate();
+  const to = maxDate || todayApiDate();
   const from = shiftApiDate(to, -daysBack);
-  return { from, to };
+  return clampApiDateRange(
+    { from, to },
+    { minDate: options?.minDate, maxDate: to },
+  );
 }
 
 function parseApiDateParts(

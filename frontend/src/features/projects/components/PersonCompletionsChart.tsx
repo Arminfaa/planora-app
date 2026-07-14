@@ -18,7 +18,13 @@ import { usePersonCompletions } from '../hooks/usePersonCompletions';
 import { useProjectProgress } from '../hooks/useProjectProgress';
 import type { NonWorkingReason, PersonCompletionDay } from '../types';
 import { useLocale } from '@/i18n/LocaleProvider';
-import { defaultApiDateRange, formatLocaleDate } from '@/lib/jalali-dates';
+import {
+  clampApiDateRange,
+  defaultApiDateRange,
+  formatLocaleDate,
+  toApiDateOnly,
+  todayApiDate,
+} from '@/lib/jalali-dates';
 import { getApiErrorMessage } from '@/lib/api';
 import { DateRangeInput } from '@/shared/components/ui/DateRangeInput';
 import { LoadingSpinner } from '@/shared/components/feedback/LoadingSpinner';
@@ -74,20 +80,35 @@ function computeTotals(days: ChartDay[]) {
 
 interface PersonCompletionsChartProps {
   projectId: string;
+  projectCreatedAt?: string | null;
 }
 
 export function PersonCompletionsChart({
   projectId,
+  projectCreatedAt,
 }: PersonCompletionsChartProps) {
   const { t, locale } = useLocale();
   const { user } = useAuth();
   const members = useProjectMembers(projectId);
   const { stats: progressStats } = useProjectProgress(projectId, true);
+  const projectMinDate = toApiDateOnly(projectCreatedAt);
   const [userId, setUserId] = useState('');
-  const [range, setRange] = useState(() => defaultApiDateRange(29));
+  const [range, setRange] = useState(() =>
+    defaultApiDateRange(29, { minDate: projectCreatedAt }),
+  );
   const [holidayDates, setHolidayDates] = useState<string[]>([]);
   const [leaveDates, setLeaveDates] = useState<string[]>([]);
   const [syncedForKey, setSyncedForKey] = useState('');
+
+  useEffect(() => {
+    if (!projectMinDate) return;
+    setRange((prev) =>
+      clampApiDateRange(prev, {
+        minDate: projectMinDate,
+        maxDate: todayApiDate(),
+      }),
+    );
+  }, [projectMinDate]);
 
   const memberOptions = useMemo(() => {
     const byId = new Map<string, string>();
@@ -225,10 +246,20 @@ export function PersonCompletionsChart({
           label={t('projects.personCompletionsRange')}
           valueFrom={range.from}
           valueTo={range.to}
+          minDate={projectMinDate || null}
+          maxDate={todayApiDate()}
           onChange={({ from, to }) => {
             if (from && to) {
               setSyncedForKey('');
-              setRange({ from, to });
+              setRange(
+                clampApiDateRange(
+                  { from, to },
+                  {
+                    minDate: projectMinDate || null,
+                    maxDate: todayApiDate(),
+                  },
+                ),
+              );
             }
           }}
         />

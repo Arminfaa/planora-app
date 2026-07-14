@@ -14,6 +14,7 @@ import {
   type BuiltInHoliday,
 } from '../utils/built-in-holidays';
 import { projectMemberRepository } from '../repositories/project-member.repository';
+import { projectRepository } from '../repositories/project.repository';
 import { workingCalendarRepository } from '../repositories/working-calendar.repository';
 import { projectMemberService } from './project-member.service';
 import { permissionService } from './permission.service';
@@ -171,6 +172,7 @@ export class WorkingCalendarService {
     await permissionService.ensurePermission(userId, projectId, 'project.edit');
 
     const date = parseApiDate(input.date);
+    await this.ensureNotBeforeProjectCreated(projectId, input.date);
 
     try {
       const holiday = await workingCalendarRepository.createHoliday(
@@ -228,6 +230,8 @@ export class WorkingCalendarService {
 
     const startDate = parseApiDate(input.startDate);
     const endDate = parseApiDate(input.endDate);
+    await this.ensureNotBeforeProjectCreated(projectId, input.startDate);
+    await this.ensureNotBeforeProjectCreated(projectId, input.endDate);
 
     const leave = await workingCalendarRepository.createLeave({
       projectId,
@@ -254,6 +258,26 @@ export class WorkingCalendarService {
     await workingCalendarRepository.deleteLeave(leaveId);
   }
 
+  private async ensureNotBeforeProjectCreated(
+    projectId: string,
+    apiDate: string,
+  ): Promise<string> {
+    const project = await projectRepository.findById(projectId);
+    if (!project) {
+      throw new ApiError(404, 'Project not found');
+    }
+
+    const createdDay = formatTehranApiDate(project.createdAt);
+    if (apiDate < createdDay) {
+      throw new ApiError(
+        400,
+        'Date cannot be earlier than the project creation date',
+      );
+    }
+
+    return createdDay;
+  }
+
   async getCompletions(
     actorId: string,
     projectIdOrSlug: string,
@@ -268,6 +292,9 @@ export class WorkingCalendarService {
     if (to.getTime() < from.getTime()) {
       throw new ApiError(400, 'to must be on or after from');
     }
+
+    await this.ensureNotBeforeProjectCreated(projectId, query.from);
+    await this.ensureNotBeforeProjectCreated(projectId, query.to);
 
     const span = dayCountInclusive(from, to);
     if (span > 366) {

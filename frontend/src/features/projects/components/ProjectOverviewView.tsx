@@ -202,7 +202,10 @@ export function ProjectOverviewView() {
 
           {canViewBoards ? (
             <div className="mt-6">
-              <PersonCompletionsChart projectId={project.id} />
+              <PersonCompletionsChart
+                projectId={project.id}
+                projectCreatedAt={project.createdAt}
+              />
             </div>
           ) : null}
 

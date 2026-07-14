@@ -5,7 +5,7 @@ import { useMemo, useState } from 'react';
 import { useProjectMembers } from '../hooks/useProjectMembers';
 import { useWorkingCalendar } from '../hooks/useWorkingCalendar';
 import { useLocale } from '@/i18n/LocaleProvider';
-import { formatLocaleDate } from '@/lib/jalali-dates';
+import { formatLocaleDate, toApiDateOnly } from '@/lib/jalali-dates';
 import { getApiErrorMessage } from '@/lib/api';
 import { DateInput } from '@/shared/components/ui/DateInput';
 import { DateRangeInput } from '@/shared/components/ui/DateRangeInput';
@@ -25,14 +25,17 @@ const WEEKDAY_KEYS = [
 interface WorkingCalendarPanelProps {
   projectId: string;
   canEdit: boolean;
+  projectCreatedAt?: string | null;
 }
 
 export function WorkingCalendarPanel({
   projectId,
   canEdit,
+  projectCreatedAt,
 }: WorkingCalendarPanelProps) {
   const { t, locale } = useLocale();
   const members = useProjectMembers(projectId);
+  const projectMinDate = toApiDateOnly(projectCreatedAt);
   const {
     calendar,
     isLoading,
@@ -174,6 +177,7 @@ export function WorkingCalendarPanel({
                 label={t('projects.workingCalendarHolidayDate')}
                 value={holidayDate}
                 onChange={setHolidayDate}
+                minDate={projectMinDate || null}
               />
               <div className="space-y-1">
                 <label className="block text-sm font-medium text-gray-700">
@@ -285,6 +289,7 @@ export function WorkingCalendarPanel({
                 valueFrom={leaveRange.from}
                 valueTo={leaveRange.to}
                 onChange={setLeaveRange}
+                minDate={projectMinDate || null}
               />
               <div className="space-y-1 lg:col-span-2">
                 <label className="block text-sm font-medium text-gray-700">
