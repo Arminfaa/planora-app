@@ -36,18 +36,29 @@ export function BoardFilterModal({
       }
       onClose={onClose}
       width={512}
+      className="board-filter-modal"
+      modalProps={{
+        styles: {
+          body: {
+            overflowX: 'hidden',
+            maxWidth: '100%',
+          },
+        },
+      }}
       footer={
         <Button type="primary" onClick={onClose}>
           {t('common.done')}
         </Button>
       }
     >
-      <BoardFilterForm
-        columns={columns}
-        filters={filters}
-        onChange={onChange}
-        variant="modal"
-      />
+      <div className="w-full min-w-0 max-w-full">
+        <BoardFilterForm
+          columns={columns}
+          filters={filters}
+          onChange={onChange}
+          variant="modal"
+        />
+      </div>
     </AppModal>
   );
 }

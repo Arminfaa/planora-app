@@ -88,26 +88,21 @@ export function AllTasksPageHeader({
   const isSelecting = selectionMode !== null;
   const isBoardScope = scope === 'board';
 
-  const backHref = isBoardScope
-    ? `/dashboard/projects/${projectSlug}/boards/${boardSlug}`
-    : `/dashboard/projects/${projectSlug}`;
-  const backLabel = isBoardScope
-    ? t('board.backToBoard')
-    : t('board.backToProject');
-
   const title = isBoardScope
     ? t('board.allTasksNamed', { name: boardName ?? '' })
     : t('board.allTasks');
 
   return (
     <header className="space-y-5">
-      <Link
-        href={backHref}
-        className="inline-flex items-center gap-1.5 text-sm font-medium text-gray-500 transition hover:text-gray-900"
-      >
-        <BackChevronIcon />
-        {backLabel}
-      </Link>
+      {isBoardScope && boardSlug ? (
+        <Link
+          href={`/dashboard/projects/${projectSlug}/boards/${boardSlug}`}
+          className="inline-flex items-center gap-1.5 text-sm font-medium text-gray-500 transition hover:text-gray-900"
+        >
+          <BackChevronIcon />
+          {t('board.backToBoard')}
+        </Link>
+      ) : null}
 
       <div className="flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
         <div className="min-w-0">

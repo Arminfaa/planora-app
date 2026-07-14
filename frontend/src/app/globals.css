@@ -8,6 +8,10 @@
     --foreground: 222.2 84% 4.9%;
   }
 
+  html {
+    scrollbar-gutter: stable;
+  }
+
   body {
     @apply bg-white text-gray-900 antialiased;
   }
@@ -224,6 +228,20 @@
   padding: 10px 24px !important;
   max-height: calc(100dvh - 200px);
   overflow-y: auto;
+}
+
+.board-filter-modal .ant-modal-body {
+  overflow-x: hidden;
+}
+
+.board-filter-modal .ant-select,
+.board-filter-modal .ant-picker {
+  max-width: 100%;
+}
+
+.board-filter-modal .ant-select-selection-item {
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 .ant-modal-footer {
   border-top: 1px solid #f0f0f0 !important;

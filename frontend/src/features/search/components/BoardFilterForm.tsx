@@ -132,6 +132,8 @@ export function BoardFilterForm({
               })
             }
             options={columnOptions}
+            popupMatchSelectWidth
+            className="min-w-0 max-w-full"
           />
         </div>
 
@@ -145,6 +147,8 @@ export function BoardFilterForm({
             })
           }
           options={assigneeOptions}
+          popupMatchSelectWidth
+          className="min-w-0 max-w-full"
         />
 
         <SelectField

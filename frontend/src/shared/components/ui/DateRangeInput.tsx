@@ -52,7 +52,8 @@ export function DateRangeInput({
           onChange?.({ from, to });
         }}
         format={format}
-        className={cn('w-full', className)}
+        className={cn('w-full min-w-0 max-w-full', className)}
+        style={{ width: '100%', maxWidth: '100%' }}
         disabled={disabled}
         allowEmpty={[true, true]}
         placeholder={
