@@ -9,15 +9,16 @@ import './globals.css';
 
 const inter = Inter({ subsets: ['latin'] });
 
-const appName = process.env.NEXT_PUBLIC_APP_NAME ?? 'Planora';
+const BRAND_NAME = 'Planora';
 
 export const metadata: Metadata = {
+  applicationName: BRAND_NAME,
   title: {
-    default: appName,
-    template: '%s | Planora',
+    default: BRAND_NAME,
+    template: `%s | ${BRAND_NAME}`,
   },
   description:
-    'Manage projects, tasks, and teams with Kanban boards and real-time collaboration.',
+    'Planora — manage projects, tasks, and teams with Kanban boards and real-time collaboration.',
   keywords: [
     'Planora',
     'project management',
@@ -29,7 +30,11 @@ export const metadata: Metadata = {
   appleWebApp: {
     capable: true,
     statusBarStyle: 'default',
-    title: appName,
+    title: BRAND_NAME,
+  },
+  openGraph: {
+    siteName: BRAND_NAME,
+    title: BRAND_NAME,
   },
   icons: {
     apple: '/logo.webp',
