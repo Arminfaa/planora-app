@@ -9,17 +9,22 @@ import './globals.css';
 
 const inter = Inter({ subsets: ['latin'] });
 
-const appName =
-  process.env.NEXT_PUBLIC_APP_NAME ?? 'Project Management Platform';
+const appName = process.env.NEXT_PUBLIC_APP_NAME ?? 'Planora';
 
 export const metadata: Metadata = {
   title: {
     default: appName,
-    template: '%s | Project Management',
+    template: '%s | Planora',
   },
   description:
     'Manage projects, tasks, and teams with Kanban boards and real-time collaboration.',
-  keywords: ['project management', 'kanban', 'tasks', 'collaboration'],
+  keywords: [
+    'Planora',
+    'project management',
+    'kanban',
+    'tasks',
+    'collaboration',
+  ],
   manifest: '/manifest.json',
   appleWebApp: {
     capable: true,

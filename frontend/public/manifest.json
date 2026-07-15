@@ -1,6 +1,6 @@
 {
-  "name": "Project Management Platform",
-  "short_name": "Projects",
+  "name": "Planora",
+  "short_name": "Planora",
   "description": "Manage projects, tasks, and teams with Kanban boards and real-time collaboration.",
   "start_url": "/dashboard",
   "scope": "/",

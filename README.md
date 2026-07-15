@@ -1,6 +1,6 @@
-# Project Management Platform
+# Planora
 
-A production-oriented, full-stack project management platform with Kanban boards, real-time collaboration, team workflows, and fine-grained access control. Built as a monorepo with a layered Express API and a feature-based Next.js frontend.
+Planora is a production-oriented, full-stack project management platform with Kanban boards, real-time collaboration, team workflows, and fine-grained access control. Built as a monorepo with a layered Express API and a feature-based Next.js frontend.
 
 ---
 
@@ -181,7 +181,7 @@ cp frontend/.env.example frontend/.env.local
 | ---------------------- | ------------------------------------------------------------------ |
 | `NEXT_PUBLIC_API_URL`  | Browser API base (default: `/api/v1` via Next.js rewrite)          |
 | `BACKEND_API_URL`      | Server-side proxy target (default: `http://localhost:5000/api/v1`) |
-| `NEXT_PUBLIC_APP_NAME` | Display name in the UI                                             |
+| `NEXT_PUBLIC_APP_NAME` | Display name in the UI (e.g. `Planora`)                            |
 
 ### 3. Initialize the database
 

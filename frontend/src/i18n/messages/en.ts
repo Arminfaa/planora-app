@@ -1,6 +1,6 @@
 export const enMessages = {
   common: {
-    appName: 'Project Management',
+    appName: 'Planora',
     home: 'Home',
     dashboard: 'Dashboard',
     save: 'Save',
@@ -151,7 +151,7 @@ export const enMessages = {
     },
     redirectNotification:
       'Sign in to view your notification and continue where you left off.',
-    appBrand: 'ProjectHub',
+    appBrand: 'Planora',
     acceptInvitePage: {
       tokenMissing: 'Invite token is missing.',
       notFound: 'Invite not found',

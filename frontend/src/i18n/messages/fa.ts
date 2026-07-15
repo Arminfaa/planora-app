@@ -2,7 +2,7 @@ import type { MessageTree } from './en';
 
 export const faMessages = {
   common: {
-    appName: 'مدیریت پروژه',
+    appName: 'Planora',
     home: 'خانه',
     dashboard: 'داشبورد',
     save: 'ذخیره',
@@ -154,7 +154,7 @@ export const faMessages = {
     },
     redirectNotification:
       'برای مشاهده اعلان و ادامه از همان‌جا که رها کردید وارد شوید.',
-    appBrand: 'ProjectHub',
+    appBrand: 'Planora',
     acceptInvitePage: {
       tokenMissing: 'توکن دعوت موجود نیست.',
       notFound: 'دعوت یافت نشد',

@@ -1,8 +1,7 @@
 import Image from 'next/image';
 import { cn } from '@/lib/utils';
 
-export const APP_NAME =
-  process.env.NEXT_PUBLIC_APP_NAME ?? 'Project Management';
+export const APP_NAME = process.env.NEXT_PUBLIC_APP_NAME ?? 'Planora';
 
 const LOGO_SIZES = {
   xs: 28,
