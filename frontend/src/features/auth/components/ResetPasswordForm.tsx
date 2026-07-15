@@ -3,7 +3,8 @@
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import Link from 'next/link';
-import { useMemo, useState } from 'react';
+import { useRouter } from 'next/navigation';
+import { useEffect, useMemo, useState } from 'react';
 import {
   createResetPasswordSchema,
   type ResetPasswordFormData,
@@ -20,8 +21,9 @@ interface ResetPasswordFormProps {
 
 export function ResetPasswordForm({ token }: ResetPasswordFormProps) {
   const { t } = useLocale();
+  const router = useRouter();
   const [error, setError] = useState('');
-  const [done, setDone] = useState(false);
+  const [doneEmail, setDoneEmail] = useState<string | null>(null);
   const schema = useMemo(() => createResetPasswordSchema(t), [t]);
 
   const {
@@ -32,27 +34,36 @@ export function ResetPasswordForm({ token }: ResetPasswordFormProps) {
     resolver: zodResolver(schema),
   });
 
+  useEffect(() => {
+    if (!doneEmail) return;
+    const timer = window.setTimeout(() => {
+      router.replace('/login');
+    }, 3500);
+    return () => window.clearTimeout(timer);
+  }, [doneEmail, router]);
+
   const onSubmit = async (data: ResetPasswordFormData) => {
     setError('');
     try {
-      await authService.resetPassword(
+      const result = await authService.resetPassword(
         token,
         data.newPassword,
         data.confirmPassword,
       );
-      setDone(true);
+      setDoneEmail(result.email);
     } catch (err) {
       setError(getApiErrorMessage(err));
     }
   };
 
-  if (done) {
+  if (doneEmail) {
     return (
       <div className="space-y-5">
         <div className="rounded-lg bg-emerald-50 px-4 py-3 text-sm text-emerald-800">
-          {t('auth.resetPasswordSuccess')}
+          {t('auth.resetPasswordSuccessForEmail', { email: doneEmail })}
         </div>
         <p className="text-center text-sm text-gray-500">
+          {t('auth.resetPasswordRedirecting')}{' '}
           <Link
             href="/login"
             className="font-medium text-gray-900 underline underline-offset-2 hover:text-primary-600"

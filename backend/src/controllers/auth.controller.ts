@@ -119,8 +119,10 @@ export const forgotPassword = asyncHandler(
 
 export const resetPassword = asyncHandler(
   async (req: AuthenticatedRequest, res: Response) => {
-    await authService.resetPassword(req.body as ResetPasswordInput);
-    ApiResponse.success(res, null, 'Password has been reset');
+    const result = await authService.resetPassword(
+      req.body as ResetPasswordInput,
+    );
+    ApiResponse.success(res, result, 'Password has been reset');
   },
 );
 

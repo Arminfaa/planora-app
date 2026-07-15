@@ -50,7 +50,9 @@ function isAuthRoute(url: string): boolean {
     url.includes('/auth/login') ||
     url.includes('/auth/register') ||
     url.includes('/auth/refresh') ||
-    url.includes('/auth/logout')
+    url.includes('/auth/logout') ||
+    url.includes('/auth/forgot-password') ||
+    url.includes('/auth/reset-password')
   );
 }
 

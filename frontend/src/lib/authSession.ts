@@ -3,7 +3,14 @@ import type { AxiosInstance } from 'axios';
 /** Refresh access token ~1 min before the default 15m access TTL. */
 const SESSION_REFRESH_INTERVAL_MS = 14 * 60 * 1000;
 
-const PUBLIC_PATH_PREFIXES = ['/', '/login', '/register', '/accept-invite'];
+const PUBLIC_PATH_PREFIXES = [
+  '/',
+  '/login',
+  '/register',
+  '/accept-invite',
+  '/forgot-password',
+  '/reset-password',
+];
 
 let apiRef: AxiosInstance | null = null;
 let refreshPromise: Promise<void> | null = null;
@@ -31,7 +38,9 @@ export function getSafeRedirectPath(
   if (
     pathname === '/login' ||
     pathname === '/register' ||
-    pathname.startsWith('/accept-invite')
+    pathname.startsWith('/accept-invite') ||
+    pathname.startsWith('/forgot-password') ||
+    pathname.startsWith('/reset-password')
   ) {
     return null;
   }

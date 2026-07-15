@@ -257,7 +257,7 @@ export class AuthService {
     }
   }
 
-  async resetPassword(input: ResetPasswordInput): Promise<void> {
+  async resetPassword(input: ResetPasswordInput): Promise<{ email: string }> {
     const stored = await passwordResetTokenRepository.findValidByHash(
       hashPasswordResetToken(input.token),
     );
@@ -276,6 +276,8 @@ export class AuthService {
     await passwordResetTokenRepository.markUsed(stored.id);
     await passwordResetTokenRepository.invalidateActiveForUser(user.id);
     await refreshTokenRepository.revokeAllForUser(user.id);
+
+    return { email: user.email };
   }
 
   async uploadAvatar(userId: string, file: Express.Multer.File) {

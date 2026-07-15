@@ -64,12 +64,16 @@ export const authService = {
     token: string,
     newPassword: string,
     confirmPassword: string,
-  ): Promise<void> {
-    await api.post('/auth/reset-password', {
-      token,
-      newPassword,
-      confirmPassword,
-    });
+  ): Promise<{ email: string }> {
+    const { data } = await api.post<ApiSuccessResponse<{ email: string }>>(
+      '/auth/reset-password',
+      {
+        token,
+        newPassword,
+        confirmPassword,
+      },
+    );
+    return data.data;
   },
 
   async uploadAvatar(file: File): Promise<User> {

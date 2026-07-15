@@ -142,6 +142,9 @@ export const faMessages = {
     resetPasswordSubmit: 'بازنشانی رمز عبور',
     resetPasswordSuccess:
       'رمز عبور با موفقیت بازنشانی شد. می‌توانید با رمز جدید وارد شوید.',
+    resetPasswordSuccessForEmail:
+      'رمز عبور ایمیل {email} با موفقیت تغییر کرد. می‌توانید با رمز جدید وارد شوید.',
+    resetPasswordRedirecting: 'در حال انتقال به صفحه ورود…',
     resetPasswordMissingToken:
       'این لینک بازنشانی ناقص است. دوباره درخواست بازنشانی رمز بدهید.',
     noAccount: 'حساب کاربری ندارید؟',

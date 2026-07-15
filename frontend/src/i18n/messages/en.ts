@@ -139,6 +139,9 @@ export const enMessages = {
     resetPasswordSubmit: 'Reset password',
     resetPasswordSuccess:
       'Your password has been reset. You can sign in with the new password.',
+    resetPasswordSuccessForEmail:
+      'Password for {email} was changed successfully. You can sign in with the new password.',
+    resetPasswordRedirecting: 'Redirecting to sign in…',
     resetPasswordMissingToken:
       'This reset link is incomplete. Request a new password reset email.',
     noAccount: "Don't have an account?",
