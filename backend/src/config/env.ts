@@ -3,6 +3,18 @@ import { z } from 'zod';
 
 dotenv.config();
 
+/** Strip accidental wrapping quotes from Render/hosting paste. */
+const trimEnv = (value: string) => value.trim().replace(/^['"]|['"]$/g, '');
+
+const optionalTrimmed = z
+  .string()
+  .optional()
+  .transform((value) => {
+    if (value == null) return undefined;
+    const trimmed = trimEnv(value);
+    return trimmed || undefined;
+  });
+
 const envSchema = z.object({
   NODE_ENV: z
     .enum(['development', 'production', 'test'])
@@ -20,16 +32,19 @@ const envSchema = z.object({
   RATE_LIMIT_MAX: z.coerce.number().default(100),
   MAX_FILE_SIZE: z.coerce.number().default(5_242_880),
   MAX_IMAGE_SIZE: z.coerce.number().default(2_097_152),
-  CLOUDINARY_CLOUD_NAME: z.string().optional(),
-  CLOUDINARY_API_KEY: z.string().optional(),
-  CLOUDINARY_API_SECRET: z.string().optional(),
+  CLOUDINARY_CLOUD_NAME: optionalTrimmed,
+  CLOUDINARY_API_KEY: optionalTrimmed,
+  CLOUDINARY_API_SECRET: optionalTrimmed,
   API_PUBLIC_URL: z.string().default('http://localhost:5000'),
-  VAPID_PUBLIC_KEY: z.string().optional(),
-  VAPID_PRIVATE_KEY: z.string().optional(),
+  VAPID_PUBLIC_KEY: optionalTrimmed,
+  VAPID_PRIVATE_KEY: optionalTrimmed,
   VAPID_SUBJECT: z.string().default('mailto:admin@localhost'),
   APP_PUBLIC_URL: z.string().default('http://localhost:3000'),
-  RESEND_API_KEY: z.string().optional(),
-  RESEND_FROM_EMAIL: z.string().default('Planora <onboarding@resend.dev>'),
+  RESEND_API_KEY: optionalTrimmed,
+  RESEND_FROM_EMAIL: z
+    .string()
+    .default('Planora <onboarding@resend.dev>')
+    .transform(trimEnv),
 });
 
 export const env = envSchema.parse(process.env);

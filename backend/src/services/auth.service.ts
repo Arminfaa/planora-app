@@ -232,10 +232,27 @@ export class AuthService {
         resetUrl,
       });
     } catch (error) {
+      const detail = error instanceof Error ? error.message : String(error);
       logger.error('Failed to send password reset email', {
         userId: user.id,
-        error: error instanceof Error ? error.message : error,
+        error: detail,
+        from: env.RESEND_FROM_EMAIL,
       });
+
+      // Surface actionable Resend config issues (pending domain, bad from, etc.)
+      const lower = detail.toLowerCase();
+      if (
+        lower.includes('not verified') ||
+        lower.includes('domain') ||
+        lower.includes('invalid `from`') ||
+        lower.includes('invalid from')
+      ) {
+        throw new ApiError(
+          502,
+          'Email domain is not verified yet. Verify the domain in Resend, then try again.',
+        );
+      }
+
       throw new ApiError(502, 'Failed to send password reset email');
     }
   }

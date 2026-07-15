@@ -236,6 +236,8 @@ export const faMessages: Record<string, string> = {
   'Reset token is required': 'توکن بازنشانی الزامی است',
   'Email service is not configured': 'سرویس ایمیل پیکربندی نشده است',
   'Failed to send password reset email': 'ارسال ایمیل بازنشانی رمز ناموفق بود',
+  'Email domain is not verified yet. Verify the domain in Resend, then try again.':
+    'دامنه ایمیل هنوز در Resend تأیید نشده است. بعد از Verify دوباره تلاش کنید.',
   'User not found': 'کاربر یافت نشد',
   'Current password is incorrect': 'رمز عبور فعلی نادرست است',
 
