@@ -1,5 +1,6 @@
 import type { PasswordResetToken } from '@prisma/client';
 import { BaseRepository } from './base.repository';
+import { mongoNullOrUnset } from '../utils/mongo-null';
 
 export class PasswordResetTokenRepository extends BaseRepository {
   async create(data: {
@@ -7,15 +8,20 @@ export class PasswordResetTokenRepository extends BaseRepository {
     tokenHash: string;
     expiresAt: Date;
   }): Promise<PasswordResetToken> {
-    return this.db.passwordResetToken.create({ data });
+    return this.db.passwordResetToken.create({
+      data: {
+        ...data,
+        usedAt: null,
+      },
+    });
   }
 
   async invalidateActiveForUser(userId: string): Promise<void> {
     await this.db.passwordResetToken.updateMany({
       where: {
         userId,
-        usedAt: null,
         expiresAt: { gt: new Date() },
+        ...mongoNullOrUnset('usedAt'),
       },
       data: { usedAt: new Date() },
     });
@@ -25,8 +31,8 @@ export class PasswordResetTokenRepository extends BaseRepository {
     return this.db.passwordResetToken.findFirst({
       where: {
         tokenHash,
-        usedAt: null,
         expiresAt: { gt: new Date() },
+        ...mongoNullOrUnset('usedAt'),
       },
     });
   }

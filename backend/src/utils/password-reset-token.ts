@@ -23,5 +23,12 @@ export function normalizePasswordResetToken(token: string): string {
     }
   }
 
-  return value.trim();
+  // Soft line-breaks / zero-width chars from email clients.
+  value = value.replace(/[\s\u200B-\u200D\uFEFF]/g, '');
+
+  if (/^[a-fA-F0-9]+$/.test(value)) {
+    return value.toLowerCase();
+  }
+
+  return value;
 }
