@@ -1,7 +1,9 @@
 import Image from 'next/image';
 import { cn } from '@/lib/utils';
 
-export const APP_NAME = 'Planora';
+import { BRAND_NAME } from '@/lib/page-metadata';
+
+export const APP_NAME = BRAND_NAME;
 
 const LOGO_SIZES = {
   xs: 28,

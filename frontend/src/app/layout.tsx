@@ -4,18 +4,17 @@ import { AntdRegistry } from '@ant-design/nextjs-registry';
 import '@fontsource/vazir/400.css';
 import '@fontsource/vazir/500.css';
 import '@fontsource/vazir/700.css';
+import { BRAND_NAME } from '@/lib/page-metadata';
 import { Providers } from './providers';
 import './globals.css';
 
 const inter = Inter({ subsets: ['latin'] });
 
-const BRAND_NAME = 'Planora';
-
 export const metadata: Metadata = {
   applicationName: BRAND_NAME,
   title: {
     default: BRAND_NAME,
-    template: `%s | ${BRAND_NAME}`,
+    template: `${BRAND_NAME} | %s`,
   },
   description:
     'Planora — manage projects, tasks, and teams with Kanban boards and real-time collaboration.',
