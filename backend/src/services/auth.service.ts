@@ -12,13 +12,22 @@ import {
 import { isImageMimeType } from './storage/storage.config';
 import type {
   ChangePasswordInput,
+  ForgotPasswordInput,
   LoginInput,
   RegisterInput,
+  ResetPasswordInput,
   UpdateProfileInput,
 } from '../validators/auth.validator';
 import { env } from '../config';
 import { parseDurationToMs } from '../utils/duration';
 import { generateRefreshToken, hashRefreshToken } from '../utils/refresh-token';
+import {
+  generatePasswordResetToken,
+  hashPasswordResetToken,
+} from '../utils/password-reset-token';
+import { passwordResetTokenRepository } from '../repositories/password-reset-token.repository';
+import { emailService, PASSWORD_RESET_TTL_MS } from './email.service';
+import { logger } from '../utils/logger';
 
 const sanitizeUser = (user: {
   id: string;
@@ -185,6 +194,71 @@ export class AuthService {
 
     const hashedPassword = await hashPassword(input.newPassword);
     await userRepository.update(userId, { password: hashedPassword });
+    await refreshTokenRepository.revokeAllForUser(userId);
+  }
+
+  /**
+   * Always returns a generic success payload so callers cannot probe
+   * whether an email is registered.
+   */
+  async requestPasswordReset(input: ForgotPasswordInput): Promise<void> {
+    const user = await userRepository.findByEmail(input.email);
+    if (!user) {
+      return;
+    }
+
+    if (!emailService.isConfigured()) {
+      logger.error('Password reset requested but RESEND_API_KEY is missing');
+      throw new ApiError(503, 'Email service is not configured');
+    }
+
+    await passwordResetTokenRepository.invalidateActiveForUser(user.id);
+
+    const rawToken = generatePasswordResetToken();
+    const expiresAt = new Date(Date.now() + PASSWORD_RESET_TTL_MS);
+
+    await passwordResetTokenRepository.create({
+      userId: user.id,
+      tokenHash: hashPasswordResetToken(rawToken),
+      expiresAt,
+    });
+
+    const resetUrl = `${env.APP_PUBLIC_URL.replace(/\/$/, '')}/reset-password?token=${encodeURIComponent(rawToken)}`;
+
+    try {
+      await emailService.sendPasswordResetEmail({
+        to: user.email,
+        name: user.name,
+        resetUrl,
+      });
+    } catch (error) {
+      logger.error('Failed to send password reset email', {
+        userId: user.id,
+        error: error instanceof Error ? error.message : error,
+      });
+      throw new ApiError(502, 'Failed to send password reset email');
+    }
+  }
+
+  async resetPassword(input: ResetPasswordInput): Promise<void> {
+    const stored = await passwordResetTokenRepository.findValidByHash(
+      hashPasswordResetToken(input.token),
+    );
+
+    if (!stored) {
+      throw new ApiError(400, 'Invalid or expired reset token');
+    }
+
+    const user = await userRepository.findById(stored.userId);
+    if (!user) {
+      throw new ApiError(400, 'Invalid or expired reset token');
+    }
+
+    const hashedPassword = await hashPassword(input.newPassword);
+    await userRepository.update(user.id, { password: hashedPassword });
+    await passwordResetTokenRepository.markUsed(stored.id);
+    await passwordResetTokenRepository.invalidateActiveForUser(user.id);
+    await refreshTokenRepository.revokeAllForUser(user.id);
   }
 
   async uploadAvatar(userId: string, file: Express.Multer.File) {

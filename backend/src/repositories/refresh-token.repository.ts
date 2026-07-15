@@ -33,6 +33,13 @@ export class RefreshTokenRepository extends BaseRepository {
       data: { revokedAt: new Date() },
     });
   }
+
+  async revokeAllForUser(userId: string): Promise<void> {
+    await this.db.refreshToken.updateMany({
+      where: { userId, revokedAt: null },
+      data: { revokedAt: new Date() },
+    });
+  }
 }
 
 export const refreshTokenRepository = new RefreshTokenRepository();

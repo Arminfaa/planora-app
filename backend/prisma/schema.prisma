@@ -64,10 +64,11 @@ model User {
   createdLeaves        MemberLeave[] @relation("LeaveCreator")
   comments            Comment[]
   projectGroupMessages ProjectGroupMessage[]
-  refreshTokens        RefreshToken[]
-  notifications        Notification[]
-  notificationActors   Notification[]        @relation("NotificationActor")
-  pushSubscriptions    PushSubscription[]
+  refreshTokens          RefreshToken[]
+  passwordResetTokens    PasswordResetToken[]
+  notifications          Notification[]
+  notificationActors     Notification[]        @relation("NotificationActor")
+  pushSubscriptions      PushSubscription[]
   notificationPreference NotificationPreference?
 
   @@map("users")
@@ -85,6 +86,20 @@ model RefreshToken {
 
   @@index([userId])
   @@map("refresh_tokens")
+}
+
+model PasswordResetToken {
+  id        String    @id @default(auto()) @map("_id") @db.ObjectId
+  userId    String    @db.ObjectId
+  tokenHash String    @unique
+  expiresAt DateTime
+  createdAt DateTime  @default(now())
+  usedAt    DateTime?
+
+  user User @relation(fields: [userId], references: [id])
+
+  @@index([userId])
+  @@map("password_reset_tokens")
 }
 
 // ─── Project ─────────────────────────────────────────────

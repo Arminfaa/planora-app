@@ -11,7 +11,9 @@ function GuestGuardContent({ children }: { children: React.ReactNode }) {
   const router = useRouter();
   const pathname = usePathname();
   const searchParams = useSearchParams();
-  const allowsAuthenticated = pathname?.startsWith('/accept-invite');
+  const allowsAuthenticated =
+    pathname?.startsWith('/accept-invite') ||
+    pathname?.startsWith('/reset-password');
 
   useEffect(() => {
     if (!isLoading && isAuthenticated && !allowsAuthenticated) {

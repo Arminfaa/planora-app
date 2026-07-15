@@ -12,7 +12,7 @@ Planora is a production-oriented, full-stack project management platform with Ka
 - **Rich task management** — priorities, due dates, assignees, labels, checklists, comments, and attachments
 - **Advanced search & filters** — global search with priority, assignee, due-date, project, and board scoping
 - **Custom RBAC** — default Owner / Admin / Member roles plus per-project custom roles with 37 granular permissions
-- **Secure auth** — JWT in HttpOnly cookies, refresh-token rotation, bcrypt hashing, and rate limiting
+- **Secure auth** — JWT in HttpOnly cookies, refresh-token rotation, bcrypt hashing, rate limiting, and password reset via Resend
 - **Cloud-ready storage** — local uploads in development, Cloudinary integration for production
 
 ---

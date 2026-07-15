@@ -218,6 +218,9 @@ export const faMessages: Record<string, string> = {
   'Logged out': 'خروج انجام شد',
   'Login successful': 'ورود موفقیت‌آمیز بود',
   'Password updated': 'رمز عبور به‌روزرسانی شد',
+  'Password has been reset': 'رمز عبور بازنشانی شد',
+  'If an account exists for that email, a reset link has been sent':
+    'اگر حسابی با این ایمیل وجود داشته باشد، لینک بازنشانی ارسال شده است',
   'Profile retrieved': 'پروفایل دریافت شد',
   'Profile updated': 'پروفایل به‌روزرسانی شد',
   'Refresh token required': 'توکن تازه‌سازی الزامی است',
@@ -229,6 +232,10 @@ export const faMessages: Record<string, string> = {
   'Email must match the invite': 'ایمیل باید با دعوت‌نامه مطابقت داشته باشد',
   'Invalid email or password': 'ایمیل یا رمز عبور نامعتبر است',
   'Invalid or expired refresh token': 'توکن تازه‌سازی نامعتبر یا منقضی شده است',
+  'Invalid or expired reset token': 'لینک بازنشانی نامعتبر یا منقضی شده است',
+  'Reset token is required': 'توکن بازنشانی الزامی است',
+  'Email service is not configured': 'سرویس ایمیل پیکربندی نشده است',
+  'Failed to send password reset email': 'ارسال ایمیل بازنشانی رمز ناموفق بود',
   'User not found': 'کاربر یافت نشد',
   'Current password is incorrect': 'رمز عبور فعلی نادرست است',
 

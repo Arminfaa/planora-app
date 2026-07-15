@@ -77,6 +77,15 @@ export function LoginForm({
         {...register('password')}
       />
 
+      <div className="flex justify-end">
+        <Link
+          href="/forgot-password"
+          className="text-sm font-medium text-gray-700 underline underline-offset-2 hover:text-primary-600"
+        >
+          {t('auth.forgotPassword')}
+        </Link>
+      </div>
+
       <Button
         type="submit"
         className="w-full !rounded-lg !bg-gray-900 !py-3 text-base font-semibold hover:!bg-gray-800 focus:ring-gray-700"

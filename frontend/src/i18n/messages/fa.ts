@@ -131,6 +131,19 @@ export const faMessages = {
     currentPasswordLabel: 'رمز عبور فعلی',
     newPasswordLabel: 'رمز عبور جدید',
     forgotPassword: 'رمز عبور را فراموش کرده‌اید؟',
+    forgotPasswordTitle: 'بازنشانی رمز عبور',
+    forgotPasswordHint:
+      'ایمیل حسابتان را وارد کنید؛ اگر حسابی با آن وجود داشته باشد لینک بازنشانی برایتان ارسال می‌شود.',
+    forgotPasswordSent:
+      'اگر حسابی با این ایمیل وجود داشته باشد، لینک بازنشانی ارسال شده است. صندوق ورودی (و اسپم) را بررسی کنید.',
+    sendResetLink: 'ارسال لینک بازنشانی',
+    backToLogin: 'بازگشت به ورود',
+    resetPasswordTitle: 'رمز عبور جدید را وارد کنید',
+    resetPasswordSubmit: 'بازنشانی رمز عبور',
+    resetPasswordSuccess:
+      'رمز عبور با موفقیت بازنشانی شد. می‌توانید با رمز جدید وارد شوید.',
+    resetPasswordMissingToken:
+      'این لینک بازنشانی ناقص است. دوباره درخواست بازنشانی رمز بدهید.',
     noAccount: 'حساب کاربری ندارید؟',
     hasAccount: 'قبلاً ثبت‌نام کرده‌اید؟',
     inviteSignInPrompt: 'برای پذیرش دعوت پروژه وارد شوید.',

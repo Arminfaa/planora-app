@@ -56,6 +56,22 @@ export const authService = {
     });
   },
 
+  async forgotPassword(email: string): Promise<void> {
+    await api.post('/auth/forgot-password', { email });
+  },
+
+  async resetPassword(
+    token: string,
+    newPassword: string,
+    confirmPassword: string,
+  ): Promise<void> {
+    await api.post('/auth/reset-password', {
+      token,
+      newPassword,
+      confirmPassword,
+    });
+  },
+
   async uploadAvatar(file: File): Promise<User> {
     const formData = new FormData();
     formData.append('file', file);

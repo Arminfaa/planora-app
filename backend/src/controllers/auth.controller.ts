@@ -9,8 +9,10 @@ import { REFRESH_TOKEN_COOKIE } from '../constants/auth';
 import { extractAccessToken } from '../utils/extractAccessToken';
 import type {
   ChangePasswordInput,
+  ForgotPasswordInput,
   LoginInput,
   RegisterInput,
+  ResetPasswordInput,
   UpdateProfileInput,
 } from '../validators/auth.validator';
 
@@ -101,6 +103,24 @@ export const changePassword = asyncHandler(
       req.body as ChangePasswordInput,
     );
     ApiResponse.success(res, null, 'Password updated');
+  },
+);
+
+export const forgotPassword = asyncHandler(
+  async (req: AuthenticatedRequest, res: Response) => {
+    await authService.requestPasswordReset(req.body as ForgotPasswordInput);
+    ApiResponse.success(
+      res,
+      null,
+      'If an account exists for that email, a reset link has been sent',
+    );
+  },
+);
+
+export const resetPassword = asyncHandler(
+  async (req: AuthenticatedRequest, res: Response) => {
+    await authService.resetPassword(req.body as ResetPasswordInput);
+    ApiResponse.success(res, null, 'Password has been reset');
   },
 );
 

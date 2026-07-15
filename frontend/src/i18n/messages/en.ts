@@ -128,6 +128,19 @@ export const enMessages = {
     currentPasswordLabel: 'Current password',
     newPasswordLabel: 'New password',
     forgotPassword: 'Forgot password?',
+    forgotPasswordTitle: 'Reset your password',
+    forgotPasswordHint:
+      'Enter your account email and we will send you a reset link if it exists.',
+    forgotPasswordSent:
+      'If an account exists for that email, a reset link has been sent. Check your inbox (and spam).',
+    sendResetLink: 'Send reset link',
+    backToLogin: 'Back to sign in',
+    resetPasswordTitle: 'Choose a new password',
+    resetPasswordSubmit: 'Reset password',
+    resetPasswordSuccess:
+      'Your password has been reset. You can sign in with the new password.',
+    resetPasswordMissingToken:
+      'This reset link is incomplete. Request a new password reset email.',
     noAccount: "Don't have an account?",
     hasAccount: 'Already have an account?',
     inviteSignInPrompt: 'Sign in to accept your project invite.',

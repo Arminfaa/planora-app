@@ -41,10 +41,36 @@ export function createChangePasswordSchema(t: Translator) {
     });
 }
 
+export function createForgotPasswordSchema(t: Translator) {
+  return z.object({
+    email: z.string().email(t('auth.errors.invalidEmail')),
+  });
+}
+
+export function createResetPasswordSchema(t: Translator) {
+  return z
+    .object({
+      newPassword: z.string().min(8, t('auth.errors.passwordMinLength')),
+      confirmPassword: z
+        .string()
+        .min(1, t('auth.errors.confirmPasswordRequired')),
+    })
+    .refine((data) => data.newPassword === data.confirmPassword, {
+      message: t('auth.errors.passwordsDoNotMatch'),
+      path: ['confirmPassword'],
+    });
+}
+
 export type LoginFormData = z.infer<ReturnType<typeof createLoginSchema>>;
 export type RegisterFormData = z.infer<ReturnType<typeof createRegisterSchema>>;
 export type ChangePasswordFormData = z.infer<
   ReturnType<typeof createChangePasswordSchema>
+>;
+export type ForgotPasswordFormData = z.infer<
+  ReturnType<typeof createForgotPasswordSchema>
+>;
+export type ResetPasswordFormData = z.infer<
+  ReturnType<typeof createResetPasswordSchema>
 >;
 
 /** @deprecated Use createLoginSchema(t) */

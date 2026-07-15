@@ -28,6 +28,8 @@ const envSchema = z.object({
   VAPID_PRIVATE_KEY: z.string().optional(),
   VAPID_SUBJECT: z.string().default('mailto:admin@localhost'),
   APP_PUBLIC_URL: z.string().default('http://localhost:3000'),
+  RESEND_API_KEY: z.string().optional(),
+  RESEND_FROM_EMAIL: z.string().default('Planora <onboarding@resend.dev>'),
 });
 
 export const env = envSchema.parse(process.env);
