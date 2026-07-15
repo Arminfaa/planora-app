@@ -26,6 +26,8 @@ interface DateRangeInputProps {
   maxDate?: string | null;
 }
 
+type RangeValue = [Dayjs | null, Dayjs | null] | null;
+
 export function DateRangeInput({
   label,
   valueFrom = '',
@@ -41,7 +43,7 @@ export function DateRangeInput({
   const format = getDateInputFormat(locale);
   const fromValue = apiDateToPickerValue(valueFrom, locale);
   const toValue = apiDateToPickerValue(valueTo, locale);
-  const rangeValue: [Dayjs | null, Dayjs | null] | null =
+  const committedValue: RangeValue =
     fromValue || toValue ? [fromValue, toValue] : null;
 
   // Do not pass minDate/maxDate to RangePicker: with dual panels + CSS-hidden
@@ -49,12 +51,30 @@ export function DateRangeInput({
   // Selection limits stay enforced via disabledDate only.
   const [panelMonth, setPanelMonth] = useState<Dayjs | null>(null);
   const [activeField, setActiveField] = useState<'start' | 'end'>('start');
+  // Keep in-progress picks while open. Re-renders from panelMonth would otherwise
+  // push the committed controlled value back and snap start to the old date.
+  const [open, setOpen] = useState(false);
+  const [draftValue, setDraftValue] = useState<RangeValue>(null);
 
-  const resolveOpenMonth = (): Dayjs | null => {
-    if (activeField === 'end') {
-      return toValue ?? fromValue ?? null;
+  const resolveOpenMonth = (
+    field: 'start' | 'end' = activeField,
+    range: RangeValue = open ? draftValue : committedValue,
+  ): Dayjs | null => {
+    const start = range?.[0] ?? fromValue;
+    const end = range?.[1] ?? toValue;
+    if (field === 'end') {
+      return end ?? start ?? null;
     }
-    return fromValue ?? toValue ?? null;
+    return start ?? end ?? null;
+  };
+
+  const displayValue: RangeValue =
+    open && draftValue ? draftValue : committedValue;
+
+  const emitChange = (dates: RangeValue) => {
+    const from = pickerValueToApiDate(dates?.[0] ?? null);
+    const to = pickerValueToApiDate(dates?.[1] ?? null);
+    onChange?.({ from, to });
   };
 
   return (
@@ -66,11 +86,19 @@ export function DateRangeInput({
       ) : null}
       <DatePicker.RangePicker
         key={`range-${locale}-${format}-${toApiDateOnly(minDate)}-${toApiDateOnly(maxDate)}`}
-        value={rangeValue}
+        value={displayValue}
+        onCalendarChange={(dates) => {
+          const next: RangeValue = dates
+            ? [dates[0] ?? null, dates[1] ?? null]
+            : null;
+          setDraftValue(next);
+        }}
         onChange={(dates) => {
-          const from = pickerValueToApiDate(dates?.[0] ?? null);
-          const to = pickerValueToApiDate(dates?.[1] ?? null);
-          onChange?.({ from, to });
+          const next: RangeValue = dates
+            ? [dates[0] ?? null, dates[1] ?? null]
+            : null;
+          setDraftValue(next);
+          emitChange(next);
         }}
         format={format}
         className={cn('w-full min-w-0 max-w-full', className)}
@@ -96,15 +124,15 @@ export function DateRangeInput({
         onFocus={(_event, info) => {
           const next = info?.range === 'end' ? 'end' : 'start';
           setActiveField(next);
-          const month =
-            next === 'end'
-              ? (toValue ?? fromValue ?? null)
-              : (fromValue ?? toValue ?? null);
-          setPanelMonth(month);
+          setPanelMonth(resolveOpenMonth(next));
         }}
-        onOpenChange={(open) => {
-          if (open) {
-            setPanelMonth(resolveOpenMonth());
+        onOpenChange={(nextOpen) => {
+          setOpen(nextOpen);
+          if (nextOpen) {
+            setDraftValue(committedValue);
+            setPanelMonth(resolveOpenMonth(activeField, committedValue));
+          } else {
+            setDraftValue(null);
           }
         }}
         placeholder={
