@@ -136,6 +136,7 @@ export const enMessages = {
     sendResetLink: 'Send reset link',
     backToLogin: 'Back to sign in',
     resetPasswordTitle: 'Choose a new password',
+    resetPasswordForEmail: 'Enter a new password for {email}',
     resetPasswordSubmit: 'Reset password',
     resetPasswordSuccess:
       'Your password has been reset. You can sign in with the new password.',

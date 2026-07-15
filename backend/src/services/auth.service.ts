@@ -16,6 +16,7 @@ import type {
   LoginInput,
   RegisterInput,
   ResetPasswordInput,
+  ResetPasswordPreviewInput,
   UpdateProfileInput,
 } from '../validators/auth.validator';
 import { env } from '../config';
@@ -24,6 +25,7 @@ import { generateRefreshToken, hashRefreshToken } from '../utils/refresh-token';
 import {
   generatePasswordResetToken,
   hashPasswordResetToken,
+  normalizePasswordResetToken,
 } from '../utils/password-reset-token';
 import { passwordResetTokenRepository } from '../repositories/password-reset-token.repository';
 import { emailService, PASSWORD_RESET_TTL_MS } from './email.service';
@@ -217,13 +219,14 @@ export class AuthService {
     const rawToken = generatePasswordResetToken();
     const expiresAt = new Date(Date.now() + PASSWORD_RESET_TTL_MS);
 
-    await passwordResetTokenRepository.create({
+    const createdToken = await passwordResetTokenRepository.create({
       userId: user.id,
       tokenHash: hashPasswordResetToken(rawToken),
       expiresAt,
     });
 
-    const resetUrl = `${env.APP_PUBLIC_URL.replace(/\/$/, '')}/reset-password?token=${encodeURIComponent(rawToken)}`;
+    // Path-based token avoids query-string mangling by some mail clients.
+    const resetUrl = `${env.APP_PUBLIC_URL.replace(/\/$/, '')}/reset-password/${rawToken}`;
 
     try {
       await emailService.sendPasswordResetEmail({
@@ -232,6 +235,10 @@ export class AuthService {
         resetUrl,
       });
     } catch (error) {
+      await passwordResetTokenRepository
+        .markUsed(createdToken.id)
+        .catch(() => undefined);
+
       const detail = error instanceof Error ? error.message : String(error);
       logger.error('Failed to send password reset email', {
         userId: user.id,
@@ -257,9 +264,30 @@ export class AuthService {
     }
   }
 
-  async resetPassword(input: ResetPasswordInput): Promise<{ email: string }> {
+  async getResetPasswordPreview(
+    input: ResetPasswordPreviewInput,
+  ): Promise<{ email: string }> {
+    const token = normalizePasswordResetToken(input.token);
     const stored = await passwordResetTokenRepository.findValidByHash(
-      hashPasswordResetToken(input.token),
+      hashPasswordResetToken(token),
+    );
+
+    if (!stored) {
+      throw new ApiError(400, 'Invalid or expired reset token');
+    }
+
+    const user = await userRepository.findById(stored.userId);
+    if (!user) {
+      throw new ApiError(400, 'Invalid or expired reset token');
+    }
+
+    return { email: user.email };
+  }
+
+  async resetPassword(input: ResetPasswordInput): Promise<{ email: string }> {
+    const token = normalizePasswordResetToken(input.token);
+    const stored = await passwordResetTokenRepository.findValidByHash(
+      hashPasswordResetToken(token),
     );
 
     if (!stored) {

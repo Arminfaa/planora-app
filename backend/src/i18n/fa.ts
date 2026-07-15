@@ -233,6 +233,7 @@ export const faMessages: Record<string, string> = {
   'Invalid email or password': 'ایمیل یا رمز عبور نامعتبر است',
   'Invalid or expired refresh token': 'توکن تازه‌سازی نامعتبر یا منقضی شده است',
   'Invalid or expired reset token': 'لینک بازنشانی نامعتبر یا منقضی شده است',
+  'Reset token is valid': 'توکن بازنشانی معتبر است',
   'Reset token is required': 'توکن بازنشانی الزامی است',
   'Email service is not configured': 'سرویس ایمیل پیکربندی نشده است',
   'Failed to send password reset email': 'ارسال ایمیل بازنشانی رمز ناموفق بود',

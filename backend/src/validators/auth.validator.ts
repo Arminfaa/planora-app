@@ -58,9 +58,19 @@ export const forgotPasswordSchema = z.object({
     .transform((v) => sanitizeString(v).toLowerCase()),
 });
 
+const resetTokenSchema = z
+  .string()
+  .min(16, 'Reset token is required')
+  .max(200)
+  .transform((value) => value.trim());
+
+export const resetPasswordPreviewSchema = z.object({
+  token: resetTokenSchema,
+});
+
 export const resetPasswordSchema = z
   .object({
-    token: z.string().min(16, 'Reset token is required').max(200),
+    token: resetTokenSchema,
     newPassword: z
       .string()
       .min(8, 'Password must be at least 8 characters')
@@ -78,3 +88,6 @@ export type UpdateProfileInput = z.infer<typeof updateProfileSchema>;
 export type ChangePasswordInput = z.infer<typeof changePasswordSchema>;
 export type ForgotPasswordInput = z.infer<typeof forgotPasswordSchema>;
 export type ResetPasswordInput = z.infer<typeof resetPasswordSchema>;
+export type ResetPasswordPreviewInput = z.infer<
+  typeof resetPasswordPreviewSchema
+>;

@@ -52,7 +52,8 @@ function isAuthRoute(url: string): boolean {
     url.includes('/auth/refresh') ||
     url.includes('/auth/logout') ||
     url.includes('/auth/forgot-password') ||
-    url.includes('/auth/reset-password')
+    url.includes('/auth/reset-password') ||
+    url.includes('/auth/reset-password/preview')
   );
 }
 

@@ -10,18 +10,23 @@ import {
   register,
   removeAvatar,
   resetPassword,
+  resetPasswordPreview,
   updateProfile,
   uploadAvatar,
 } from '../../controllers/auth.controller';
 import { authenticate } from '../../middlewares/auth.middleware';
 import { authRateLimiter } from '../../middlewares/rateLimit.middleware';
 import { uploadMiddleware } from '../../middlewares/upload.middleware';
-import { validateBody } from '../../middlewares/validate.middleware';
+import {
+  validateBody,
+  validateQuery,
+} from '../../middlewares/validate.middleware';
 import {
   changePasswordSchema,
   forgotPasswordSchema,
   loginSchema,
   registerSchema,
+  resetPasswordPreviewSchema,
   resetPasswordSchema,
   updateProfileSchema,
 } from '../../validators/auth.validator';
@@ -42,6 +47,12 @@ router.post(
   authRateLimiter,
   validateBody(forgotPasswordSchema),
   forgotPassword,
+);
+router.get(
+  '/reset-password/preview',
+  authRateLimiter,
+  validateQuery(resetPasswordPreviewSchema),
+  resetPasswordPreview,
 );
 router.post(
   '/reset-password',

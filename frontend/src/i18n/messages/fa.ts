@@ -139,6 +139,7 @@ export const faMessages = {
     sendResetLink: 'ارسال لینک بازنشانی',
     backToLogin: 'بازگشت به ورود',
     resetPasswordTitle: 'رمز عبور جدید را وارد کنید',
+    resetPasswordForEmail: 'رمز جدید را برای ایمیل {email} وارد کنید',
     resetPasswordSubmit: 'بازنشانی رمز عبور',
     resetPasswordSuccess:
       'رمز عبور با موفقیت بازنشانی شد. می‌توانید با رمز جدید وارد شوید.',

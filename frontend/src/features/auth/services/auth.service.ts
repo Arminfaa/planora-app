@@ -60,6 +60,14 @@ export const authService = {
     await api.post('/auth/forgot-password', { email });
   },
 
+  async previewResetPassword(token: string): Promise<{ email: string }> {
+    const { data } = await api.get<ApiSuccessResponse<{ email: string }>>(
+      '/auth/reset-password/preview',
+      { params: { token } },
+    );
+    return data.data;
+  },
+
   async resetPassword(
     token: string,
     newPassword: string,

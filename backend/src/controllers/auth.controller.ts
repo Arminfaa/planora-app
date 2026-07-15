@@ -13,6 +13,7 @@ import type {
   LoginInput,
   RegisterInput,
   ResetPasswordInput,
+  ResetPasswordPreviewInput,
   UpdateProfileInput,
 } from '../validators/auth.validator';
 
@@ -114,6 +115,15 @@ export const forgotPassword = asyncHandler(
       null,
       'If an account exists for that email, a reset link has been sent',
     );
+  },
+);
+
+export const resetPasswordPreview = asyncHandler(
+  async (req: AuthenticatedRequest, res: Response) => {
+    const result = await authService.getResetPasswordPreview(
+      req.query as unknown as ResetPasswordPreviewInput,
+    );
+    ApiResponse.success(res, result, 'Reset token is valid');
   },
 );
 
