@@ -27,10 +27,7 @@ export function AuthPageLayout({ children }: AuthPageLayoutProps) {
 
           <div className="flex flex-col justify-center px-8 py-10 sm:px-12 lg:py-12">
             <div className="mb-8 flex items-center justify-center gap-2.5">
-              <AppLogo
-                size="md"
-                className="rounded-lg shadow-md shadow-primary-600/30"
-              />
+              <AppLogo size="md" className="rounded-lg" />
               <Link
                 href="/"
                 className="text-xl font-bold tracking-tight text-gray-900 transition hover:text-primary-600"

@@ -77,7 +77,7 @@ export function Header() {
             href="/dashboard"
             className="group flex shrink-0 items-center gap-2.5"
           >
-            <AppLogo className="rounded-lg shadow-sm shadow-primary-500/20 transition group-hover:shadow-md group-hover:shadow-primary-500/25" />
+            <AppLogo className="rounded-lg" />
             <span className="hidden text-lg font-semibold text-gray-900 sm:inline">
               {t('common.appName')}
             </span>
