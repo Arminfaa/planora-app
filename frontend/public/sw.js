@@ -43,8 +43,8 @@ self.addEventListener('push', (event) => {
   event.waitUntil(
     self.registration.showNotification(title, {
       body,
-      icon: '/logo.webp',
-      badge: '/logo.webp',
+      icon: '/planora-logo.webp',
+      badge: '/planora-logo.webp',
       tag,
       data: {
         href,

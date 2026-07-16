@@ -97,8 +97,8 @@ export function showForegroundNotification(
 
   const notification = new Notification(title, {
     body: options.body,
-    icon: options.icon ?? '/logo.webp',
-    badge: options.badge ?? '/logo.webp',
+    icon: options.icon ?? '/planora-logo.webp',
+    badge: options.badge ?? '/planora-logo.webp',
     tag: options.tag,
     data: options.data,
   });

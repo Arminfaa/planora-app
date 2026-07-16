@@ -23,7 +23,7 @@ export function AppLogo({ size = 'sm', className }: AppLogoProps) {
 
   return (
     <Image
-      src="/logo.webp"
+      src="/planora-logo.webp"
       alt={APP_NAME}
       width={dimension}
       height={dimension}
