@@ -1,3 +1,43 @@
+@font-face {
+  font-family: 'Vazirmatn';
+  src: url('/vazir/Vazirmatn-Regular.woff2') format('woff2');
+  font-weight: 400;
+  font-style: normal;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: 'Vazirmatn';
+  src: url('/vazir/Vazirmatn-Medium.woff2') format('woff2');
+  font-weight: 500;
+  font-style: normal;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: 'Vazirmatn';
+  src: url('/vazir/Vazirmatn-Bold.woff2') format('woff2');
+  font-weight: 700;
+  font-style: normal;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: 'Vazirmatn';
+  src: url('/vazir/Vazirmatn-ExtraBold.woff2') format('woff2');
+  font-weight: 800;
+  font-style: normal;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: 'Vazirmatn';
+  src: url('/vazir/Vazirmatn-Black.woff2') format('woff2');
+  font-weight: 900;
+  font-style: normal;
+  font-display: swap;
+}
+
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
@@ -12,13 +52,17 @@
     @apply bg-white text-gray-900 antialiased;
   }
 
+  html.locale-en body {
+    font-family: var(--font-inter), ui-sans-serif, system-ui, sans-serif;
+  }
+
   html.locale-fa body,
   html.locale-fa .ant-app,
   html.locale-fa .ant-modal-root,
   html.locale-fa .ant-dropdown,
   html.locale-fa .ant-select-dropdown,
   html.locale-fa .ant-picker-dropdown {
-    font-family: 'Vazir', Tahoma, 'Segoe UI', sans-serif;
+    font-family: 'Vazirmatn', Tahoma, 'Segoe UI', sans-serif;
   }
 }
 

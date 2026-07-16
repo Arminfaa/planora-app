@@ -5,6 +5,7 @@ import {
   isLocale,
   type Locale,
 } from './types';
+import { VAZIRMATN_PRELOAD_WEIGHTS } from '@/lib/fonts';
 import { formatLocaleDate } from '@/lib/jalali-dates';
 import type { Messages } from './messages/en';
 
@@ -104,6 +105,28 @@ export function resolveInitialLocale(): Locale {
   return readLocaleCookie() ?? DEFAULT_LOCALE;
 }
 
+function preloadVazirmatnFonts(): void {
+  if (typeof document === 'undefined') {
+    return;
+  }
+
+  for (const weight of VAZIRMATN_PRELOAD_WEIGHTS) {
+    const href = `/vazir/Vazirmatn-${weight}.woff2`;
+
+    if (document.querySelector(`link[rel="preload"][href="${href}"]`)) {
+      continue;
+    }
+
+    const link = document.createElement('link');
+    link.rel = 'preload';
+    link.as = 'font';
+    link.type = 'font/woff2';
+    link.crossOrigin = 'anonymous';
+    link.href = href;
+    document.head.appendChild(link);
+  }
+}
+
 export function applyDocumentLocale(locale: Locale): void {
   if (typeof document === 'undefined') {
     return;
@@ -113,4 +136,8 @@ export function applyDocumentLocale(locale: Locale): void {
   document.documentElement.dir = locale === 'fa' ? 'rtl' : 'ltr';
   document.documentElement.classList.toggle('locale-fa', locale === 'fa');
   document.documentElement.classList.toggle('locale-en', locale === 'en');
+
+  if (locale === 'fa') {
+    preloadVazirmatnFonts();
+  }
 }
