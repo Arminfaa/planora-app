@@ -86,6 +86,21 @@ function serializeTask(task: Record<string, unknown>) {
   };
 }
 
+function serializeColumns(columns: Array<Record<string, unknown>>) {
+  return columns.map((column) => ({
+    id: String(column.id),
+    name: column.name,
+    boardId: String(column.boardId),
+    position: Number(column.position),
+    color: (column.color as string | null) ?? null,
+    tasks: Array.isArray(column.tasks)
+      ? column.tasks.map((task) =>
+          serializeTask(task as Record<string, unknown>),
+        )
+      : [],
+  }));
+}
+
 function serializeColumn(column: Record<string, unknown>) {
   return {
     id: String(column.id),
@@ -138,22 +153,15 @@ export async function notifyBoardTaskEvent(
   let payload = options.payload;
   const dispatchPayload = payload;
 
-  if (type === 'task:moved' && payload && typeof payload === 'object') {
-    const record = payload as Record<string, unknown>;
-    if (record.task && typeof record.task === 'object') {
+  if (type === 'task:moved') {
+    // Sync full (light) column order so clients keep correct positions after
+    // reorder. A single-task payload is not enough because sibling positions
+    // also change on the server.
+    const board = await boardRepository.findById(boardId);
+    if (board?.columns) {
       payload = {
-        task: serializeTask(record.task as Record<string, unknown>),
-        ...(typeof record.fromColumnName === 'string'
-          ? { fromColumnName: record.fromColumnName }
-          : {}),
-        ...(typeof record.toColumnName === 'string'
-          ? { toColumnName: record.toColumnName }
-          : {}),
-      };
-    } else if (Array.isArray(record.tasks)) {
-      payload = {
-        tasks: record.tasks.map((task) =>
-          serializeTask(task as Record<string, unknown>),
+        columns: serializeColumns(
+          board.columns as unknown as Array<Record<string, unknown>>,
         ),
       };
     }

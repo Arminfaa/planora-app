@@ -1,13 +1,6 @@
 'use client';
 
-import {
-  memo,
-  useCallback,
-  useRef,
-  type HTMLAttributes,
-  type RefCallback,
-} from 'react';
-import { useVirtualizer } from '@tanstack/react-virtual';
+import { memo, type HTMLAttributes } from 'react';
 import { useSortable } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
 import { useDroppable } from '@dnd-kit/core';
@@ -25,10 +18,6 @@ import { useLocale } from '@/i18n/LocaleProvider';
 import { SortableTaskCard } from './TaskCard';
 import { AddTaskForm } from './AddTaskForm';
 import { GripVerticalIcon } from './GripVerticalIcon';
-
-const VIRTUALIZE_TASK_THRESHOLD = 24;
-const ESTIMATED_TASK_CARD_HEIGHT = 128;
-const TASK_CARD_GAP = 8;
 
 interface KanbanColumnProps {
   column: BoardColumn;
@@ -85,46 +74,10 @@ export const KanbanColumn = memo(function KanbanColumn({
   const { setNodeRef, isOver } = useDroppable({
     id: getColumnTaskDropId(column.id),
   });
-  const scrollParentRef = useRef<HTMLDivElement | null>(null);
-  const setScrollRef = useCallback<RefCallback<HTMLDivElement>>(
-    (node) => {
-      scrollParentRef.current = node;
-      setNodeRef(node);
-    },
-    [setNodeRef],
-  );
   const tasks = column.tasks ?? [];
   const taskIds = tasks.map((t) => t.id);
   const sortableKey = columnSortableKey(column);
-  const shouldVirtualize = tasks.length >= VIRTUALIZE_TASK_THRESHOLD;
-  const virtualizer = useVirtualizer({
-    count: shouldVirtualize ? tasks.length : 0,
-    getScrollElement: () => scrollParentRef.current,
-    estimateSize: () => ESTIMATED_TASK_CARD_HEIGHT,
-    overscan: 6,
-    gap: TASK_CARD_GAP,
-  });
   const isGlass = variant === 'glass';
-
-  const renderTaskCard = (task: BoardTask) => (
-    <SortableTaskCard
-      key={`${task.id}-${task.position}`}
-      task={task}
-      isCompleted={Boolean(task.isCompleted)}
-      onEdit={canEditTask ? onTaskEdit : undefined}
-      onToggleComplete={canToggleComplete ? onTaskToggleComplete : undefined}
-      onChecklistItemToggle={
-        canToggleChecklist ? onChecklistItemToggle : undefined
-      }
-      onAttachmentClick={onTaskAttachmentClick}
-      isHighlighted={highlightedTaskId === task.id}
-      canEdit={canEditTask}
-      canToggleComplete={canToggleComplete}
-      canToggleChecklist={canToggleChecklist}
-      canDrag={canMoveTasks}
-      memberColorMap={memberColorMap}
-    />
-  );
 
   const columnClass = isGlass
     ? isDragOverlay
@@ -221,7 +174,7 @@ export const KanbanColumn = memo(function KanbanColumn({
       )}
 
       <div
-        ref={setScrollRef}
+        ref={setNodeRef}
         className={`kanban-column-scroll flex min-h-0 flex-1 flex-col gap-2 overflow-y-auto p-3 ${
           isOver && tasks.length === 0
             ? isGlass
@@ -235,33 +188,27 @@ export const KanbanColumn = memo(function KanbanColumn({
           items={taskIds}
           strategy={verticalListSortingStrategy}
         >
-          {shouldVirtualize ? (
-            <div
-              className="relative w-full"
-              style={{ height: `${virtualizer.getTotalSize()}px` }}
-            >
-              {virtualizer.getVirtualItems().map((virtualItem) => {
-                const task = tasks[virtualItem.index];
-                if (!task) return null;
-
-                return (
-                  <div
-                    key={virtualItem.key}
-                    data-index={virtualItem.index}
-                    ref={virtualizer.measureElement}
-                    className="absolute start-0 top-0 w-full"
-                    style={{
-                      transform: `translateY(${virtualItem.start}px)`,
-                    }}
-                  >
-                    {renderTaskCard(task)}
-                  </div>
-                );
-              })}
-            </div>
-          ) : (
-            tasks.map((task) => renderTaskCard(task))
-          )}
+          {tasks.map((task) => (
+            <SortableTaskCard
+              key={`${task.id}-${task.position}`}
+              task={task}
+              isCompleted={Boolean(task.isCompleted)}
+              onEdit={canEditTask ? onTaskEdit : undefined}
+              onToggleComplete={
+                canToggleComplete ? onTaskToggleComplete : undefined
+              }
+              onChecklistItemToggle={
+                canToggleChecklist ? onChecklistItemToggle : undefined
+              }
+              onAttachmentClick={onTaskAttachmentClick}
+              isHighlighted={highlightedTaskId === task.id}
+              canEdit={canEditTask}
+              canToggleComplete={canToggleComplete}
+              canToggleChecklist={canToggleChecklist}
+              canDrag={canMoveTasks}
+              memberColorMap={memberColorMap}
+            />
+          ))}
         </SortableContext>
 
         {tasks.length === 0 && (
