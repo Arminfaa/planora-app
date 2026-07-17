@@ -43,6 +43,7 @@ export interface BoardTask {
   labels?: Array<{ label: TaskLabel }> | TaskLabel[];
   _count?: {
     attachments: number;
+    checklistItems?: number;
   };
 }
 

@@ -55,6 +55,7 @@ import {
 import { AllTasksPageHeader } from './AllTasksPageHeader';
 import { AllTasksSearchBar } from './AllTasksSearchBar';
 import { WorkReportModal } from './WorkReportModal';
+import { VirtualizedWindowList } from '@/shared/components/VirtualizedWindowList';
 
 const TaskModal = dynamic(
   () => import('./TaskModal').then((mod) => ({ default: mod.TaskModal })),
@@ -697,7 +698,7 @@ export function AllTasksView({
         />
       )}
 
-      <div className="mt-6 space-y-3">
+      <div className="mt-6">
         {filteredTasks.length === 0 ? (
           <div className="rounded-2xl border border-dashed border-gray-200 bg-gradient-to-b from-gray-50 to-white px-6 py-16 text-center">
             <p className="text-base font-medium text-gray-800">
@@ -733,7 +734,14 @@ export function AllTasksView({
             </div>
           </div>
         ) : (
-          filteredTasks.map((task) => {
+          <VirtualizedWindowList
+            items={filteredTasks}
+            estimateSize={180}
+            threshold={40}
+            gap={12}
+            getItemKey={(task) => task.id}
+            className="space-y-3"
+            renderItem={(task) => {
             const style = priorityStylesMap[task.priority];
             const labels = normalizeTaskLabels(task.labels);
             const isCompleted = Boolean(task.isCompleted);
@@ -749,7 +757,6 @@ export function AllTasksView({
 
             return (
               <div
-                key={task.id}
                 data-task-id={task.id}
                 className="flex scroll-mt-24 flex-col gap-2 sm:flex-row sm:items-start sm:gap-3"
               >
@@ -914,6 +921,7 @@ export function AllTasksView({
                       <LabelBadges labels={labels} className="mt-2" />
                       <TaskChecklistPreview
                         items={task.checklistItems}
+                        totalCount={task._count?.checklistItems}
                         interactive={!showSelection && canViewTasks}
                         onToggleItem={
                           !showSelection && canViewTasks
@@ -954,7 +962,8 @@ export function AllTasksView({
                 </div>
               </div>
             );
-          })
+            }}
+          />
         )}
       </div>
 

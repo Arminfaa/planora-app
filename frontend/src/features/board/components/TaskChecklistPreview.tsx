@@ -7,6 +7,8 @@ import { useLocale } from '@/i18n/LocaleProvider';
 
 interface TaskChecklistPreviewProps {
   items?: TaskChecklistItem[];
+  /** Total checklist size when `items` is only a preview slice. */
+  totalCount?: number;
   maxItems?: number;
   interactive?: boolean;
   onToggleItem?: (itemId: string, isDone: boolean) => void | Promise<void>;
@@ -14,6 +16,7 @@ interface TaskChecklistPreviewProps {
 
 export function TaskChecklistPreview({
   items = [],
+  totalCount,
   maxItems = 5,
   interactive = false,
   onToggleItem,
@@ -29,7 +32,8 @@ export function TaskChecklistPreview({
 
   const sorted = [...localItems].sort((a, b) => a.position - b.position);
   const visible = sorted.slice(0, maxItems);
-  const hiddenCount = sorted.length - visible.length;
+  const resolvedTotal = Math.max(totalCount ?? sorted.length, sorted.length);
+  const hiddenCount = resolvedTotal - visible.length;
 
   const handleToggle = (item: TaskChecklistItem, checked: boolean) => {
     if (!interactive || !onToggleItem) return;

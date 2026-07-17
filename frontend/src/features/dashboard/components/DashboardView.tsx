@@ -7,7 +7,7 @@ import { CreateProjectModal } from '@/features/dashboard/components/CreateProjec
 import { DashboardHeader } from '@/features/dashboard/components/DashboardHeader';
 import { StatsCard } from '@/features/dashboard/components/StatsCard';
 import { computeDashboardStats } from '@/features/dashboard/utils/stats';
-import { LoadingSpinner } from '@/shared/components/feedback/LoadingSpinner';
+import { DashboardSkeleton } from '@/features/dashboard/components/DashboardSkeleton';
 import { Button } from '@/shared/components/ui/Button';
 import { Pagination } from '@/shared/components/ui/Pagination';
 import { useLocale } from '@/i18n/LocaleProvider';
@@ -56,11 +56,7 @@ export function DashboardView() {
   };
 
   if (isLoading) {
-    return (
-      <div className="flex min-h-[calc(100vh-4rem)] items-center justify-center">
-        <LoadingSpinner />
-      </div>
-    );
+    return <DashboardSkeleton />;
   }
 
   return (

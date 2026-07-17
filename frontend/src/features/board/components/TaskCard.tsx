@@ -176,6 +176,7 @@ export const TaskCard = memo(function TaskCard({
 
             <TaskChecklistPreview
               items={task.checklistItems}
+              totalCount={task._count?.checklistItems}
               interactive={canToggleChecklist}
               onToggleItem={
                 canToggleChecklist && onChecklistItemToggle

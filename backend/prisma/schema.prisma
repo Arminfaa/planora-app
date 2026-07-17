@@ -238,6 +238,7 @@ model Board {
   tasks   Task[]
 
   @@unique([projectId, slug])
+  @@index([projectId, position])
   @@map("boards")
 }
 
@@ -253,6 +254,7 @@ model Column {
   board Board  @relation(fields: [boardId], references: [id])
   tasks Task[]
 
+  @@index([boardId, position])
   @@map("columns")
 }
 
@@ -293,6 +295,9 @@ model Task {
 
   @@unique([boardId, slug])
   @@index([parentTaskId])
+  @@index([boardId])
+  @@index([columnId, position])
+  @@index([boardId, position])
   @@map("tasks")
 }
 

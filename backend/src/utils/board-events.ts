@@ -43,7 +43,18 @@ function serializeTaskLabels(task: Record<string, unknown>) {
 }
 
 function serializeTask(task: Record<string, unknown>) {
-  const count = task._count as { attachments?: number } | undefined;
+  const count = task._count as
+    | { attachments?: number; checklistItems?: number }
+    | undefined;
+  const checklistItems = Array.isArray(task.checklistItems)
+    ? task.checklistItems.map((item) => ({
+        id: String((item as { id: string }).id),
+        title: (item as { title: string }).title,
+        isDone: Boolean((item as { isDone: boolean }).isDone),
+        weight: Number((item as { weight?: number }).weight ?? 5),
+        position: Number((item as { position: number }).position),
+      }))
+    : [];
 
   return {
     id: String(task.id),
@@ -67,34 +78,12 @@ function serializeTask(task: Record<string, unknown>) {
     isCompleted: Boolean(task.isCompleted),
     assignees: task.assignees ?? [],
     labels: serializeTaskLabels(task),
-    checklistItems: Array.isArray(task.checklistItems)
-      ? task.checklistItems.map((item) => ({
-          id: String((item as { id: string }).id),
-          title: (item as { title: string }).title,
-          isDone: Boolean((item as { isDone: boolean }).isDone),
-          weight: Number((item as { weight?: number }).weight ?? 5),
-          position: Number((item as { position: number }).position),
-        }))
-      : [],
-    ...(count
-      ? { _count: { attachments: Number(count.attachments ?? 0) } }
-      : {}),
+    checklistItems,
+    _count: {
+      attachments: Number(count?.attachments ?? 0),
+      checklistItems: Number(count?.checklistItems ?? checklistItems.length),
+    },
   };
-}
-
-function serializeColumns(columns: Array<Record<string, unknown>>) {
-  return columns.map((column) => ({
-    id: String(column.id),
-    name: column.name,
-    boardId: String(column.boardId),
-    position: Number(column.position),
-    color: (column.color as string | null) ?? null,
-    tasks: Array.isArray(column.tasks)
-      ? column.tasks.map((task) =>
-          serializeTask(task as Record<string, unknown>),
-        )
-      : [],
-  }));
 }
 
 function serializeColumn(column: Record<string, unknown>) {
@@ -149,12 +138,22 @@ export async function notifyBoardTaskEvent(
   let payload = options.payload;
   const dispatchPayload = payload;
 
-  if (type === 'task:moved') {
-    const board = await boardRepository.findById(boardId);
-    if (board?.columns) {
+  if (type === 'task:moved' && payload && typeof payload === 'object') {
+    const record = payload as Record<string, unknown>;
+    if (record.task && typeof record.task === 'object') {
       payload = {
-        columns: serializeColumns(
-          board.columns as unknown as Array<Record<string, unknown>>,
+        task: serializeTask(record.task as Record<string, unknown>),
+        ...(typeof record.fromColumnName === 'string'
+          ? { fromColumnName: record.fromColumnName }
+          : {}),
+        ...(typeof record.toColumnName === 'string'
+          ? { toColumnName: record.toColumnName }
+          : {}),
+      };
+    } else if (Array.isArray(record.tasks)) {
+      payload = {
+        tasks: record.tasks.map((task) =>
+          serializeTask(task as Record<string, unknown>),
         ),
       };
     }
@@ -203,14 +202,12 @@ export async function notifyBoardColumnEvent(
     const record = payload as { columnId?: string };
     payload = { columnId: String(record.columnId ?? options.columnId) };
   } else if (type === 'columns:reordered') {
-    const board = await boardRepository.findById(boardId);
-    if (board?.columns) {
-      payload = {
-        columns: (
-          board.columns as unknown as Array<Record<string, unknown>>
-        ).map((column) => serializeColumn(column)),
-      };
-    }
+    const columns = await boardRepository.findColumnSummariesByBoardId(boardId);
+    payload = {
+      columns: (
+        columns as unknown as Array<Record<string, unknown>>
+      ).map((column) => serializeColumn(column)),
+    };
   } else if (payload && typeof payload === 'object' && 'column' in payload) {
     const record = payload as { column: Record<string, unknown> };
     payload = { column: serializeColumn(record.column) };

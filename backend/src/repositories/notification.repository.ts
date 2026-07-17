@@ -1,5 +1,6 @@
 import type { Notification, NotificationType, Prisma } from '@prisma/client';
 import { BaseRepository } from './base.repository';
+import { mongoNullOrUnset } from '../utils/mongo-null';
 
 export class NotificationRepository extends BaseRepository {
   async create(data: {
@@ -42,7 +43,7 @@ export class NotificationRepository extends BaseRepository {
   ): Promise<{ items: Notification[]; total: number }> {
     const where: Prisma.NotificationWhereInput = {
       userId,
-      ...(options?.unreadOnly ? { readAt: null } : {}),
+      ...(options?.unreadOnly ? mongoNullOrUnset('readAt') : {}),
     };
 
     const [items, total] = await Promise.all([
@@ -64,12 +65,12 @@ export class NotificationRepository extends BaseRepository {
   }
 
   async countUnread(userId: string): Promise<number> {
-    const notifications = await this.db.notification.findMany({
-      where: { userId },
-      select: { readAt: true },
+    return this.db.notification.count({
+      where: {
+        userId,
+        ...mongoNullOrUnset('readAt'),
+      },
     });
-
-    return notifications.filter((notification) => !notification.readAt).length;
   }
 
   async findByIdForUser(
@@ -98,21 +99,11 @@ export class NotificationRepository extends BaseRepository {
   }
 
   async markAllRead(userId: string): Promise<number> {
-    const unreadNotifications = await this.db.notification.findMany({
-      where: { userId },
-      select: { id: true, readAt: true },
-    });
-
-    const unreadIds = unreadNotifications
-      .filter((notification) => !notification.readAt)
-      .map((notification) => notification.id);
-
-    if (unreadIds.length === 0) {
-      return 0;
-    }
-
     const result = await this.db.notification.updateMany({
-      where: { id: { in: unreadIds } },
+      where: {
+        userId,
+        ...mongoNullOrUnset('readAt'),
+      },
       data: { readAt: new Date() },
     });
 
@@ -124,21 +115,13 @@ export class NotificationRepository extends BaseRepository {
     projectId: string,
     type: NotificationType,
   ): Promise<number> {
-    const unreadNotifications = await this.db.notification.findMany({
-      where: { userId, projectId, type },
-      select: { id: true, readAt: true },
-    });
-
-    const unreadIds = unreadNotifications
-      .filter((notification) => !notification.readAt)
-      .map((notification) => notification.id);
-
-    if (unreadIds.length === 0) {
-      return 0;
-    }
-
     const result = await this.db.notification.updateMany({
-      where: { id: { in: unreadIds } },
+      where: {
+        userId,
+        projectId,
+        type,
+        ...mongoNullOrUnset('readAt'),
+      },
       data: { readAt: new Date() },
     });
 

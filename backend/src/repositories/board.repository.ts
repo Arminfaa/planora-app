@@ -14,6 +14,7 @@ export class BoardRepository extends BaseRepository {
   }
 
   async findById(id: string) {
+    // Card payload: omit description and only preview the first checklist items.
     const board = await this.db.board.findUnique({
       where: { id },
       include: {
@@ -22,15 +23,42 @@ export class BoardRepository extends BaseRepository {
           include: {
             tasks: {
               orderBy: { position: 'asc' },
-              include: {
+              select: {
+                id: true,
+                slug: true,
+                title: true,
+                description: true,
+                columnId: true,
+                boardId: true,
+                position: true,
+                priority: true,
+                startDate: true,
+                dueDate: true,
+                completeDate: true,
+                progress: true,
+                parentTaskId: true,
+                isCompleted: true,
+                autoCompleteSuppressed: true,
+                assigneeIds: true,
+                createdById: true,
+                createdAt: true,
+                updatedAt: true,
                 labels: {
                   include: { label: true },
                 },
                 checklistItems: {
                   orderBy: { position: 'asc' },
+                  take: 5,
+                  select: {
+                    id: true,
+                    title: true,
+                    isDone: true,
+                    weight: true,
+                    position: true,
+                  },
                 },
                 _count: {
-                  select: { attachments: true },
+                  select: { attachments: true, checklistItems: true },
                 },
               },
             },
@@ -52,6 +80,20 @@ export class BoardRepository extends BaseRepository {
         tasks: column.tasks.map((task) => enrichedById.get(task.id) ?? task),
       })),
     };
+  }
+
+  async findColumnSummariesByBoardId(boardId: string) {
+    return this.db.column.findMany({
+      where: { boardId },
+      orderBy: { position: 'asc' },
+      select: {
+        id: true,
+        name: true,
+        boardId: true,
+        position: true,
+        color: true,
+      },
+    });
   }
 
   async findByProject(projectId: string): Promise<Board[]> {

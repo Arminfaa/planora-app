@@ -121,12 +121,29 @@ export function applyRealtimeEvent(
 ): BoardColumn[] {
   switch (event.type) {
     case 'task:moved': {
-      const { columns: syncedColumns } = event.payload as {
+      const payload = event.payload as {
         columns?: BoardColumn[];
+        task?: BoardTask;
+        tasks?: BoardTask[];
       };
-      if (syncedColumns?.length) {
-        return normalizeColumns(syncedColumns);
+
+      // Legacy full-board sync payload (kept for older server events).
+      if (payload.columns?.length) {
+        return normalizeColumns(payload.columns);
       }
+
+      if (payload.tasks?.length) {
+        let next = columns;
+        for (const task of payload.tasks) {
+          next = insertTask(next, task);
+        }
+        return normalizeColumns(next);
+      }
+
+      if (payload.task) {
+        return normalizeColumns(insertTask(columns, payload.task));
+      }
+
       return columns;
     }
     case 'task:created': {

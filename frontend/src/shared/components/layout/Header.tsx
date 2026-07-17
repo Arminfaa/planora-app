@@ -3,6 +3,7 @@
 import Link from 'next/link';
 import dynamic from 'next/dynamic';
 import { usePathname } from 'next/navigation';
+import { useAuth } from '@/features/auth/hooks/useAuth';
 import { LocaleSwitcher } from '@/i18n/components/LocaleSwitcher';
 import { useLocale } from '@/i18n/LocaleProvider';
 import { UserMenuDropdown } from '@/shared/components/layout/UserMenuDropdown';
@@ -62,6 +63,7 @@ function getHeaderContainerClass(pathname: string) {
 export function Header() {
   const pathname = usePathname();
   const { t } = useLocale();
+  const { isLoading: authLoading, user } = useAuth();
   const navLinks = getHeaderNavLinks(pathname, t);
 
   return (
@@ -117,7 +119,11 @@ export function Header() {
         </div>
 
         <div className="ms-auto flex items-center gap-3">
-          <UserMenuDropdown />
+          {authLoading && !user ? (
+            <div className="h-9 w-28 animate-pulse rounded-full bg-gray-100" />
+          ) : (
+            <UserMenuDropdown />
+          )}
         </div>
       </div>
     </header>

@@ -21,6 +21,8 @@ import {
 import { connectSocket, disconnectSocket } from '@/lib/socket';
 import { getCurrentPushEndpoint } from '@/features/notifications/lib/push-client';
 import { notificationService } from '@/features/notifications/services/notification.service';
+import { projectService } from '@/features/projects/services/project.service';
+import { queryKeys, STALE_TIME } from '@/lib/query-keys';
 import type { LoginFormData, RegisterFormData } from '../types';
 import type { User } from '@/shared/types/api';
 
@@ -74,8 +76,20 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }, []);
 
   useEffect(() => {
+    // Bootstrap session on mount; parallel with dashboard prefetch below.
+    // eslint-disable-next-line react-hooks/set-state-in-effect -- auth bootstrap
     void loadUser();
   }, [loadUser]);
+
+  useEffect(() => {
+    // Warm dashboard list in parallel with /auth/me so shell data is ready
+    // as soon as AuthGuard mounts children.
+    void queryClient.prefetchQuery({
+      queryKey: queryKeys.projects.list(1, 10),
+      queryFn: () => projectService.list(1, 10),
+      staleTime: STALE_TIME.projectsList,
+    });
+  }, [queryClient]);
 
   const login = useCallback(
     async (

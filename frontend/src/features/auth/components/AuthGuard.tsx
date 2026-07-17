@@ -3,13 +3,16 @@
 import { useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { useAuth } from '@/features/auth/hooks/useAuth';
-import { LoadingSpinner } from '@/shared/components/feedback/LoadingSpinner';
 
 function getRedirectPath(): string {
   if (typeof window === 'undefined') return '/dashboard';
   return `${window.location.pathname}${window.location.search}`;
 }
 
+/**
+ * Renders the protected shell immediately so route data can fetch in parallel
+ * with /auth/me. Redirects only after session resolution fails.
+ */
 export function AuthGuard({ children }: { children: React.ReactNode }) {
   const { isAuthenticated, isLoading } = useAuth();
   const router = useRouter();
@@ -21,8 +24,7 @@ export function AuthGuard({ children }: { children: React.ReactNode }) {
     }
   }, [isAuthenticated, isLoading, router]);
 
-  if (isLoading) return <LoadingSpinner />;
-  if (!isAuthenticated) return null;
+  if (!isLoading && !isAuthenticated) return null;
 
   return <>{children}</>;
 }

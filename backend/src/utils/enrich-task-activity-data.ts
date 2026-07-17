@@ -1,5 +1,4 @@
-import { boardRepository } from '../repositories/board.repository';
-import { taskRepository } from '../repositories/task.repository';
+import { prisma } from '../config/database';
 
 const TASK_LINK_ACTIVITY_TYPES = new Set([
   'task.created',
@@ -11,6 +10,28 @@ export function isTaskLinkActivityType(
   activityType: string | null | undefined,
 ): boolean {
   return Boolean(activityType && TASK_LINK_ACTIVITY_TYPES.has(activityType));
+}
+
+async function findTaskBoardLinks(taskIds: string[]) {
+  if (taskIds.length === 0) {
+    return new Map<string, { taskSlug: string; boardSlug: string | undefined }>();
+  }
+
+  const tasks = await prisma.task.findMany({
+    where: { id: { in: taskIds } },
+    select: {
+      id: true,
+      slug: true,
+      board: { select: { slug: true } },
+    },
+  });
+
+  return new Map(
+    tasks.map((task) => [
+      task.id,
+      { taskSlug: task.slug, boardSlug: task.board?.slug },
+    ]),
+  );
 }
 
 export async function enrichTaskActivityData<T extends Record<string, unknown>>(
@@ -33,17 +54,16 @@ export async function enrichTaskActivityData<T extends Record<string, unknown>>(
     return activityData;
   }
 
-  const task = await taskRepository.findById(taskId);
-  if (!task) {
+  const linkByTaskId = await findTaskBoardLinks([taskId]);
+  const link = linkByTaskId.get(taskId);
+  if (!link) {
     return activityData;
   }
 
-  const board = await boardRepository.findById(task.boardId);
-
   return {
     ...activityData,
-    taskSlug: task.slug,
-    boardSlug: board?.slug,
+    taskSlug: link.taskSlug,
+    boardSlug: link.boardSlug,
   };
 }
 
@@ -72,23 +92,7 @@ export async function enrichTaskActivityDataBatch(
 
   if (taskIds.length === 0) return;
 
-  const linkByTaskId = new Map<
-    string,
-    { taskSlug: string; boardSlug: string | undefined }
-  >();
-
-  await Promise.all(
-    taskIds.map(async (taskId) => {
-      const task = await taskRepository.findById(taskId);
-      if (!task) return;
-
-      const board = await boardRepository.findById(task.boardId);
-      linkByTaskId.set(taskId, {
-        taskSlug: task.slug,
-        boardSlug: board?.slug,
-      });
-    }),
-  );
+  const linkByTaskId = await findTaskBoardLinks(taskIds);
 
   for (const entry of entries) {
     if (!isTaskLinkActivityType(entry.activityType)) continue;
