@@ -122,12 +122,10 @@ export function ColumnSearchInput({
         styles={
           isGlass
             ? {
-                ...styles,
                 input: {
                   color: '#fff',
                   caretColor: '#fff',
                   backgroundColor: 'transparent',
-                  ...styles?.input,
                 },
               }
             : styles
