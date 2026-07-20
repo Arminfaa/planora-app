@@ -75,7 +75,7 @@ export function ColumnSearchInput({
             '[&_.ant-input]:placeholder:!text-gray-400',
             '[&_.ant-input-clear-icon]:!text-gray-400',
             '[&_.ant-input-affix-wrapper:hover_.ant-input-prefix_svg]:!text-primary-500',
-          ]
+          ],
         className,
       )}
       {...props}
