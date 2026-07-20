@@ -1195,6 +1195,7 @@ export const faMessages = {
     globalPlaceholder: 'جستجوی پروژه‌ها، بردها، وظایف...',
     noResults: 'نتیجه‌ای یافت نشد',
     searchTasks: 'جستجوی وظایف...',
+    searchColumnTasks: 'جستجو در این ستون...',
     filterByPriority: 'اولویت',
     filterByAssignee: 'مسئول',
     filterByLabel: 'برچسب‌ها',

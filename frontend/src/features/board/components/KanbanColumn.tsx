@@ -1,6 +1,6 @@
 'use client';
 
-import { memo, type HTMLAttributes } from 'react';
+import { memo, useMemo, useState, type HTMLAttributes } from 'react';
 import { useSortable } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
 import { useDroppable } from '@dnd-kit/core';
@@ -15,6 +15,7 @@ import type { CreateTaskInput } from '@/features/tasks/types';
 import { columnSortableKey } from '../utils/applyRealtimeEvent';
 import { getColumnTaskDropId } from '../utils/kanbanDndUtils';
 import { useLocale } from '@/i18n/LocaleProvider';
+import { SearchInput } from '@/shared/components/ui/SearchInput';
 import { SortableTaskCard } from './TaskCard';
 import { AddTaskForm } from './AddTaskForm';
 import { GripVerticalIcon } from './GripVerticalIcon';
@@ -47,6 +48,25 @@ interface KanbanColumnProps {
   memberColorMap?: Map<string, AssigneeColorTheme>;
 }
 
+function taskMatchesColumnQuery(task: BoardTask, query: string): boolean {
+  const normalized = query.trim().toLowerCase();
+  if (!normalized) return true;
+
+  const checklistText = (task.checklistItems ?? [])
+    .flatMap((item) => [
+      item.title,
+      item.isDone ? 'checked done complete completed' : 'unchecked todo open',
+    ])
+    .join(' ')
+    .toLowerCase();
+
+  return (
+    task.title.toLowerCase().includes(normalized) ||
+    (task.description ?? '').toLowerCase().includes(normalized) ||
+    checklistText.includes(normalized)
+  );
+}
+
 export const KanbanColumn = memo(function KanbanColumn({
   column,
   members,
@@ -71,11 +91,16 @@ export const KanbanColumn = memo(function KanbanColumn({
   memberColorMap,
 }: KanbanColumnProps) {
   const { t } = useLocale();
+  const [searchQuery, setSearchQuery] = useState('');
   const { setNodeRef, isOver } = useDroppable({
     id: getColumnTaskDropId(column.id),
   });
-  const tasks = column.tasks ?? [];
-  const taskIds = tasks.map((t) => t.id);
+  const tasks = useMemo(() => column.tasks ?? [], [column.tasks]);
+  const filteredTasks = useMemo(
+    () => tasks.filter((task) => taskMatchesColumnQuery(task, searchQuery)),
+    [searchQuery, tasks],
+  );
+  const taskIds = filteredTasks.map((t) => t.id);
   const sortableKey = columnSortableKey(column);
   const isGlass = variant === 'glass';
 
@@ -173,10 +198,24 @@ export const KanbanColumn = memo(function KanbanColumn({
         </div>
       )}
 
+      <div className="shrink-0 px-3 pb-1.5">
+        <SearchInput
+          value={searchQuery}
+          onChange={(event) => setSearchQuery(event.target.value)}
+          placeholder={t('search.searchColumnTasks')}
+          aria-label={t('search.searchColumnTasks')}
+          className={
+            isGlass
+              ? 'border-white/15 bg-white/10 text-white placeholder:text-white/50'
+              : 'border-gray-200 bg-white'
+          }
+        />
+      </div>
+
       <div
         ref={setNodeRef}
         className={`kanban-column-scroll flex min-h-0 flex-1 flex-col gap-2 overflow-y-auto p-3 ${
-          isOver && tasks.length === 0
+          isOver && filteredTasks.length === 0
             ? isGlass
               ? 'bg-white/10'
               : 'bg-primary-50/40'
@@ -188,7 +227,7 @@ export const KanbanColumn = memo(function KanbanColumn({
           items={taskIds}
           strategy={verticalListSortingStrategy}
         >
-          {tasks.map((task) => (
+          {filteredTasks.map((task) => (
             <SortableTaskCard
               key={`${task.id}-${task.position}`}
               task={task}
@@ -211,7 +250,7 @@ export const KanbanColumn = memo(function KanbanColumn({
           ))}
         </SortableContext>
 
-        {tasks.length === 0 && (
+        {filteredTasks.length === 0 && (
           <div
             className={`pointer-events-none flex min-h-[120px] items-center justify-center rounded-lg border border-dashed px-3 py-6 text-center text-xs ${
               isGlass
@@ -219,7 +258,9 @@ export const KanbanColumn = memo(function KanbanColumn({
                 : 'border-gray-200 text-gray-400'
             } ${isOver ? (isGlass ? 'border-white/50 text-white/70' : 'border-primary-300 text-primary-500') : ''}`}
           >
-            {t('board.dropTasksHere')}
+            {searchQuery.trim()
+              ? t('board.noTasksMatch')
+              : t('board.dropTasksHere')}
           </div>
         )}
       </div>

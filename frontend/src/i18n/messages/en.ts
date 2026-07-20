@@ -1196,6 +1196,7 @@ export const enMessages = {
     globalPlaceholder: 'Search projects, boards, tasks...',
     noResults: 'No results found',
     searchTasks: 'Search tasks...',
+    searchColumnTasks: 'Search this column...',
     filterByPriority: 'Priority',
     filterByAssignee: 'Assignee',
     filterByLabel: 'Labels',
