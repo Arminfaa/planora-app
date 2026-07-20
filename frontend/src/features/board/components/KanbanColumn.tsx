@@ -15,9 +15,9 @@ import type { CreateTaskInput } from '@/features/tasks/types';
 import { columnSortableKey } from '../utils/applyRealtimeEvent';
 import { getColumnTaskDropId } from '../utils/kanbanDndUtils';
 import { useLocale } from '@/i18n/LocaleProvider';
-import { SearchInput } from '@/shared/components/ui/SearchInput';
 import { SortableTaskCard } from './TaskCard';
 import { AddTaskForm } from './AddTaskForm';
+import { ColumnSearchInput } from './ColumnSearchInput';
 import { GripVerticalIcon } from './GripVerticalIcon';
 
 interface KanbanColumnProps {
@@ -198,17 +198,13 @@ export const KanbanColumn = memo(function KanbanColumn({
         </div>
       )}
 
-      <div className="shrink-0 px-4 pb-1.5">
-        <SearchInput
+      <div className="shrink-0 px-3 pb-1.5">
+        <ColumnSearchInput
+          boardVariant={isGlass ? 'glass' : 'default'}
           value={searchQuery}
           onChange={(event) => setSearchQuery(event.target.value)}
           placeholder={t('search.searchColumnTasks')}
           aria-label={t('search.searchColumnTasks')}
-          className={
-            isGlass
-              ? '[&_.ant-input-affix-wrapper]:rounded-lg [&_.ant-input-affix-wrapper]:border [&_.ant-input-affix-wrapper]:border-dashed [&_.ant-input-affix-wrapper]:border-white/25 [&_.ant-input-affix-wrapper]:bg-white/10 [&_.ant-input-affix-wrapper]:text-white [&_.ant-input-affix-wrapper]:shadow-none [&_.ant-input-affix-wrapper]:backdrop-blur-md [&_.ant-input-affix-wrapper:hover]:border-white/45 [&_.ant-input-affix-wrapper-focused]:border-white/55 [&_.ant-input-affix-wrapper-focused]:shadow-none [&_.ant-input-clear-icon]:text-white/60 [&_.ant-input-prefix_svg]:text-white/55 [&_.ant-input]:bg-transparent [&_.ant-input]:text-white [&_.ant-input]:placeholder:text-white/45'
-              : '[&_.ant-input-affix-wrapper]:rounded-lg [&_.ant-input-affix-wrapper]:border [&_.ant-input-affix-wrapper]:border-dashed [&_.ant-input-affix-wrapper]:border-gray-300 [&_.ant-input-affix-wrapper]:bg-transparent [&_.ant-input-affix-wrapper]:text-gray-600 [&_.ant-input-affix-wrapper]:shadow-none [&_.ant-input-affix-wrapper:hover]:border-primary-400 [&_.ant-input-affix-wrapper:hover]:text-primary-600 [&_.ant-input-affix-wrapper-focused]:border-primary-400 [&_.ant-input-affix-wrapper-focused]:shadow-none [&_.ant-input-clear-icon]:text-gray-400 [&_.ant-input-prefix_svg]:text-gray-400 [&_.ant-input-affix-wrapper:hover_.ant-input-prefix_svg]:text-primary-500 [&_.ant-input]:bg-transparent [&_.ant-input]:text-gray-700 [&_.ant-input]:placeholder:text-gray-400'
-          }
         />
       </div>
 
