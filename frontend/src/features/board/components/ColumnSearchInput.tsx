@@ -97,6 +97,7 @@ export function ColumnSearchInput({
             ? GLASS_CLASS
             : [
                 '[&_.ant-input-affix-wrapper]:!border-gray-300',
+                '[&_.ant-input-affix-wrapper]:!rounded-[8px]',
                 '[&_.ant-input-affix-wrapper]:!text-gray-600',
                 '[&_.ant-input-affix-wrapper:hover]:!border-primary-400',
                 '[&_.ant-input-affix-wrapper-focused]:!border-primary-400',
