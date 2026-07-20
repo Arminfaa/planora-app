@@ -96,39 +96,41 @@ export function ColumnSearchInput({
           isGlass
             ? GLASS_CLASS
             : [
-                '[&_.ant-input-affix-wrapper]:!border-gray-300',
-                '[&_.ant-input-affix-wrapper]:!rounded-[8px]',
-                '[&_.ant-input-affix-wrapper]:!text-gray-600',
-                '[&_.ant-input-affix-wrapper:hover]:!border-primary-400',
-                '[&_.ant-input-affix-wrapper-focused]:!border-primary-400',
-                '[&_.ant-input-affix-wrapper-focused]:!shadow-none',
-                '[&_.ant-input]:!text-gray-700',
-                '[&_.ant-input]:placeholder:!text-gray-400',
-                '[&_.ant-input-clear-icon]:!text-gray-400',
-                '[&_.ant-input-affix-wrapper:hover_.ant-input-prefix_svg]:!text-primary-500',
-              ],
+              '[&_.ant-input-affix-wrapper]:!border-gray-300',
+              '[&_.ant-input-affix-wrapper]:!rounded-[8px]',
+              '[&_.ant-input-affix-wrapper]:!text-gray-600',
+              '[&_.ant-input-affix-wrapper:hover]:!border-primary-400',
+              '[&_.ant-input-affix-wrapper-focused]:!border-primary-400',
+              '[&_.ant-input-affix-wrapper-focused]:!shadow-none',
+              '[&_.ant-input]:!text-gray-700',
+              '[&_.ant-input]:placeholder:!text-gray-400',
+              '[&_.ant-input-clear-icon]:!text-gray-400',
+              '[&_.ant-input-affix-wrapper:hover_.ant-input-prefix_svg]:!text-primary-500',
+            ],
           className,
         )}
         style={
           isGlass
             ? {
-                borderColor: 'rgba(255, 255, 255, 0.25)',
-                color: '#fff',
-                boxShadow: 'none',
-                backgroundColor: 'transparent',
-                ...style,
-              }
+              borderColor: 'rgba(255, 255, 255, 0.25)',
+              color: '#fff',
+              boxShadow: 'none',
+              backgroundColor: 'transparent',
+              borderRadius: '8px',
+              ...style,
+            }
             : style
         }
         styles={
           isGlass
             ? {
-                input: {
-                  color: '#fff',
-                  caretColor: '#fff',
-                  backgroundColor: 'transparent',
-                },
-              }
+              input: {
+                color: '#fff',
+                caretColor: '#fff',
+                backgroundColor: 'transparent',
+                borderRadius: '8px',
+              },
+            }
             : styles
         }
       />
