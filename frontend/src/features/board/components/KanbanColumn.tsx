@@ -198,7 +198,7 @@ export const KanbanColumn = memo(function KanbanColumn({
         </div>
       )}
 
-      <div className="shrink-0 px-3 pb-1.5">
+      <div className="shrink-0 px-4 pb-1.5">
         <SearchInput
           value={searchQuery}
           onChange={(event) => setSearchQuery(event.target.value)}
@@ -206,8 +206,8 @@ export const KanbanColumn = memo(function KanbanColumn({
           aria-label={t('search.searchColumnTasks')}
           className={
             isGlass
-              ? 'border-white/15 bg-white/10 text-white placeholder:text-white/50'
-              : 'border-gray-200 bg-white'
+              ? 'rounded-xl border-white/15 bg-white/10 text-white placeholder:text-white/50 shadow-sm backdrop-blur-xl'
+              : 'rounded-xl border-gray-200 bg-white/80 placeholder:text-gray-500 shadow-sm backdrop-blur-sm'
           }
         />
       </div>
