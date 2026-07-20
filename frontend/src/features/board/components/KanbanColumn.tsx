@@ -206,8 +206,8 @@ export const KanbanColumn = memo(function KanbanColumn({
           aria-label={t('search.searchColumnTasks')}
           className={
             isGlass
-              ? 'rounded-xl border-white/15 bg-white/10 text-white placeholder:text-white/50 shadow-sm backdrop-blur-xl'
-              : 'rounded-xl border-gray-200 bg-white/80 placeholder:text-gray-500 shadow-sm backdrop-blur-sm'
+              ? '[&_.ant-input-affix-wrapper]:rounded-lg [&_.ant-input-affix-wrapper]:border [&_.ant-input-affix-wrapper]:border-dashed [&_.ant-input-affix-wrapper]:border-white/25 [&_.ant-input-affix-wrapper]:bg-white/10 [&_.ant-input-affix-wrapper]:text-white [&_.ant-input-affix-wrapper]:shadow-none [&_.ant-input-affix-wrapper]:backdrop-blur-md [&_.ant-input-affix-wrapper:hover]:border-white/45 [&_.ant-input-affix-wrapper-focused]:border-white/55 [&_.ant-input-affix-wrapper-focused]:shadow-none [&_.ant-input-clear-icon]:text-white/60 [&_.ant-input-prefix_svg]:text-white/55 [&_.ant-input]:bg-transparent [&_.ant-input]:text-white [&_.ant-input]:placeholder:text-white/45'
+              : '[&_.ant-input-affix-wrapper]:rounded-lg [&_.ant-input-affix-wrapper]:border [&_.ant-input-affix-wrapper]:border-dashed [&_.ant-input-affix-wrapper]:border-gray-300 [&_.ant-input-affix-wrapper]:bg-transparent [&_.ant-input-affix-wrapper]:text-gray-600 [&_.ant-input-affix-wrapper]:shadow-none [&_.ant-input-affix-wrapper:hover]:border-primary-400 [&_.ant-input-affix-wrapper:hover]:text-primary-600 [&_.ant-input-affix-wrapper-focused]:border-primary-400 [&_.ant-input-affix-wrapper-focused]:shadow-none [&_.ant-input-clear-icon]:text-gray-400 [&_.ant-input-prefix_svg]:text-gray-400 [&_.ant-input-affix-wrapper:hover_.ant-input-prefix_svg]:text-primary-500 [&_.ant-input]:bg-transparent [&_.ant-input]:text-gray-700 [&_.ant-input]:placeholder:text-gray-400'
           }
         />
       </div>
