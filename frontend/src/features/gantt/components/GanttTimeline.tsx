@@ -169,8 +169,7 @@ export function GanttTimeline({
   if (tasks.length === 0) {
     return (
       <div className="rounded-xl border border-dashed border-gray-200 bg-white px-6 py-12 text-center text-sm text-gray-500">
-        No scheduled tasks yet. Add a start date or due date to tasks to see
-        them on the timeline.
+        {t('gantt.noScheduledTasksEmpty')}
       </div>
     );
   }
@@ -235,7 +234,13 @@ export function GanttTimeline({
               <p className="mt-0.5 truncate text-xs text-gray-500">
                 {task.columnName}
                 {task.childCount > 0
-                  ? ` · ${task.childCount} subtask${task.childCount === 1 ? '' : 's'}`
+                  ? ` · ${
+                      task.childCount === 1
+                        ? t('gantt.subtaskCount', { count: task.childCount })
+                        : t('gantt.subtaskCountPlural', {
+                            count: task.childCount,
+                          })
+                    }`
                   : ''}
               </p>
             </div>
@@ -260,18 +265,24 @@ export function GanttTimeline({
     <div className="overflow-hidden rounded-xl border border-gray-200 bg-white shadow-sm">
       <div className="flex flex-wrap items-center justify-between gap-3 border-b border-gray-100 px-4 py-3">
         <p className="text-sm text-gray-600">
-          {tasks.length} scheduled task{tasks.length === 1 ? '' : 's'}
+          {tasks.length === 1
+            ? t('gantt.scheduledTaskCount', { count: tasks.length })
+            : t('gantt.scheduledTaskCountPlural', { count: tasks.length })}
           {dependencies.length > 0 && (
             <span className="text-gray-400">
               {' '}
-              · {dependencies.length} dependenc
-              {dependencies.length === 1 ? 'y' : 'ies'}
+              ·{' '}
+              {dependencies.length === 1
+                ? t('gantt.dependencyCount', { count: dependencies.length })
+                : t('gantt.dependencyCountPlural', {
+                    count: dependencies.length,
+                  })}
             </span>
           )}
           {canEdit && (
             <span className="text-gray-400">
               {' '}
-              · Drag bars to move, edges to resize
+              · {t('gantt.dragHint')}
             </span>
           )}
         </p>
@@ -282,13 +293,13 @@ export function GanttTimeline({
               type="button"
               onClick={() => setZoom(option)}
               className={cn(
-                'rounded-lg px-3 py-1.5 text-xs font-medium capitalize transition',
+                'rounded-lg px-3 py-1.5 text-xs font-medium transition',
                 zoom === option
                   ? 'bg-primary-600 text-white'
                   : 'bg-gray-100 text-gray-600 hover:bg-gray-200',
               )}
             >
-              {option}
+              {t(`gantt.${option}`)}
             </button>
           ))}
         </div>
@@ -304,7 +315,7 @@ export function GanttTimeline({
             style={{ gridTemplateColumns }}
           >
             <div className="sticky start-0 z-20 border-e border-gray-100 bg-gray-50 px-4 py-3">
-              Task
+              {t('gantt.taskColumn')}
             </div>
             <div className="relative px-4 py-3">
               <div className="relative h-5">

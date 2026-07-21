@@ -990,6 +990,24 @@ export const faMessages = {
     selectTask: 'انتخاب وظیفه',
     blockedBy: 'مسدود شده توسط',
     selectPredecessor: 'انتخاب پیش‌نیاز',
+    dependenciesHint:
+      'لینک‌های پایان‌به‌شروع نشان می‌دهند کدام وظایف باید قبل از شروع بقیه تمام شوند.',
+    addLink: 'افزودن لینک',
+    noDependencies: 'هنوز وابستگی‌ای ثبت نشده است.',
+    noPredecessors: 'هنوز پیش‌نیازی ثبت نشده است.',
+    dependenciesTaskHint: 'وظایفی که باید قبل از شروع این وظیفه تمام شوند.',
+    blocks: 'مسدود می‌کند',
+    noScheduledTasksEmpty:
+      'هنوز وظیفه زمان‌بندی‌شده‌ای نیست. برای دیدن در جدول زمانی، تاریخ شروع یا سررسید به وظایف اضافه کنید.',
+    scheduledTaskCount: '{count} وظیفه زمان‌بندی‌شده',
+    scheduledTaskCountPlural: '{count} وظیفه زمان‌بندی‌شده',
+    dependencyCount: '{count} وابستگی',
+    dependencyCountPlural: '{count} وابستگی',
+    dragHint: 'برای جابه‌جایی نوار را بکشید، برای تغییر اندازه لبه‌ها را بکشید',
+    day: 'روز',
+    taskColumn: 'وظیفه',
+    subtaskCount: '{count} زیروظیفه',
+    subtaskCountPlural: '{count} زیروظیفه',
   },
 
   notifications: {

@@ -991,6 +991,17 @@ export const enMessages = {
     noPredecessors: 'No predecessors yet.',
     dependenciesTaskHint: 'Tasks that must finish before this one can start.',
     blocks: 'Blocks',
+    noScheduledTasksEmpty:
+      'No scheduled tasks yet. Add a start date or due date to tasks to see them on the timeline.',
+    scheduledTaskCount: '{count} scheduled task',
+    scheduledTaskCountPlural: '{count} scheduled tasks',
+    dependencyCount: '{count} dependency',
+    dependencyCountPlural: '{count} dependencies',
+    dragHint: 'Drag bars to move, edges to resize',
+    day: 'Day',
+    taskColumn: 'Task',
+    subtaskCount: '{count} subtask',
+    subtaskCountPlural: '{count} subtasks',
   },
 
   notifications: {
