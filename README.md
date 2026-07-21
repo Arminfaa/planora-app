@@ -1,18 +1,25 @@
 # Planora
 
-Planora is a production-oriented, full-stack project management platform with Kanban boards, real-time collaboration, team workflows, and fine-grained access control. Built as a monorepo with a layered Express API and a feature-based Next.js frontend.
+Planora is a production-oriented, full-stack project management platform with Kanban boards, Gantt planning, real-time collaboration, team workflows, and fine-grained access control. Built as a monorepo with a layered Express API and a feature-based Next.js frontend.
+
+**Repository:** [github.com/Arminfaa/planora-app](https://github.com/Arminfaa/planora-app)
 
 ---
 
 ## Highlights
 
-- **Kanban boards** — columns, drag-and-drop task cards, board backgrounds, and an all-tasks view
+- **Kanban boards** — columns, drag-and-drop cards, per-column search & assignee filter, board backgrounds, and real-time sync
+- **Gantt timeline** — project-wide schedule view, drag-to-reschedule, task dependencies, and unscheduled tasks panel
+- **Rich task management** — priorities, due/completion dates, weighted checklists, labels, comments, attachments, and progress tracking
+- **All-tasks hub** — project- or board-scoped list with advanced filters, bulk operations, Excel import/export, and formatted work-report text
+- **Team & analytics** — invites, custom roles, group chat, person completion charts, and project progress overview
+- **Working calendar** — non-working weekends, holidays, and leave days for delivery analytics
 - **Real-time updates** — Socket.io rooms for live board and project events across connected clients
-- **Team collaboration** — invites, member roles, project group chat, and an activity feed
-- **Rich task management** — priorities, due dates, assignees, labels, checklists, comments, and attachments
-- **Advanced search & filters** — global search with priority, assignee, due-date, project, and board scoping
+- **Notifications** — in-app feed with preferences and optional Web Push (VAPID)
+- **Bilingual UI** — English & Persian (FA), RTL layout, Jalali/Gregorian date pickers
 - **Custom RBAC** — default Owner / Admin / Member roles plus per-project custom roles with 37 granular permissions
 - **Secure auth** — JWT in HttpOnly cookies, refresh-token rotation, bcrypt hashing, rate limiting, and password reset via Resend
+- **Polished UX** — content-matched loading skeletons, virtualized long lists, and mobile-friendly form controls
 - **Cloud-ready storage** — local uploads in development, Cloudinary integration for production
 
 ---
@@ -21,10 +28,11 @@ Planora is a production-oriented, full-stack project management platform with Ka
 
 | Layer               | Technologies                                                                                                                                                                                                                                                                                                                                                   |
 | ------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| **Frontend**        | [Next.js 16](https://nextjs.org/) (App Router), [React 19](https://react.dev/), [TypeScript](https://www.typescriptlang.org/), [Tailwind CSS](https://tailwindcss.com/), [Ant Design](https://ant.design/), [React Hook Form](https://react-hook-form.com/) + [Zod](https://zod.dev/), [@dnd-kit](https://dndkit.com/), [Socket.io Client](https://socket.io/) |
-| **Backend**         | [Node.js](https://nodejs.org/) 20+, [Express](https://expressjs.com/), [TypeScript](https://www.typescriptlang.org/), [Prisma](https://www.prisma.io/) + [MongoDB](https://www.mongodb.com/), [Socket.io](https://socket.io/), [Zod](https://zod.dev/), [Winston](https://github.com/winstonjs/winston)                                                        |
+| **Frontend**        | [Next.js 16](https://nextjs.org/) (App Router), [React 19](https://react.dev/), [TypeScript](https://www.typescriptlang.org/), [Tailwind CSS](https://tailwindcss.com/), [Ant Design 6](https://ant.design/), [TanStack Query](https://tanstack.com/query) & [Virtual](https://tanstack.com/virtual), [React Hook Form](https://react-hook-form.com/) + [Zod](https://zod.dev/), [@dnd-kit](https://dndkit.com/), [Recharts](https://recharts.org/), [Socket.io Client](https://socket.io/), [xlsx](https://www.npmjs.com/package/xlsx) |
+| **Backend**         | [Node.js](https://nodejs.org/) 20+, [Express](https://expressjs.com/), [TypeScript](https://www.typescriptlang.org/), [Prisma](https://www.prisma.io/) + [MongoDB](https://www.mongodb.com/), [Socket.io](https://socket.io/), [Zod](https://zod.dev/), [Winston](https://github.com/winstonjs/winston), [web-push](https://www.npmjs.com/package/web-push) |
 | **Auth & Security** | JWT (access + refresh), HttpOnly cookies, bcrypt, Helmet, express-rate-limit, input sanitization                                                                                                                                                                                                                                                               |
 | **Storage**         | Local filesystem (dev) · [Cloudinary](https://cloudinary.com/) (production)                                                                                                                                                                                                                                                                                    |
+| **Email**           | [Resend](https://resend.com/) (password reset)                                                                                                                                                                                                                                                                                                                 |
 | **Tooling**         | npm workspaces, ESLint, Prettier, Husky, lint-staged, Commitlint                                                                                                                                                                                                                                                                                               |
 
 ---
@@ -55,7 +63,7 @@ flowchart LR
 
 **Backend layers:** `Route → Middleware → Controller → Service → Repository → MongoDB`
 
-**Frontend structure:** feature modules (`auth`, `dashboard`, `board`, `projects`, `tasks`, `search`, `permissions`, …) plus a shared UI and service layer.
+**Frontend structure:** feature modules (`auth`, `dashboard`, `board`, `projects`, `tasks`, `gantt`, `notifications`, `search`, `permissions`, …) plus shared UI and service layers.
 
 ---
 
@@ -64,27 +72,37 @@ flowchart LR
 ### Projects & Teams
 
 - Create and manage multiple projects with slug-based URLs
-- Invite members by email with role assignment
-- Accept invites via a dedicated flow
-- Team page with member management and pending invites
-- Project overview, settings, and sub-navigation hub
+- Project hub with overview, all-tasks, Gantt, group chat, team, and settings
+- Invite members by email with role assignment and pending-invite management
+- Team page with member roles, person completion charts (bar/line), and delivery date ranges
+- Project progress overview (by project or by board)
+- Working calendar: weekends, holidays, and member leave for analytics
 
 ### Kanban Boards
 
-- Multiple boards per project with custom backgrounds
+- Multiple boards per project with custom backgrounds (image or gradient)
 - Configurable columns (create, edit, reorder, delete)
 - Task cards with drag-and-drop between columns and within a column
+- Per-column text search (title, description, checklist) and assignee filter modal
 - Real-time board events when tasks, columns, or boards change
 
 ### Tasks
 
-- Title, description, slug, priority (`LOW` → `URGENT`), due dates, and completion state
-- Multiple assignees per task
+- Title, description, slug, priority (`LOW` → `URGENT`), start/due dates, and completion state
+- Multiple assignees per task with color-coded avatars
+- Weighted checklists with per-item `completedAt` timestamps
 - Color-coded project labels
-- Checklists with reordering
-- Threaded comments
-- File and image attachments (with preview modal)
-- Dedicated all-tasks view and task detail modals
+- Threaded comments and file/image attachments (with preview modal)
+- Dedicated all-tasks view (project-wide or per-board) with virtualized list
+- Bulk operations: move, assign, dates, labels, checklist items, delete, export
+- Excel import/export and copy-ready work-report text generation
+
+### Gantt
+
+- Timeline view grouped by board with day/week/month zoom
+- Drag bars to update task schedules
+- Task dependency links (create, list, delete)
+- Unscheduled tasks panel for quick scheduling
 
 ### Project Group
 
@@ -94,20 +112,33 @@ flowchart LR
 
 ### Search & Filters
 
-- Full-text search across accessible projects and tasks
-- Filter by priority, assignee (`unassigned` or user ID), and due date (`overdue`, `today`, `week`, `none`)
-- Scope by project and/or board
+- Global search across accessible projects and tasks
+- Board/all-tasks filters: priority, assignee, column, due date, completion status, completion date range
+- Completion filters include checklist items completed in the selected period (not only fully completed tasks)
+- Kanban column-level search and assignee filter
+
+### Notifications
+
+- In-app notification center with unread state
+- Per-category preferences (task changes, group messages, push)
+- Web Push support when VAPID keys are configured (HTTPS required in production)
 
 ### Permissions
 
 Built-in roles (`OWNER`, `ADMIN`, `MEMBER`) with sensible defaults, or switch a project to **custom mode** and define roles with a permission builder UI. Permissions cover project, board, column, task, team, label, comment, attachment, group, and role management.
+
+### Localization
+
+- English and Persian (فارسی) with runtime locale switching
+- RTL layout for Persian (Vazirmatn font)
+- Jalali calendar support via `antd-jalali-v5` for date inputs and charts
 
 ---
 
 ## Project Structure
 
 ```
-project-management-platform/
+planora-app/
 ├── backend/                 # Express REST API + Socket.io
 │   ├── prisma/              # Schema, seed data, replica-set init
 │   ├── mongo/               # Local MongoDB replica-set config
@@ -127,8 +158,9 @@ project-management-platform/
 │
 ├── frontend/                # Next.js App Router
 │   └── src/
-│       ├── app/             # Routes, layouts, metadata
+│       ├── app/             # Routes, layouts, metadata, loading skeletons
 │       ├── features/        # Feature-based modules
+│       ├── i18n/            # EN/FA messages and locale provider
 │       ├── shared/          # Reusable components, hooks, UI primitives
 │       └── lib/             # API client, socket, Ant Design setup
 │
@@ -153,8 +185,8 @@ project-management-platform/
 ### 1. Clone and install
 
 ```bash
-git clone https://github.com/<your-username>/project-management-platform.git
-cd project-management-platform
+git clone https://github.com/Arminfaa/planora-app.git
+cd planora-app
 npm install
 ```
 
@@ -174,6 +206,8 @@ cp frontend/.env.example frontend/.env.local
 | `CORS_ORIGIN`    | Allowed frontend origin (default: `http://localhost:3000`)                                         |
 | `API_PUBLIC_URL` | Public URL for serving uploaded files                                                              |
 | `CLOUDINARY_*`   | Cloudinary credentials (production attachments)                                                    |
+| `RESEND_API_KEY` | Resend API key for password-reset emails                                                           |
+| `VAPID_*`        | Web Push keys (`npx web-push generate-vapid-keys`)                                                |
 
 **Frontend** (`frontend/.env.local`) — key variables:
 
@@ -204,7 +238,7 @@ After seeding, the CLI prints demo user credentials. Example owner account:
 | -------------------- | -------------- |
 | `arminfaa@gmail.com` | `password0041` |
 
-The seed creates **4 projects**, **7 users**, boards, columns, tasks, checklists, comments, labels, and group chat messages.
+The seed creates multiple projects, users, boards, columns, tasks, checklists, comments, labels, and group chat messages.
 
 ### 4. Run the app
 
@@ -252,11 +286,13 @@ All endpoints are versioned under `/api/v1` and return a consistent envelope:
 | Area                 | Endpoints                                                               |
 | -------------------- | ----------------------------------------------------------------------- |
 | **Auth**             | `POST /auth/register`, `/login`, `/refresh`, `/logout` · `GET /auth/me` |
-| **Projects**         | CRUD + permission catalog                                               |
+| **Projects**         | CRUD, progress stats, working calendar, person completions              |
 | **Boards & Columns** | Nested under projects and boards                                        |
-| **Tasks**            | CRUD, move, checklist, labels, comments, attachments                    |
+| **Tasks**            | CRUD, move, bulk actions, checklist, labels, comments, attachments    |
+| **Gantt**            | Project timeline, dependencies, schedule updates                        |
 | **Team**             | Members, invites, role definitions                                      |
 | **Search**           | `GET /search` with text and filter params                               |
+| **Notifications**    | Feed, preferences, Web Push subscription                                |
 | **Group**            | Project group messages and attachments                                  |
 | **Health**           | `GET /health`                                                           |
 
@@ -322,6 +358,8 @@ See [docs/testing.md](docs/testing.md) for the manual QA checklist.
 
 - Set `NODE_ENV=production` and a strong `JWT_SECRET`
 - Configure `CLOUDINARY_*` for cloud file storage
+- Configure `RESEND_API_KEY` and a verified `RESEND_FROM_EMAIL` for password reset
+- Configure `VAPID_*` and `APP_PUBLIC_URL` for Web Push (HTTPS required)
 - Cookies are `Secure` and `SameSite=Lax` in production
 - The Next.js app proxies `/api/v1`, `/socket.io`, and `/uploads` to the backend — deploy both services with matching `BACKEND_API_URL`
 - Atlas migration helpers: `npm run db:migrate-atlas -w backend`
@@ -344,19 +382,18 @@ See [docs/testing.md](docs/testing.md) for the manual QA checklist.
 
 ## Roadmap
 
-| Step                                | Status |
+| Area                                | Status |
 | ----------------------------------- | ------ |
-| Folder structure & configuration    | ✅     |
-| Database & Prisma schema            | ✅     |
-| Authentication (JWT + refresh)      | ✅     |
-| REST API (projects, boards, tasks)  | ✅     |
-| Frontend dashboard & projects       | ✅     |
-| Kanban board & drag-and-drop        | ✅     |
-| Real-time collaboration (Socket.io) | ✅     |
-| Search & advanced filters           | ✅     |
-| Team invites & custom roles (RBAC)  | ✅     |
-| Project group chat & activity feed  | ✅     |
-| Checklists, comments, attachments   | ✅     |
+| Core platform (auth, projects, RBAC) | ✅     |
+| Kanban boards & real-time sync      | ✅     |
+| Tasks, checklists, comments, files  | ✅     |
+| Search, filters & all-tasks view    | ✅     |
+| Bulk ops, Excel import/export       | ✅     |
+| Gantt timeline & dependencies       | ✅     |
+| Team analytics & working calendar   | ✅     |
+| Notifications & Web Push            | ✅     |
+| Bilingual UI (EN/FA) & Jalali dates | ✅     |
+| Content-matched loading skeletons   | ✅     |
 | Smoke tests & QA                    | ✅     |
 
 ---
