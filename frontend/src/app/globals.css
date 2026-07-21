@@ -504,3 +504,41 @@ html.app-scroll-locked body {
 .kanban-column-scroll::-webkit-scrollbar-thumb:hover {
   background: rgba(255, 255, 255, 0.36);
 }
+
+/*
+ * Keep form control text at 16px under ~tablet widths.
+ * Prevents iOS Safari auto-zoom on focus when font-size is < 16px.
+ */
+@media (max-width: 991px) {
+  input:not([type='checkbox']):not([type='radio']):not([type='range']):not(
+      [type='file']
+    ):not([type='button']):not([type='submit']):not([type='reset']):not(
+      [type='image']
+    ):not([type='hidden']),
+  select,
+  textarea,
+  .ant-input,
+  .ant-input-affix-wrapper,
+  .ant-input-affix-wrapper .ant-input,
+  .ant-input-outlined,
+  .ant-input-filled,
+  .ant-input-borderless,
+  .ant-input-textarea textarea,
+  .ant-input-number,
+  .ant-input-number-input,
+  .ant-input-search .ant-input,
+  .ant-mentions,
+  .ant-mentions-outlined,
+  .ant-select,
+  .ant-select-selector,
+  .ant-select-selection-item,
+  .ant-select-selection-placeholder,
+  .ant-select-selection-search-input,
+  .ant-picker,
+  .ant-picker-input > input,
+  .ant-picker-range .ant-picker-input > input,
+  .ant-cascader-picker,
+  .ant-tree-select .ant-select-selector {
+    font-size: 16px !important;
+  }
+}
