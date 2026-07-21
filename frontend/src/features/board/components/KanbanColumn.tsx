@@ -12,11 +12,14 @@ import type { BoardColumn, BoardTask } from '../types';
 import type { ProjectMember } from '@/features/projects/types';
 import type { AssigneeColorTheme } from '@/features/tasks/utils/assigneeColors';
 import type { CreateTaskInput } from '@/features/tasks/types';
+import { UNASSIGNED_ASSIGNEE } from '@/features/search/types/filter';
 import { columnSortableKey } from '../utils/applyRealtimeEvent';
+import { taskMatchesColumnFilters } from '../utils/columnTaskFilters';
 import { getColumnTaskDropId } from '../utils/kanbanDndUtils';
 import { useLocale } from '@/i18n/LocaleProvider';
 import { SortableTaskCard } from './TaskCard';
 import { AddTaskForm } from './AddTaskForm';
+import { ColumnAssigneeFilter } from './ColumnAssigneeFilter';
 import { ColumnSearchInput } from './ColumnSearchInput';
 import { GripVerticalIcon } from './GripVerticalIcon';
 
@@ -48,23 +51,27 @@ interface KanbanColumnProps {
   memberColorMap?: Map<string, AssigneeColorTheme>;
 }
 
-function taskMatchesColumnQuery(task: BoardTask, query: string): boolean {
-  const normalized = query.trim().toLowerCase();
-  if (!normalized) return true;
+function buildColumnAssigneeOptions(
+  tasks: BoardTask[],
+  members: ProjectMember[],
+): Array<{ value: string; label: string }> {
+  const byId = new Map<string, string>();
 
-  const checklistText = (task.checklistItems ?? [])
-    .flatMap((item) => [
-      item.title,
-      item.isDone ? 'checked done complete completed' : 'unchecked todo open',
-    ])
-    .join(' ')
-    .toLowerCase();
+  for (const member of members) {
+    byId.set(member.id, member.name);
+  }
 
-  return (
-    task.title.toLowerCase().includes(normalized) ||
-    (task.description ?? '').toLowerCase().includes(normalized) ||
-    checklistText.includes(normalized)
-  );
+  for (const task of tasks) {
+    for (const assignee of task.assignees ?? []) {
+      if (!byId.has(assignee.id)) {
+        byId.set(assignee.id, assignee.name);
+      }
+    }
+  }
+
+  return [...byId.entries()]
+    .map(([value, label]) => ({ value, label }))
+    .sort((a, b) => a.label.localeCompare(b.label));
 }
 
 export const KanbanColumn = memo(function KanbanColumn({
@@ -92,14 +99,24 @@ export const KanbanColumn = memo(function KanbanColumn({
 }: KanbanColumnProps) {
   const { t } = useLocale();
   const [searchQuery, setSearchQuery] = useState('');
+  const [assigneeFilter, setAssigneeFilter] = useState<string | null>(null);
   const { setNodeRef, isOver } = useDroppable({
     id: getColumnTaskDropId(column.id),
   });
   const tasks = useMemo(() => column.tasks ?? [], [column.tasks]);
-  const filteredTasks = useMemo(
-    () => tasks.filter((task) => taskMatchesColumnQuery(task, searchQuery)),
-    [searchQuery, tasks],
+  const assigneeOptions = useMemo(
+    () => buildColumnAssigneeOptions(tasks, members),
+    [members, tasks],
   );
+  const filteredTasks = useMemo(
+    () =>
+      tasks.filter((task) =>
+        taskMatchesColumnFilters(task, searchQuery, assigneeFilter),
+      ),
+    [assigneeFilter, searchQuery, tasks],
+  );
+  const hasActiveColumnFilters =
+    searchQuery.trim().length > 0 || assigneeFilter !== null;
   const taskIds = filteredTasks.map((t) => t.id);
   const sortableKey = columnSortableKey(column);
   const isGlass = variant === 'glass';
@@ -199,13 +216,34 @@ export const KanbanColumn = memo(function KanbanColumn({
       )}
 
       <div className="shrink-0 px-3 pb-1.5">
-        <ColumnSearchInput
-          boardVariant={isGlass ? 'glass' : 'default'}
-          value={searchQuery}
-          onChange={(event) => setSearchQuery(event.target.value)}
-          placeholder={t('search.searchColumnTasks')}
-          aria-label={t('search.searchColumnTasks')}
-        />
+        <div className="flex items-stretch gap-2">
+          <ColumnSearchInput
+            boardVariant={isGlass ? 'glass' : 'default'}
+            value={searchQuery}
+            onChange={(event) => setSearchQuery(event.target.value)}
+            placeholder={t('search.searchColumnTasks')}
+            aria-label={t('search.searchColumnTasks')}
+            className="min-w-0 flex-1"
+          />
+          <ColumnAssigneeFilter
+            boardVariant={isGlass ? 'glass' : 'default'}
+            value={assigneeFilter ?? undefined}
+            onChange={(value) =>
+              setAssigneeFilter(
+                value === undefined || value === null || value === ''
+                  ? null
+                  : String(value),
+              )
+            }
+            options={[
+              { value: UNASSIGNED_ASSIGNEE, label: t('tasks.unassigned') },
+              ...assigneeOptions,
+            ]}
+            placeholder={t('search.filterByAssignee')}
+            aria-label={t('search.filterByAssignee')}
+            className="w-[7.25rem] shrink-0 sm:w-[8.75rem]"
+          />
+        </div>
       </div>
 
       <div
@@ -254,7 +292,7 @@ export const KanbanColumn = memo(function KanbanColumn({
                 : 'border-gray-200 text-gray-400'
             } ${isOver ? (isGlass ? 'border-white/50 text-white/70' : 'border-primary-300 text-primary-500') : ''}`}
           >
-            {searchQuery.trim()
+            {hasActiveColumnFilters
               ? t('board.noTasksMatch')
               : t('board.dropTasksHere')}
           </div>
