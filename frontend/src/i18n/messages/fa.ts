@@ -623,6 +623,7 @@ export const faMessages = {
     activeFiltersPlural: '{count} فیلتر فعال',
     clearFilters: 'پاک کردن فیلترها',
     filterTasks: 'فیلتر وظایف',
+    filterColumnAssignee: 'فیلتر ستون بر اساس مسئول',
     sortBy: 'مرتب‌سازی بر اساس',
     viewTask: 'مشاهده وظیفه',
     editTask: 'ویرایش وظیفه',

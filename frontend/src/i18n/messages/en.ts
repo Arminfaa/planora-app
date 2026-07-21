@@ -622,6 +622,7 @@ export const enMessages = {
     activeFiltersPlural: '{count} active filters',
     clearFilters: 'Clear filters',
     filterTasks: 'Filter tasks',
+    filterColumnAssignee: 'Filter column by assignee',
     sortBy: 'Sort by',
     viewTask: 'View task',
     editTask: 'Edit task',

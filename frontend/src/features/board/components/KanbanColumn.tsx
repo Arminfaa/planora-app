@@ -12,14 +12,14 @@ import type { BoardColumn, BoardTask } from '../types';
 import type { ProjectMember } from '@/features/projects/types';
 import type { AssigneeColorTheme } from '@/features/tasks/utils/assigneeColors';
 import type { CreateTaskInput } from '@/features/tasks/types';
-import { UNASSIGNED_ASSIGNEE } from '@/features/search/types/filter';
 import { columnSortableKey } from '../utils/applyRealtimeEvent';
 import { taskMatchesColumnFilters } from '../utils/columnTaskFilters';
 import { getColumnTaskDropId } from '../utils/kanbanDndUtils';
 import { useLocale } from '@/i18n/LocaleProvider';
 import { SortableTaskCard } from './TaskCard';
 import { AddTaskForm } from './AddTaskForm';
-import { ColumnAssigneeFilter } from './ColumnAssigneeFilter';
+import { ColumnAssigneeFilterModal } from './ColumnAssigneeFilterModal';
+import { ColumnFilterButton } from './ColumnFilterButton';
 import { ColumnSearchInput } from './ColumnSearchInput';
 import { GripVerticalIcon } from './GripVerticalIcon';
 
@@ -100,6 +100,7 @@ export const KanbanColumn = memo(function KanbanColumn({
   const { t } = useLocale();
   const [searchQuery, setSearchQuery] = useState('');
   const [assigneeFilter, setAssigneeFilter] = useState<string | null>(null);
+  const [showAssigneeFilterModal, setShowAssigneeFilterModal] = useState(false);
   const { setNodeRef, isOver } = useDroppable({
     id: getColumnTaskDropId(column.id),
   });
@@ -216,7 +217,7 @@ export const KanbanColumn = memo(function KanbanColumn({
       )}
 
       <div className="shrink-0 px-3 pb-1.5">
-        <div className="flex items-stretch gap-2">
+        <div className="flex items-center gap-2">
           <ColumnSearchInput
             boardVariant={isGlass ? 'glass' : 'default'}
             value={searchQuery}
@@ -225,26 +226,23 @@ export const KanbanColumn = memo(function KanbanColumn({
             aria-label={t('search.searchColumnTasks')}
             className="min-w-0 flex-1"
           />
-          <ColumnAssigneeFilter
+          <ColumnFilterButton
             boardVariant={isGlass ? 'glass' : 'default'}
-            value={assigneeFilter ?? undefined}
-            onChange={(value) =>
-              setAssigneeFilter(
-                value === undefined || value === null || value === ''
-                  ? null
-                  : String(value),
-              )
-            }
-            options={[
-              { value: UNASSIGNED_ASSIGNEE, label: t('tasks.unassigned') },
-              ...assigneeOptions,
-            ]}
-            placeholder={t('search.filterByAssignee')}
-            aria-label={t('search.filterByAssignee')}
-            className="w-[7.25rem] shrink-0 sm:w-[8.75rem]"
+            isActive={assigneeFilter !== null}
+            ariaLabel={t('board.filterColumnAssignee')}
+            onClick={() => setShowAssigneeFilterModal(true)}
           />
         </div>
       </div>
+
+      <ColumnAssigneeFilterModal
+        open={showAssigneeFilterModal}
+        columnName={column.name}
+        value={assigneeFilter}
+        options={assigneeOptions}
+        onChange={setAssigneeFilter}
+        onClose={() => setShowAssigneeFilterModal(false)}
+      />
 
       <div
         ref={setNodeRef}
