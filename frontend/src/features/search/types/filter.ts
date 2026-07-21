@@ -20,6 +20,8 @@ export interface TaskFilters {
   completeDate: CompleteDateFilter;
   completeDateFrom: string | null;
   completeDateTo: string | null;
+  /** When true, completion-date filters also match checklist items ticked in range. */
+  includeChecklistCompletions: boolean;
   columnId: string | null;
 }
 
@@ -33,6 +35,7 @@ export const defaultTaskFilters: TaskFilters = {
   completeDate: 'all',
   completeDateFrom: null,
   completeDateTo: null,
+  includeChecklistCompletions: true,
   columnId: null,
 };
 

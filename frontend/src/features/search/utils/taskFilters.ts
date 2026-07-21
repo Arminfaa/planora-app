@@ -2,6 +2,10 @@ import type { BoardColumn, BoardTask } from '@/features/board/types';
 import type { TaskPriority } from '@/features/tasks/types';
 import { getTaskAssignees } from '@/features/tasks/types';
 import {
+  matchesCompletionTimestamp,
+  taskHasMatchingChecklistCompletion,
+} from '@/features/tasks/utils/checklistCompletion';
+import {
   type BoardAssigneeOption,
   type TaskFilters,
   UNASSIGNED_ASSIGNEE,
@@ -25,12 +29,6 @@ function endOfWeek(date = new Date()): Date {
   const day = value.getDay();
   const daysUntilSunday = day === 0 ? 0 : 7 - day;
   value.setDate(value.getDate() + daysUntilSunday);
-  return endOfDay(value);
-}
-
-function endOfMonth(date = new Date()): Date {
-  const value = startOfDay(date);
-  value.setMonth(value.getMonth() + 1, 0);
   return endOfDay(value);
 }
 
@@ -100,35 +98,20 @@ function matchesCompleteDateFilter(
   const { completeDate } = filters;
   if (completeDate === 'all') return true;
 
-  if (completeDate === 'range') {
-    if (!filters.completeDateFrom && !filters.completeDateTo) return true;
-    return matchesDateRange(
-      task.completeDate,
-      filters.completeDateFrom,
-      filters.completeDateTo,
-    );
+  const taskMatches = matchesCompletionTimestamp(
+    task.completeDate,
+    completeDate,
+    filters.completeDateFrom,
+    filters.completeDateTo,
+  );
+
+  if (completeDate === 'none') {
+    return !task.completeDate;
   }
 
-  if (!task.completeDate) {
-    return completeDate === 'none';
-  }
+  if (taskMatches) return true;
 
-  const completedAt = new Date(task.completeDate);
-  const todayStart = startOfDay();
-  const todayEnd = endOfDay();
-
-  switch (completeDate) {
-    case 'none':
-      return false;
-    case 'today':
-      return completedAt >= todayStart && completedAt <= todayEnd;
-    case 'week':
-      return completedAt >= todayStart && completedAt <= endOfWeek();
-    case 'month':
-      return completedAt >= todayStart && completedAt <= endOfMonth();
-    default:
-      return true;
-  }
+  return taskHasMatchingChecklistCompletion(task, filters);
 }
 
 export function isTaskFiltersActive(

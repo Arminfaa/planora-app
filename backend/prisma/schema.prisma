@@ -320,14 +320,15 @@ model TaskDependency {
 }
 
 model TaskChecklistItem {
-  id        String   @id @default(auto()) @map("_id") @db.ObjectId
-  taskId    String   @db.ObjectId
-  title     String
-  isDone    Boolean  @default(false)
-  weight    Int      @default(5)
-  position  Int      @default(0)
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+  id          String    @id @default(auto()) @map("_id") @db.ObjectId
+  taskId      String    @db.ObjectId
+  title       String
+  isDone      Boolean   @default(false)
+  completedAt DateTime?
+  weight      Int       @default(5)
+  position    Int       @default(0)
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
 
   task Task @relation(fields: [taskId], references: [id], onDelete: Cascade)
 

@@ -1,6 +1,7 @@
 'use client';
 
 import type { BoardColumn } from '@/features/board/types';
+import { Checkbox } from 'antd';
 import {
   PRIORITY_OPTIONS,
   getPriorityStyles,
@@ -234,6 +235,24 @@ export function BoardFilterForm({
                 })
               }
             />
+          </div>
+        )}
+
+        {filters.completeDate !== 'all' && filters.completeDate !== 'none' && (
+          <div className="sm:col-span-2">
+            <Checkbox
+              checked={filters.includeChecklistCompletions}
+              onChange={(event) =>
+                onChange({
+                  ...filters,
+                  includeChecklistCompletions: event.target.checked,
+                })
+              }
+            >
+              <span className="text-sm text-gray-700">
+                {t('search.includeChecklistCompletions')}
+              </span>
+            </Checkbox>
           </div>
         )}
       </div>

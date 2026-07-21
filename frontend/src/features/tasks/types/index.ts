@@ -13,6 +13,7 @@ export interface TaskChecklistItem {
   id: string;
   title: string;
   isDone: boolean;
+  completedAt?: string | null;
   weight?: number;
   position: number;
 }

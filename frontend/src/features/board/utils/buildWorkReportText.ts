@@ -1,11 +1,19 @@
 import type { BoardTask } from '../types';
 import { getTaskAssignees } from '@/features/tasks/types';
+import { getCompletedChecklistItems } from '@/features/tasks/utils/checklistCompletion';
+import type { TaskFilters } from '@/features/search/types/filter';
 import type { Locale } from '@/i18n/types';
 import type { Translator } from '@/i18n/utils';
 import { formatLocaleDate } from '@/lib/jalali-dates';
 
 const TASK_SEPARATOR = '························';
 const SECTION_RULE = '────────────────────────';
+
+export interface WorkReportOptions
+  extends Pick<
+    TaskFilters,
+    'completeDate' | 'completeDateFrom' | 'completeDateTo'
+  > {}
 
 function formatReportDate(
   value: string | Date | null | undefined,
@@ -29,10 +37,25 @@ function joinNames(names: string[], locale: Locale): string {
   return names.join(locale === 'fa' ? '، ' : ', ');
 }
 
-function buildHeaderDateLabel(tasks: BoardTask[], locale: Locale): string {
-  const dates = tasks
-    .map((task) => task.completeDate)
-    .filter((value): value is string => Boolean(value))
+function buildHeaderDateLabel(
+  tasks: BoardTask[],
+  locale: Locale,
+  options?: WorkReportOptions,
+): string {
+  const timestamps: string[] = [];
+
+  for (const task of tasks) {
+    if (task.completeDate) {
+      timestamps.push(task.completeDate);
+    }
+    for (const item of getCompletedChecklistItems(task, options)) {
+      if (item.completedAt) {
+        timestamps.push(item.completedAt);
+      }
+    }
+  }
+
+  const dates = timestamps
     .map((value) => ({ value, key: toDayKey(value) }))
     .filter(
       (entry): entry is { value: string; key: number } => entry.key !== null,
@@ -68,20 +91,14 @@ function appendChecklistLines(
   lines: string[],
   task: BoardTask,
   t: Translator,
+  options?: WorkReportOptions,
 ): void {
-  const items = task.checklistItems ?? [];
-  if (items.length === 0) return;
+  const completedItems = getCompletedChecklistItems(task, options);
+  if (completedItems.length === 0) return;
 
-  const doneCount = items.filter((item) => item.isDone).length;
-  lines.push(
-    t('board.workReport.checklistProgress', {
-      done: doneCount,
-      total: items.length,
-    }),
-  );
-  for (const item of items) {
-    const mark = item.isDone ? '✓' : '•';
-    lines.push(`${mark} ${item.title.trim()}`);
+  lines.push(t('board.workReport.checklistCompletedItems'));
+  for (const item of completedItems) {
+    lines.push(`✓ ${item.title.trim()}`);
   }
 }
 
@@ -90,6 +107,7 @@ function formatTaskBlock(
   index: number,
   locale: Locale,
   t: Translator,
+  options?: WorkReportOptions,
 ): string {
   const title = task.title.trim() || t('board.workReport.untitled');
   const assignees = getTaskAssignees(task)
@@ -97,7 +115,7 @@ function formatTaskBlock(
     .filter(Boolean);
 
   const lines: string[] = [`${index + 1}) ${title}`];
-  appendChecklistLines(lines, task, t);
+  appendChecklistLines(lines, task, t, options);
 
   if (task.completeDate) {
     lines.push(
@@ -115,10 +133,11 @@ export function buildWorkReportText(
   tasks: BoardTask[],
   locale: Locale,
   t: Translator,
+  options?: WorkReportOptions,
 ): string {
   if (tasks.length === 0) return '';
 
-  const dateLabel = buildHeaderDateLabel(tasks, locale);
+  const dateLabel = buildHeaderDateLabel(tasks, locale, options);
   const people = collectPeople(tasks);
   const peopleLabel =
     people.length > 0
@@ -135,7 +154,7 @@ export function buildWorkReportText(
   ].join('\n');
 
   const body = tasks
-    .map((task, index) => formatTaskBlock(task, index, locale, t))
+    .map((task, index) => formatTaskBlock(task, index, locale, t, options))
     .join(`\n${TASK_SEPARATOR}\n`);
 
   const footer = [SECTION_RULE, t('board.workReport.footer')].join('\n');

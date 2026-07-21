@@ -38,6 +38,7 @@ export class ChecklistRepository extends BaseRepository {
     data: {
       title?: string;
       isDone?: boolean;
+      completedAt?: Date | null;
       weight?: number;
       position?: number;
     },
@@ -56,10 +57,10 @@ export class ChecklistRepository extends BaseRepository {
     await this.db.taskChecklistItem.deleteMany({ where: { taskId } });
   }
 
-  async markAllDone(taskId: string): Promise<void> {
+  async markAllDone(taskId: string, completedAt = new Date()): Promise<void> {
     await this.db.taskChecklistItem.updateMany({
       where: { taskId, isDone: false },
-      data: { isDone: true },
+      data: { isDone: true, completedAt },
     });
   }
 }

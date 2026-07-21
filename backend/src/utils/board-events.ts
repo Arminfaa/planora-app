@@ -51,6 +51,12 @@ function serializeTask(task: Record<string, unknown>) {
         id: String((item as { id: string }).id),
         title: (item as { title: string }).title,
         isDone: Boolean((item as { isDone: boolean }).isDone),
+        completedAt: (item as { completedAt?: Date | string | null })
+          .completedAt
+          ? new Date(
+              (item as { completedAt: Date | string }).completedAt,
+            ).toISOString()
+          : null,
         weight: Number((item as { weight?: number }).weight ?? 5),
         position: Number((item as { position: number }).position),
       }))

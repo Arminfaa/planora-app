@@ -774,6 +774,7 @@ export const faMessages = {
       teamLine: 'اجرا توسط: {people}',
       countLine: 'تعداد موارد انجام‌شده: {count}',
       checklistProgress: 'اقدامات انجام‌شده ({done}/{total}):',
+      checklistCompletedItems: 'موارد انجام‌شده از چک‌لیست:',
       completedOn: 'تاریخ انجام',
       by: 'مسئول',
       untitled: 'بدون عنوان',
@@ -1243,6 +1244,8 @@ export const faMessages = {
     completedThisWeek: 'تکمیل‌شده این هفته',
     completedThisMonth: 'تکمیل‌شده این ماه',
     noCompleteDate: 'بدون تاریخ تکمیل',
+    includeChecklistCompletions:
+      'شامل موارد چک‌لیستی که در این بازه تیک خورده‌اند',
     dateRange: 'بازه تاریخی',
     dueDateRange: 'بازه تاریخ سررسید',
     completeDateRange: 'بازه تاریخ تکمیل',

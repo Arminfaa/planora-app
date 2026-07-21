@@ -147,12 +147,20 @@ export class ChecklistService {
     const payload: {
       title?: string;
       isDone?: boolean;
+      completedAt?: Date | null;
       weight?: number;
       position?: number;
     } = {};
 
     if (input.title !== undefined) payload.title = input.title;
-    if (input.isDone !== undefined) payload.isDone = input.isDone;
+    if (input.isDone !== undefined) {
+      payload.isDone = input.isDone;
+      if (input.isDone && !item.isDone) {
+        payload.completedAt = new Date();
+      } else if (!input.isDone && item.isDone) {
+        payload.completedAt = null;
+      }
+    }
     if (input.position !== undefined) payload.position = input.position;
     if (input.weight !== undefined) {
       payload.weight = normalizeChecklistWeight(input.weight);
