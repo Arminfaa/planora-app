@@ -461,7 +461,11 @@ export function AllTasksView({
     if (selectionMode !== 'exportText' || selectedCount === 0) return;
     const selectedTasks = tasks.filter((task) => selectedTaskIds.has(task.id));
     if (selectedTasks.length === 0) return;
-    const text = buildWorkReportText(selectedTasks, locale, t);
+    const text = buildWorkReportText(selectedTasks, locale, t, {
+      completeDate: filters.completeDate,
+      completeDateFrom: filters.completeDateFrom,
+      completeDateTo: filters.completeDateTo,
+    });
     setWorkReportText(text);
     exitSelectionMode();
   };
@@ -507,7 +511,11 @@ export function AllTasksView({
         progress: completed ? 100 : uncheckedProgress,
         autoCompleteSuppressed: completed ? false : hasChecklist,
         checklistItems: completed
-          ? current.checklistItems?.map((item) => ({ ...item, isDone: true }))
+          ? current.checklistItems?.map((item) => ({
+              ...item,
+              isDone: true,
+              completedAt: item.completedAt ?? new Date().toISOString(),
+            }))
           : current.checklistItems,
       }));
 
@@ -555,7 +563,13 @@ export function AllTasksView({
       updateTaskInList(taskId, (current) => {
         const nextItems =
           current.checklistItems?.map((item) =>
-            item.id === itemId ? { ...item, isDone } : item,
+            item.id === itemId
+              ? {
+                  ...item,
+                  isDone,
+                  completedAt: isDone ? new Date().toISOString() : null,
+                }
+              : item,
           ) ?? [];
         const nextProgress = computeChecklistProgress(nextItems);
         const shouldAutoComplete =

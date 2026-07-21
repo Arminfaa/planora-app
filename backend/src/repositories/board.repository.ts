@@ -53,6 +53,7 @@ export class BoardRepository extends BaseRepository {
                     id: true,
                     title: true,
                     isDone: true,
+                    completedAt: true,
                     weight: true,
                     position: true,
                   },
