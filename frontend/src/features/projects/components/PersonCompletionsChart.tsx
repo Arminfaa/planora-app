@@ -34,7 +34,7 @@ import {
 } from '@/lib/jalali-dates';
 import { getApiErrorMessage } from '@/lib/api';
 import { DateRangeInput } from '@/shared/components/ui/DateRangeInput';
-import { LoadingSpinner } from '@/shared/components/feedback/LoadingSpinner';
+import { ChartPlotSkeleton } from '@/features/projects/components/skeletons/ProjectTeamSkeleton';
 import { cn } from '@/lib/utils';
 
 const MAX_SELECTED_MEMBERS = 6;
@@ -614,9 +614,7 @@ export function PersonCompletionsChart({
           </p>
         </div>
       ) : isLoading && !hasChartData ? (
-        <div className="mt-6 flex min-h-[220px] items-center justify-center">
-          <LoadingSpinner />
-        </div>
+        <ChartPlotSkeleton />
       ) : hasChartData ? (
         <>
           <div

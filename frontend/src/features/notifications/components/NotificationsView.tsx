@@ -3,10 +3,11 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { useSearchParams } from 'next/navigation';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
-import { App, Button as AntButton, Empty, Spin, Switch } from 'antd';
+import { App, Button as AntButton, Empty, Switch } from 'antd';
 import { useNotifications } from '../hooks/useNotifications';
 import { notificationService } from '../services/notification.service';
 import type { AppNotification, NotificationPreferences } from '../types';
+import { NotificationsListSkeleton } from '@/features/notifications/components/NotificationsSkeleton';
 import { PageContainer } from '@/shared/components/layout/PageContainer';
 import { Button } from '@/shared/components/ui/Button';
 import { getApiErrorMessage } from '@/lib/api';
@@ -289,9 +290,7 @@ export function NotificationsView() {
         )}
 
         {isLoading ? (
-          <div className="flex justify-center py-16">
-            <Spin size="large" />
-          </div>
+          <NotificationsListSkeleton />
         ) : notifications.length === 0 ? (
           <Empty description={t('notifications.noNotifications')} />
         ) : (

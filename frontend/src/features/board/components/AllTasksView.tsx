@@ -37,6 +37,7 @@ import { EditIcon } from './EditIcon';
 import { TaskListActionButton } from './TaskListActionButton';
 import { TrashIcon } from './TrashIcon';
 import { ViewIcon } from './ViewIcon';
+import { AllTasksSkeleton } from '@/features/board/components/AllTasksSkeleton';
 import { LoadingSpinner } from '@/shared/components/feedback/LoadingSpinner';
 import { Button } from '@/shared/components/ui/Button';
 import { getApiErrorMessage, isForbiddenError } from '@/lib/api';
@@ -601,11 +602,7 @@ export function AllTasksView({
   );
 
   if (isLoading) {
-    return (
-      <div className="flex min-h-[50vh] items-center justify-center">
-        <LoadingSpinner />
-      </div>
-    );
+    return <AllTasksSkeleton scope={isProjectScope ? 'project' : 'board'} />;
   }
 
   if (error || (!isProjectScope && !board)) {
