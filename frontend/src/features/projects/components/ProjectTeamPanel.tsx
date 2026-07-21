@@ -10,6 +10,7 @@ import type {
   UpdateProjectMemberInput,
 } from '../types';
 import { InviteMemberModal } from './InviteMemberModal';
+import { TeamMembersListSkeleton } from '@/features/projects/components/skeletons/ProjectTeamSkeleton';
 import { Button } from '@/shared/components/ui/Button';
 import { SelectField } from '@/shared/components/ui/SelectField';
 import { formatDate } from '@/features/dashboard/utils/stats';
@@ -147,7 +148,7 @@ export function ProjectTeamPanel({
         )}
 
         {isLoading ? (
-          <p className="text-sm text-gray-500">{t('projects.loadingTeam')}</p>
+          <TeamMembersListSkeleton />
         ) : (
           <div className="divide-y divide-gray-100">
             {members.map((member) => {

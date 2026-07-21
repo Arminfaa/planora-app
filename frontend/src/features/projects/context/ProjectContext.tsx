@@ -13,6 +13,7 @@ import { projectService } from '../services/project.service';
 import type { Project, ProjectRoleDefinition } from '../types';
 import { getApiErrorMessage } from '@/lib/api';
 import { queryKeys, STALE_TIME } from '@/lib/query-keys';
+import { ProjectRouteSkeleton } from '@/features/projects/components/skeletons/ProjectRouteSkeleton';
 interface ProjectContextValue {
   project: Project;
   slug: string;
@@ -147,20 +148,7 @@ export function ProjectProvider({
   );
 
   if (projectQuery.isLoading) {
-    return (
-      <div className="mx-auto max-w-7xl animate-pulse px-4 py-8 sm:px-6">
-        <div className="h-8 w-56 rounded-lg bg-gray-200" />
-        <div className="mt-3 h-4 w-80 max-w-full rounded bg-gray-100" />
-        <div className="mt-8 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-          {Array.from({ length: 6 }).map((_, index) => (
-            <div
-              key={index}
-              className="h-36 rounded-xl border border-gray-100 bg-white shadow-sm"
-            />
-          ))}
-        </div>
-      </div>
-    );
+    return <ProjectRouteSkeleton />;
   }
 
   const error = projectQuery.error

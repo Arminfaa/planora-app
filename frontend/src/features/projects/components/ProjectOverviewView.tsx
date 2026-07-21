@@ -12,7 +12,10 @@ import { useProjectContext } from '@/features/projects/context/ProjectContext';
 import { useProjectProgress } from '@/features/projects/hooks/useProjectProgress';
 import { ProjectProgressOverview } from '@/features/projects/components/ProjectProgressOverview';
 import { useLocale } from '@/i18n/LocaleProvider';
-import { LoadingSpinner } from '@/shared/components/feedback/LoadingSpinner';
+import {
+  ProjectBoardsGridSkeleton,
+  ProjectProgressSkeleton,
+} from '@/features/projects/components/skeletons/ProjectOverviewSkeleton';
 import { Button } from '@/shared/components/ui/Button';
 import { SearchInput } from '@/shared/components/ui/SearchInput';
 import { getApiErrorMessage, isForbiddenError } from '@/lib/api';
@@ -186,9 +189,7 @@ export function ProjectOverviewView() {
           {canViewBoards && (
             <div className="mt-6">
               {loadingProgress ? (
-                <div className="flex min-h-[160px] items-center justify-center rounded-xl border border-white/60 bg-white/70 backdrop-blur-md">
-                  <LoadingSpinner />
-                </div>
+                <ProjectProgressSkeleton />
               ) : progressError ? (
                 <div className="rounded-xl bg-red-50 px-4 py-3 text-sm text-red-700">
                   {progressError}
@@ -263,7 +264,7 @@ export function ProjectOverviewView() {
               )}
 
               {loadingBoards ? (
-                <LoadingSpinner />
+                <ProjectBoardsGridSkeleton />
               ) : boards.length === 0 ? (
                 <div className="rounded-xl border border-dashed border-gray-200 bg-white py-16 text-center">
                   <p className="text-gray-600">{t('projects.noBoards')}</p>

@@ -12,8 +12,8 @@ import {
   toCustomRoleInputs,
   validateCustomRoles,
 } from '../utils/syncCustomRoles';
+import { RolesBuilderSkeleton } from '@/features/projects/components/skeletons/ProjectSettingsSkeleton';
 import { Button } from '@/shared/components/ui/Button';
-import { LoadingSpinner } from '@/shared/components/feedback/LoadingSpinner';
 import { getApiErrorMessage } from '@/lib/api';
 import { queryKeys, STALE_TIME } from '@/lib/query-keys';
 import { useLocale } from '@/i18n/LocaleProvider';
@@ -136,7 +136,7 @@ export function ProjectRolesPanel({
         )}
 
         {isLoading ? (
-          <LoadingSpinner />
+          <RolesBuilderSkeleton />
         ) : canManage ? (
           <CustomRolesBuilder roles={roles} onChange={setRoles} />
         ) : !ownRole ? (

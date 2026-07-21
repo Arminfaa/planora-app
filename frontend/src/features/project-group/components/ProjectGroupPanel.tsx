@@ -15,6 +15,7 @@ import { TextArea } from '@/shared/components/ui/TextArea';
 import { getApiErrorMessage } from '@/lib/api';
 import { getAssetUrl } from '@/lib/assets';
 import { AssetImage } from '@/shared/components/ui/AssetImage';
+import { GroupMessagesSkeleton } from '@/features/projects/components/skeletons/ProjectGroupSkeleton';
 import { useProjectGroup } from '../hooks/useProjectGroup';
 import { formatActivityMessage } from '../utils/formatActivity';
 import { formatMessageText } from '../utils/formatMessageText';
@@ -547,9 +548,7 @@ export function ProjectGroupPanel({
           )}
 
           {isLoading ? (
-            <p className="text-center text-sm text-gray-500">
-              {t('group.loadingMessages')}
-            </p>
+            <GroupMessagesSkeleton />
           ) : messages.length === 0 ? (
             <p className="text-center text-sm text-gray-500">
               {t('group.noMessages')}

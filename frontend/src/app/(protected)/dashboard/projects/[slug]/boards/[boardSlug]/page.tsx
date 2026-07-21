@@ -6,7 +6,7 @@ import { useBoard } from '@/features/board/hooks/useBoard';
 import { useProjectPermissions } from '@/features/permissions/hooks/useProjectPermissions';
 import { useProjectContext } from '@/features/projects/context/ProjectContext';
 import { useLocale } from '@/i18n/LocaleProvider';
-import { LoadingSpinner } from '@/shared/components/feedback/LoadingSpinner';
+import { KanbanBoardSkeleton } from '@/features/board/components/KanbanBoardSkeleton';
 
 export default function BoardPage() {
   const { t } = useLocale();
@@ -19,7 +19,7 @@ export default function BoardPage() {
 
   const { can } = useProjectPermissions(project);
 
-  if (isLoading) return <LoadingSpinner />;
+  if (isLoading) return <KanbanBoardSkeleton />;
 
   if (error || !board) {
     return (

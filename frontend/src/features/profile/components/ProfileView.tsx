@@ -10,6 +10,7 @@ import {
   createChangePasswordSchema,
   type ChangePasswordFormData,
 } from '@/features/auth/types';
+import { ProfileSkeleton } from '@/features/profile/components/ProfileSkeleton';
 import { getApiErrorMessage } from '@/lib/api';
 import { getAssetUrl } from '@/lib/assets';
 import { AssetImage } from '@/shared/components/ui/AssetImage';
@@ -39,7 +40,7 @@ function getInitials(name: string) {
 
 export function ProfileView() {
   const { message } = App.useApp();
-  const { user, updateUser } = useAuth();
+  const { user, updateUser, isLoading: authLoading } = useAuth();
   const { t, locale } = useLocale();
   const changePasswordSchema = useMemo(
     () => createChangePasswordSchema(t),
@@ -70,7 +71,9 @@ export function ProfileView() {
     }
   }, [user]);
 
-  if (!user) return null;
+  if (authLoading || !user) {
+    return <ProfileSkeleton />;
+  }
 
   const avatarUrl = user.avatar ? getAssetUrl(user.avatar) : null;
   const nameChanged = name.trim() !== user.name;

@@ -11,7 +11,7 @@ import { useProjectGantt } from '../hooks/useProjectGantt';
 import { useUpdateGanttSchedule } from '../hooks/useUpdateGanttSchedule';
 import { GanttDependencyPanel } from './GanttDependencyPanel';
 import { GanttTimeline } from './GanttTimeline';
-import { LoadingSpinner } from '@/shared/components/feedback/LoadingSpinner';
+import { GanttSkeleton } from '@/features/gantt/components/GanttSkeleton';
 import { getApiErrorMessage } from '@/lib/api';
 
 export function ProjectGanttView() {
@@ -40,11 +40,7 @@ export function ProjectGanttView() {
   }
 
   if (isLoading) {
-    return (
-      <div className="flex min-h-[20rem] items-center justify-center">
-        <LoadingSpinner />
-      </div>
-    );
+    return <GanttSkeleton />;
   }
 
   if (error) {

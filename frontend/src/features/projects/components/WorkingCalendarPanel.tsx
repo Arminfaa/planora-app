@@ -4,13 +4,13 @@ import { Checkbox, Select } from 'antd';
 import { useMemo, useState } from 'react';
 import { useProjectMembers } from '../hooks/useProjectMembers';
 import { useWorkingCalendar } from '../hooks/useWorkingCalendar';
+import { WorkingCalendarSkeleton } from '@/features/projects/components/skeletons/ProjectSettingsSkeleton';
 import { useLocale } from '@/i18n/LocaleProvider';
 import { formatLocaleDate, toApiDateOnly } from '@/lib/jalali-dates';
 import { getApiErrorMessage } from '@/lib/api';
 import { DateInput } from '@/shared/components/ui/DateInput';
 import { DateRangeInput } from '@/shared/components/ui/DateRangeInput';
 import { Button } from '@/shared/components/ui/Button';
-import { LoadingSpinner } from '@/shared/components/feedback/LoadingSpinner';
 
 const WEEKDAY_KEYS = [
   'sunday',
@@ -119,13 +119,7 @@ export function WorkingCalendarPanel({
   };
 
   if (isLoading || !calendar) {
-    return (
-      <section className="rounded-xl border border-gray-200 bg-white p-6 shadow-sm">
-        <div className="flex min-h-[120px] items-center justify-center">
-          <LoadingSpinner />
-        </div>
-      </section>
-    );
+    return <WorkingCalendarSkeleton />;
   }
 
   return (
