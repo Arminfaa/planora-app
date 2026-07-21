@@ -87,6 +87,8 @@ export function ColumnSearchInput({
           />
         }
         className={cn(
+          '[&_.ant-input-affix-wrapper]:h-10',
+          '[&_.ant-input-affix-wrapper]:min-h-10',
           '[&_.ant-input-affix-wrapper]:rounded-[8px]',
           '[&_.ant-input-affix-wrapper]:border',
           '[&_.ant-input-affix-wrapper]:border-dashed',
