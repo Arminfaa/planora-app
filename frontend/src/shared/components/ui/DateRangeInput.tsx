@@ -2,7 +2,7 @@
 
 import { DatePicker } from 'antd';
 import type { Dayjs } from 'dayjs';
-import { useState, type ReactNode } from 'react';
+import { useRef, useState, type ReactNode } from 'react';
 import { useLocale } from '@/i18n/LocaleProvider';
 import {
   apiDateToPickerValue,
@@ -28,6 +28,20 @@ interface DateRangeInputProps {
 
 type RangeValue = [Dayjs | null, Dayjs | null] | null;
 
+function normalizeRange(dates: RangeValue): RangeValue {
+  if (!dates) return null;
+  const start = dates[0] ?? null;
+  const end = dates[1] ?? null;
+  if (start && end && start.isAfter(end, 'day')) {
+    return [end, start];
+  }
+  return [start, end];
+}
+
+function isCompleteRange(dates: RangeValue): dates is [Dayjs, Dayjs] {
+  return Boolean(dates?.[0]?.isValid() && dates?.[1]?.isValid());
+}
+
 export function DateRangeInput({
   label,
   valueFrom = '',
@@ -47,18 +61,16 @@ export function DateRangeInput({
     fromValue || toValue ? [fromValue, toValue] : null;
 
   // Do not pass minDate/maxDate to RangePicker: with dual panels + CSS-hidden
-  // second panel, maxDate shifts the visible month back by one (e.g. Tir → Khordad).
-  // Selection limits stay enforced via disabledDate only.
-  const [panelMonth, setPanelMonth] = useState<Dayjs | null>(null);
-  const [activeField, setActiveField] = useState<'start' | 'end'>('start');
-  // Keep in-progress picks while open. Re-renders from panelMonth would otherwise
-  // push the committed controlled value back and snap start to the old date.
+  // second panel, maxDate shifts the visible month back by one.
   const [open, setOpen] = useState(false);
   const [draftValue, setDraftValue] = useState<RangeValue>(null);
+  const [panelMonth, setPanelMonth] = useState<Dayjs | null>(null);
+  const draftRef = useRef<RangeValue>(null);
+  const pickingRef = useRef(false);
 
-  const resolveOpenMonth = (
-    field: 'start' | 'end' = activeField,
-    range: RangeValue = open ? draftValue : committedValue,
+  const resolvePanelMonth = (
+    field: 'start' | 'end',
+    range: RangeValue,
   ): Dayjs | null => {
     const start = range?.[0] ?? fromValue;
     const end = range?.[1] ?? toValue;
@@ -68,13 +80,33 @@ export function DateRangeInput({
     return start ?? end ?? null;
   };
 
-  const displayValue: RangeValue =
-    open && draftValue ? draftValue : committedValue;
+  const displayValue: RangeValue = open
+    ? (draftValue ?? committedValue)
+    : committedValue;
 
-  const emitChange = (dates: RangeValue) => {
-    const from = pickerValueToApiDate(dates?.[0] ?? null);
-    const to = pickerValueToApiDate(dates?.[1] ?? null);
-    onChange?.({ from, to });
+  const commitRange = (dates: RangeValue) => {
+    const normalized = normalizeRange(dates);
+    const from = pickerValueToApiDate(normalized?.[0] ?? null);
+    const to = pickerValueToApiDate(normalized?.[1] ?? null);
+
+    if (from && to) {
+      onChange?.({ from, to });
+      return true;
+    }
+
+    if (!from && !to) {
+      onChange?.({ from: '', to: '' });
+    }
+
+    return false;
+  };
+
+  const updateDraft = (dates: RangeValue) => {
+    const next = normalizeRange(dates);
+    draftRef.current = next;
+    setDraftValue(next);
+    pickingRef.current = Boolean(next?.[0] && !next?.[1]);
+    return next;
   };
 
   return (
@@ -85,20 +117,47 @@ export function DateRangeInput({
         </label>
       ) : null}
       <DatePicker.RangePicker
-        key={`range-${locale}-${format}-${toApiDateOnly(minDate)}-${toApiDateOnly(maxDate)}`}
+        key={`range-${locale}-${format}`}
         value={displayValue}
+        onOpenChange={(nextOpen) => {
+          if (nextOpen) {
+            const initial = committedValue;
+            draftRef.current = initial;
+            pickingRef.current = false;
+            setDraftValue(initial);
+            setPanelMonth(resolvePanelMonth('start', initial));
+            setOpen(true);
+            return;
+          }
+
+          // Closing: commit a complete in-progress draft so a late parent
+          // update is not lost when draft is cleared.
+          commitRange(draftRef.current);
+          pickingRef.current = false;
+          setOpen(false);
+          setDraftValue(null);
+          draftRef.current = null;
+        }}
         onCalendarChange={(dates) => {
-          const next: RangeValue = dates
-            ? [dates[0] ?? null, dates[1] ?? null]
-            : null;
-          setDraftValue(next);
+          const next = updateDraft(
+            dates ? [dates[0] ?? null, dates[1] ?? null] : null,
+          );
+
+          // Commit as soon as both ends exist. Relying only on onChange is
+          // flaky with the single-panel CSS + controlled panel month.
+          if (isCompleteRange(next)) {
+            pickingRef.current = false;
+            commitRange(next);
+          }
         }}
         onChange={(dates) => {
-          const next: RangeValue = dates
-            ? [dates[0] ?? null, dates[1] ?? null]
-            : null;
-          setDraftValue(next);
-          emitChange(next);
+          const next = updateDraft(
+            dates ? [dates[0] ?? null, dates[1] ?? null] : null,
+          );
+          if (isCompleteRange(next) || !next) {
+            pickingRef.current = false;
+            commitRange(next);
+          }
         }}
         format={format}
         className={cn('w-full min-w-0 max-w-full', className)}
@@ -116,24 +175,21 @@ export function DateRangeInput({
           if (max && api > max) return true;
           return false;
         }}
-        defaultPickerValue={resolveOpenMonth() ?? undefined}
         pickerValue={panelMonth ?? undefined}
         onPickerValueChange={(dates) => {
-          setPanelMonth(dates?.[0] ?? null);
+          // Follow user month navigation only; do not fight day clicks.
+          const nextMonth = Array.isArray(dates) ? dates[0] : dates;
+          if (nextMonth?.isValid()) {
+            setPanelMonth(nextMonth);
+          }
         }}
         onFocus={(_event, info) => {
-          const next = info?.range === 'end' ? 'end' : 'start';
-          setActiveField(next);
-          setPanelMonth(resolveOpenMonth(next));
-        }}
-        onOpenChange={(nextOpen) => {
-          setOpen(nextOpen);
-          if (nextOpen) {
-            setDraftValue(committedValue);
-            setPanelMonth(resolveOpenMonth(activeField, committedValue));
-          } else {
-            setDraftValue(null);
-          }
+          const field = info?.range === 'end' ? 'end' : 'start';
+          // While the user is mid-range (start picked, end not), do not jump
+          // the panel month — that was snapping/cancelling the selection.
+          if (pickingRef.current) return;
+          const current = draftRef.current ?? committedValue;
+          setPanelMonth(resolvePanelMonth(field, current));
         }}
         placeholder={
           placeholder ?? [t('search.rangeFrom'), t('search.rangeTo')]

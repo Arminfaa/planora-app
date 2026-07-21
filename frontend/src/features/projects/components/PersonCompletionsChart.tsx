@@ -530,18 +530,18 @@ export function PersonCompletionsChart({
           minDate={projectMinDate || null}
           maxDate={todayApiDate()}
           onChange={({ from, to }) => {
-            if (from && to) {
-              setSyncedForKey('');
-              setRange(
-                clampApiDateRange(
-                  { from, to },
-                  {
-                    minDate: projectMinDate || null,
-                    maxDate: todayApiDate(),
-                  },
-                ),
-              );
-            }
+            if (!from || !to) return;
+            const next = clampApiDateRange(
+              { from, to },
+              {
+                minDate: projectMinDate || null,
+                maxDate: todayApiDate(),
+              },
+            );
+            setSyncedForKey('');
+            setRange((prev) =>
+              prev.from === next.from && prev.to === next.to ? prev : next,
+            );
           }}
         />
       </div>
