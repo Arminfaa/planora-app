@@ -43,7 +43,7 @@ export function ColumnFilterButton({
       aria-label={ariaLabel}
       aria-pressed={isActive}
       className={cn(
-        'relative flex h-8 w-8 shrink-0 items-center justify-center rounded-[8px] border border-dashed bg-transparent shadow-none transition',
+        'relative flex aspect-square h-10 w-10 shrink-0 items-center justify-center rounded-[8px] border border-dashed bg-transparent p-0 shadow-none transition',
         isGlass
           ? cn(
               'border-white/25 text-white/85 hover:border-white/45 hover:text-white',
