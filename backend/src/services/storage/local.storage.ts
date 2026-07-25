@@ -43,6 +43,28 @@ export async function saveLocalFile(
   };
 }
 
+export async function saveLocalBuffer(
+  buffer: Buffer,
+  originalName: string,
+  mimeType: string,
+): Promise<{ url: string; storageKey: string }> {
+  await ensureUploadDirs();
+
+  const subdir = getSubdir(mimeType);
+  const filename = buildFilename(originalName);
+  const absolutePath = path.join(uploadsRoot, subdir, filename);
+  await fs.writeFile(absolutePath, buffer);
+
+  return {
+    storageKey: `${subdir}/${filename}`,
+    url: `/uploads/${subdir}/${filename}`,
+  };
+}
+
+export function resolveLocalAbsolutePath(storageKey: string): string {
+  return path.join(uploadsRoot, storageKey);
+}
+
 export async function deleteLocalFile(storageKey: string): Promise<void> {
   const absolutePath = path.join(uploadsRoot, storageKey);
   await fs.unlink(absolutePath).catch(() => undefined);

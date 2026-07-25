@@ -10,6 +10,7 @@ import { deleteFromCloudinary, uploadToCloudinary } from './cloudinary.storage';
 import {
   deleteLocalFile,
   getPublicAssetUrl,
+  saveLocalBuffer,
   saveLocalFile,
 } from './local.storage';
 
@@ -52,6 +53,38 @@ export async function storeUploadedFile(
     mimeType: file.mimetype,
     size: file.size,
     type: isImageMimeType(file.mimetype)
+      ? AttachmentType.IMAGE
+      : AttachmentType.FILE,
+    storageKey: stored.storageKey,
+    storageProvider: isCloudinaryEnabled() ? 'cloudinary' : 'local',
+  };
+}
+
+/** Restore a file from a project backup without MIME allow-list checks. */
+export async function storeBackupBuffer(input: {
+  buffer: Buffer;
+  filename: string;
+  mimeType: string;
+}): Promise<StoredFile> {
+  const file = {
+    fieldname: 'file',
+    originalname: input.filename,
+    encoding: '7bit',
+    mimetype: input.mimeType,
+    size: input.buffer.length,
+    buffer: input.buffer,
+  } as Express.Multer.File;
+
+  const stored = isCloudinaryEnabled()
+    ? await uploadToCloudinary(file)
+    : await saveLocalBuffer(input.buffer, input.filename, input.mimeType);
+
+  return {
+    filename: input.filename,
+    url: stored.url,
+    mimeType: input.mimeType,
+    size: input.buffer.length,
+    type: isImageMimeType(input.mimeType)
       ? AttachmentType.IMAGE
       : AttachmentType.FILE,
     storageKey: stored.storageKey,

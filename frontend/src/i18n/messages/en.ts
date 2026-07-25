@@ -423,6 +423,10 @@ export const enMessages = {
     subtitle: "Here's an overview of your projects and boards",
     manageWorkspaces: '{count} projects · manage your workspaces',
     manageWorkspacesSingular: '1 project · manage your workspaces',
+    importBackup: 'Restore backup',
+    importingBackup: 'Restoring…',
+    importBackupSuccess:
+      'Project “{name}” restored ({boards} boards, {tasks} tasks, {members} members).',
     createProjectForm: {
       nameLabel: 'Project Name',
       descriptionOptional: 'Description (optional)',
@@ -503,6 +507,21 @@ export const enMessages = {
     projectDetails: 'Project details',
     projectDetailsHint:
       'Update the project name, description, and permission mode.',
+    backupTitle: 'Backup & restore',
+    backupHint:
+      'Download a full project archive (boards, tasks, members, and files). Users in the backup can sign in later with their existing credentials.',
+    backupSecurityNote:
+      'This file contains account password hashes. Store it securely and share only with trusted admins.',
+    exportBackup: 'Download backup',
+    exportingBackup: 'Preparing backup…',
+    exportBackupSuccess: 'Backup downloaded',
+    importBackup: 'Restore from backup',
+    importingBackup: 'Restoring…',
+    importBackupSuccess:
+      'Project “{name}” restored ({boards} boards, {tasks} tasks, {members} members).',
+    importBackupHint:
+      'Creates a new project from a .planora file. Existing users are linked by email; new users are created so they can sign in without re-registering.',
+    chooseBackupFile: 'Choose .planora file',
     noTeamPermission: 'You do not have permission to view the project team.',
     deleteProjectNamed:
       'Delete project "{name}"? All boards, columns, and tasks will be removed.',
@@ -1239,7 +1258,8 @@ export const enMessages = {
     completedThisWeek: 'Completed this week',
     completedThisMonth: 'Completed this month',
     noCompleteDate: 'No completion date',
-    includeChecklistCompletions: 'Include checklist items completed in this period',
+    includeChecklistCompletions:
+      'Include checklist items completed in this period',
     dateRange: 'Date range',
     dueDateRange: 'Due date range',
     completeDateRange: 'Completion date range',

@@ -3,6 +3,7 @@
 import { useAuth } from '@/features/auth/hooks/useAuth';
 import { SearchInput } from '@/shared/components/ui/SearchInput';
 import { useLocale } from '@/i18n/LocaleProvider';
+import { ImportBackupButton } from './ImportBackupButton';
 
 interface DashboardHeaderProps {
   projectCount: number;
@@ -45,6 +46,8 @@ export function DashboardHeader({
               className="rounded-xl border-gray-200 bg-white/80 shadow-sm backdrop-blur-sm"
             />
           </div>
+
+          <ImportBackupButton />
 
           <button
             type="button"

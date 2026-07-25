@@ -425,6 +425,10 @@ export const faMessages = {
     subtitle: 'نمای کلی پروژه‌ها و بردهای شما',
     manageWorkspaces: '{count} پروژه · مدیریت فضاهای کاری',
     manageWorkspacesSingular: '۱ پروژه · مدیریت فضاهای کاری',
+    importBackup: 'بازیابی بکاپ',
+    importingBackup: 'در حال بازیابی…',
+    importBackupSuccess:
+      'پروژه «{name}» بازیابی شد ({boards} برد، {tasks} تسک، {members} عضو).',
     createProjectForm: {
       nameLabel: 'نام پروژه',
       descriptionOptional: 'توضیحات (اختیاری)',
@@ -502,6 +506,21 @@ export const faMessages = {
     noSettingsPermission: 'شما مجوز مدیریت تنظیمات پروژه را ندارید.',
     projectDetails: 'جزئیات پروژه',
     projectDetailsHint: 'نام، توضیحات و حالت مجوز پروژه را به‌روزرسانی کنید.',
+    backupTitle: 'پشتیبان‌گیری و بازیابی',
+    backupHint:
+      'آرشیو کامل پروژه (بردها، تسک‌ها، اعضا و فایل‌ها) را دانلود کنید. کاربران داخل بکاپ بعداً با همان حساب قبلی وارد می‌شوند.',
+    backupSecurityNote:
+      'این فایل شامل هش رمز عبور حساب‌هاست. آن را امن نگه دارید و فقط با ادمین‌های مورد اعتماد به اشتراک بگذارید.',
+    exportBackup: 'دانلود بکاپ',
+    exportingBackup: 'در حال آماده‌سازی بکاپ…',
+    exportBackupSuccess: 'بکاپ دانلود شد',
+    importBackup: 'بازیابی از بکاپ',
+    importingBackup: 'در حال بازیابی…',
+    importBackupSuccess:
+      'پروژه «{name}» بازیابی شد ({boards} برد، {tasks} تسک، {members} عضو).',
+    importBackupHint:
+      'از فایل .planora یک پروژه جدید می‌سازد. کاربران موجود با ایمیل لینک می‌شوند؛ کاربران جدید ساخته می‌شوند تا بدون ثبت‌نام دوباره وارد شوند.',
+    chooseBackupFile: 'انتخاب فایل .planora',
     noTeamPermission: 'شما مجوز مشاهده تیم پروژه را ندارید.',
     deleteProjectNamed:
       'پروژه «{name}» حذف شود؟ تمام بردها، ستون‌ها و وظایف حذف خواهند شد.',

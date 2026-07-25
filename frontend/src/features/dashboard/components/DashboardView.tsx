@@ -5,6 +5,7 @@ import { ProjectCard } from '@/features/projects/components/ProjectCard';
 import { useProjects } from '@/features/projects/hooks/useProjects';
 import { CreateProjectModal } from '@/features/dashboard/components/CreateProjectModal';
 import { DashboardHeader } from '@/features/dashboard/components/DashboardHeader';
+import { ImportBackupButton } from '@/features/dashboard/components/ImportBackupButton';
 import { StatsCard } from '@/features/dashboard/components/StatsCard';
 import { computeDashboardStats } from '@/features/dashboard/utils/stats';
 import { DashboardSkeleton } from '@/features/dashboard/components/DashboardSkeleton';
@@ -167,9 +168,12 @@ export function DashboardView() {
         {projects.length === 0 ? (
           <div className="rounded-xl border border-dashed border-gray-200 bg-white py-16 text-center">
             <p className="text-gray-600">{t('dashboard.noProjects')}</p>
-            <Button className="mt-4" onClick={() => setShowCreateModal(true)}>
-              {t('dashboard.createFirstProject')}
-            </Button>
+            <div className="mt-4 flex flex-wrap items-center justify-center gap-3">
+              <Button onClick={() => setShowCreateModal(true)}>
+                {t('dashboard.createFirstProject')}
+              </Button>
+              <ImportBackupButton />
+            </div>
           </div>
         ) : filteredProjects.length === 0 ? (
           <div className="rounded-xl border border-dashed border-gray-200 bg-white py-16 text-center">

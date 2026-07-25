@@ -6,6 +6,7 @@ import { useProjectPermissions } from '@/features/permissions/hooks/useProjectPe
 import { useDeleteProject } from '../hooks/useDeleteProject';
 import { projectService } from '../services/project.service';
 import { useProjectContext } from '../context/ProjectContext';
+import { ProjectBackupPanel } from './ProjectBackupPanel';
 import { DeleteProjectModal } from './DeleteProjectModal';
 import { EditProjectModal } from './EditProjectModal';
 import { ProjectRolesPanel } from './ProjectRolesPanel';
@@ -128,6 +129,15 @@ export function ProjectSettingsView() {
           projectCreatedAt={project.createdAt}
         />
       ) : null}
+
+      {(canDeleteProject || canEditProject) && (
+        <ProjectBackupPanel
+          projectId={project.id}
+          projectSlug={project.slug}
+          canExport={canDeleteProject}
+          canImport={canEditProject || canDeleteProject}
+        />
+      )}
 
       {canDeleteProject && (
         <section className="rounded-xl border border-red-200 bg-red-50/50 p-6">

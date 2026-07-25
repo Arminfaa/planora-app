@@ -149,4 +149,68 @@ export const projectService = {
     );
     return data.data;
   },
+
+  async downloadBackup(projectId: string, projectSlug: string): Promise<void> {
+    try {
+      const response = await api.get<Blob>(`/projects/${projectId}/backup`, {
+        responseType: 'blob',
+      });
+
+      const blob = response.data;
+      const url = window.URL.createObjectURL(blob);
+      const anchor = document.createElement('a');
+      anchor.href = url;
+      anchor.download = `${projectSlug}-backup.planora`;
+      document.body.appendChild(anchor);
+      anchor.click();
+      anchor.remove();
+      window.URL.revokeObjectURL(url);
+    } catch (error) {
+      const data = (error as { response?: { data?: unknown } }).response?.data;
+      if (typeof Blob !== 'undefined' && data instanceof Blob) {
+        const text = await data.text();
+        try {
+          const parsed = JSON.parse(text) as { message?: string };
+          throw Object.assign(
+            new Error(parsed.message || 'Failed to download backup'),
+            {
+              response: { data: parsed },
+            },
+          );
+        } catch (inner) {
+          if (inner instanceof SyntaxError) {
+            throw new Error(text || 'Failed to download backup');
+          }
+          throw inner;
+        }
+      }
+      throw error;
+    }
+  },
+
+  async importBackup(file: File): Promise<ProjectBackupImportResult> {
+    const formData = new FormData();
+    formData.append('file', file);
+
+    const { data } = await api.post<
+      ApiSuccessResponse<ProjectBackupImportResult>
+    >('/projects/backup/import', formData, {
+      headers: { 'Content-Type': 'multipart/form-data' },
+      timeout: 300_000,
+    });
+    return data.data;
+  },
 };
+
+export interface ProjectBackupImportResult {
+  projectId: string;
+  projectSlug: string;
+  projectName: string;
+  usersCreated: number;
+  usersReused: number;
+  boards: number;
+  tasks: number;
+  members: number;
+  filesRestored: number;
+  filesSkipped: number;
+}

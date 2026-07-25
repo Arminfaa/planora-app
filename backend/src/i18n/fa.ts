@@ -149,6 +149,14 @@ export const faMessages: Record<string, string> = {
   'Project updated': 'پروژه به‌روزرسانی شد',
   'Project deleted': 'پروژه حذف شد',
   'Project not found': 'پروژه یافت نشد',
+  'Project backup imported': 'بکاپ پروژه با موفقیت درون‌ریزی شد',
+  'Backup file is required': 'فایل بکاپ الزامی است',
+  'Invalid or corrupted backup file': 'فایل بکاپ نامعتبر یا خراب است',
+  'Unsupported backup file format': 'فرمت فایل بکاپ پشتیبانی نمی‌شود',
+  'Backup file is missing required project data':
+    'فایل بکاپ فاقد داده‌های ضروری پروژه است',
+  'Only .planora backup files are allowed':
+    'فقط فایل‌های بکاپ با پسوند .planora مجاز هستند',
   'You do not have access to this project': 'شما به این پروژه دسترسی ندارید',
 
   // Project members & invites

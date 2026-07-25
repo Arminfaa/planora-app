@@ -32,6 +32,8 @@ const envSchema = z.object({
   RATE_LIMIT_MAX: z.coerce.number().default(100),
   MAX_FILE_SIZE: z.coerce.number().default(5_242_880),
   MAX_IMAGE_SIZE: z.coerce.number().default(2_097_152),
+  /** Max size for `.planora` project backup uploads (default 100MB). */
+  MAX_BACKUP_SIZE: z.coerce.number().default(104_857_600),
   CLOUDINARY_CLOUD_NAME: optionalTrimmed,
   CLOUDINARY_API_KEY: optionalTrimmed,
   CLOUDINARY_API_SECRET: optionalTrimmed,

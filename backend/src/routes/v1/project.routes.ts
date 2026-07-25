@@ -16,6 +16,10 @@ import {
   updateProject,
 } from '../../controllers/project.controller';
 import {
+  exportProjectBackup,
+  importProjectBackup,
+} from '../../controllers/project-backup.controller';
+import {
   createHoliday,
   createLeave,
   deleteHoliday,
@@ -30,6 +34,7 @@ import {
   projectDependencyParamsSchema,
 } from '../../validators/task-dependency.validator';
 import { authenticate } from '../../middlewares/auth.middleware';
+import { backupUploadMiddleware } from '../../middlewares/backup-upload.middleware';
 import {
   validateBody,
   validateParams,
@@ -58,6 +63,12 @@ router.use(authenticate);
 router.get('/permissions', getPermissionCatalog);
 router.get('/', validateQuery(projectListQuerySchema), listProjects);
 router.post('/', validateBody(createProjectSchema), createProject);
+router.post('/backup/import', backupUploadMiddleware, importProjectBackup);
+router.get(
+  '/:id/backup',
+  validateParams(projectParamsSchema),
+  exportProjectBackup,
+);
 router.get(
   '/:id/progress',
   validateParams(projectParamsSchema),
