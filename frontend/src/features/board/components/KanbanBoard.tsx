@@ -1,6 +1,7 @@
 'use client';
 
-import { useCallback, useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import type { RefObject } from 'react';
 import dynamic from 'next/dynamic';
 import { usePathname, useRouter, useSearchParams } from 'next/navigation';
 import { useQueryClient } from '@tanstack/react-query';
@@ -22,6 +23,7 @@ import { CreateColumnForm } from './CreateColumnForm';
 import { EditColumnModal } from './EditColumnModal';
 import { BoardHeader } from './BoardHeader';
 import { useKanbanDnd } from '../hooks/useKanbanDnd';
+import { useRtlSafeBoardAutoScroll } from '../hooks/useRtlSafeBoardAutoScroll';
 import { useBoardSocket } from '../hooks/useBoardSocket';
 import type { BoardSocketEvent } from '../types/socket';
 import { columnService } from '../services/column.service';
@@ -58,6 +60,30 @@ const kanbanCollisionDetection: CollisionDetection = (args) => {
   }
   return closestCorners(args);
 };
+
+const BOARD_AUTO_SCROLL = {
+  threshold: { x: 0.12, y: 0.15 },
+  acceleration: 12,
+  // Horizontal board scrolling is handled by useRtlSafeBoardAutoScroll
+  // because dnd-kit's edge detection breaks under RTL negative scrollLeft.
+  canScroll: (element: Element) =>
+    !(
+      element instanceof HTMLElement &&
+      element.classList.contains('kanban-board-scroll')
+    ),
+};
+
+function KanbanBoardHorizontalAutoScroll({
+  scrollRef,
+}: {
+  scrollRef: RefObject<HTMLElement | null>;
+}) {
+  useRtlSafeBoardAutoScroll(scrollRef, {
+    threshold: BOARD_AUTO_SCROLL.threshold.x,
+    acceleration: BOARD_AUTO_SCROLL.acceleration,
+  });
+  return null;
+}
 
 function findTaskById(
   columns: BoardColumn[],
@@ -117,6 +143,7 @@ export function KanbanBoard({
   const pathname = usePathname();
   const searchParams = useSearchParams();
   const queryClient = useQueryClient();
+  const boardScrollRef = useRef<HTMLDivElement>(null);
   const activeTaskSlug = searchParams.get('task');
   const [editingTask, setEditingTask] = useState<BoardTask | null>(null);
   const [editingColumn, setEditingColumn] = useState<BoardColumn | null>(null);
@@ -504,19 +531,20 @@ export function KanbanBoard({
           )}
         </div>
 
-        <div className="kanban-board-scroll sticky top-16 z-10 mt-2 h-[calc(100dvh-1rem)] overflow-x-auto overflow-y-hidden pb-2 max-sm:-mx-4 max-sm:px-4">
+        <div
+          ref={boardScrollRef}
+          className="kanban-board-scroll sticky top-16 z-10 mt-2 h-[calc(100dvh-1rem)] overflow-x-auto overflow-y-hidden pb-2 max-sm:-mx-4 max-sm:px-4"
+        >
           <DndContext
             sensors={sensors}
             collisionDetection={kanbanCollisionDetection}
-            autoScroll={{
-              threshold: { x: 0.12, y: 0.15 },
-              acceleration: 12,
-            }}
+            autoScroll={BOARD_AUTO_SCROLL}
             onDragStart={handleDragStart}
             onDragOver={handleDragOver}
             onDragEnd={handleDragEnd}
             onDragCancel={handleDragCancel}
           >
+            <KanbanBoardHorizontalAutoScroll scrollRef={boardScrollRef} />
             <div
               className={`flex h-full gap-4 pb-4 ${boardDeleted ? 'pointer-events-none opacity-50' : ''}`}
             >
