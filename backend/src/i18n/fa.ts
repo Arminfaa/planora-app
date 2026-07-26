@@ -158,6 +158,10 @@ export const faMessages: Record<string, string> = {
   'Only .planora backup files are allowed':
     'فقط فایل‌های بکاپ با پسوند .planora مجاز هستند',
   'You do not have access to this project': 'شما به این پروژه دسترسی ندارید',
+  'You do not have permission to perform this action':
+    'شما مجوز انجام این عمل را ندارید',
+  Unauthorized: 'احراز هویت نشده',
+  'File too large': 'حجم فایل بیش از حد مجاز است',
 
   // Project members & invites
   'Project members retrieved': 'اعضای پروژه دریافت شد',

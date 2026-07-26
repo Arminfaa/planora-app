@@ -83,8 +83,17 @@ export function ProjectRolesPanel({
     setSuccess('');
     setIsSaving(true);
     try {
-      validateCustomRoles(roles);
-      await syncCustomRoles(projectId, originalRoles, roles);
+      const roleValidationMessages = {
+        empty: t('permissions.builder.addOneRole'),
+        incomplete: t('permissions.builder.roleIncomplete'),
+      };
+      validateCustomRoles(roles, roleValidationMessages);
+      await syncCustomRoles(
+        projectId,
+        originalRoles,
+        roles,
+        roleValidationMessages,
+      );
       await queryClient.invalidateQueries({
         queryKey: queryKeys.projects.roles(projectId),
       });

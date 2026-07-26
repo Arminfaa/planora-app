@@ -75,7 +75,10 @@ export function CreateProjectForm({
 
     try {
       if (permissionMode === 'CUSTOM') {
-        const validRoles = validateCustomRoles(customRoles);
+        const validRoles = validateCustomRoles(customRoles, {
+          empty: t('permissions.builder.addOneRole'),
+          incomplete: t('permissions.builder.roleIncomplete'),
+        });
         await onSubmit({
           name: data.name,
           description: data.description,

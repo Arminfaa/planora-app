@@ -21,18 +21,28 @@ function isRoleComplete(role: CustomRoleInput): boolean {
   return role.name.trim().length >= 2 && role.permissions.length > 0;
 }
 
+export type CustomRoleValidationMessages = {
+  empty: string;
+  incomplete: string;
+};
+
+const DEFAULT_ROLE_VALIDATION_MESSAGES: CustomRoleValidationMessages = {
+  empty: 'Add at least one role with a name and one permission.',
+  incomplete:
+    'Each role needs a name (at least 2 characters) and at least one permission before saving.',
+};
+
 export function validateCustomRoles(
   roles: CustomRoleInput[],
+  messages: CustomRoleValidationMessages = DEFAULT_ROLE_VALIDATION_MESSAGES,
 ): CustomRoleInput[] {
   if (roles.length === 0) {
-    throw new Error('Add at least one role with a name and one permission.');
+    throw new Error(messages.empty);
   }
 
   const incomplete = roles.filter((role) => !isRoleComplete(role));
   if (incomplete.length > 0) {
-    throw new Error(
-      'Each role needs a name (at least 2 characters) and at least one permission before saving.',
-    );
+    throw new Error(messages.incomplete);
   }
 
   return roles.map((role) => ({
@@ -65,8 +75,9 @@ export async function syncCustomRoles(
   projectId: string,
   original: ProjectRoleDefinition[],
   current: CustomRoleInput[],
+  messages?: CustomRoleValidationMessages,
 ): Promise<void> {
-  const validCurrent = validateCustomRoles(current);
+  const validCurrent = validateCustomRoles(current, messages);
   const persistedIds = new Set(
     validCurrent
       .filter(

@@ -478,6 +478,10 @@ export const enMessages = {
     saveRoles: 'Save roles',
     settingsTitle: 'Project settings',
     editProject: 'Edit project',
+    switchToDefaultWarning:
+      'Switching to default roles will remove all custom role definitions. Members will keep their Admin or Member access level.',
+    customRolesReadOnlyHint:
+      'View role permissions in the Roles & Permissions section on the project page.',
     overview: 'Overview',
     allTasks: 'All tasks',
     team: 'Team',
@@ -515,6 +519,7 @@ export const enMessages = {
     exportBackup: 'Create backup',
     exportingBackup: 'Creating backup…',
     exportBackupSuccess: 'Backup downloaded',
+    exportBackupFailed: 'Failed to download backup',
     importBackup: 'Restore backup',
     importingBackup: 'Restoring backup…',
     importBackupSuccess:
@@ -1300,6 +1305,8 @@ export const enMessages = {
       title: 'Custom roles',
       addRole: 'Add role',
       addOneRole: 'Add at least one role with permissions.',
+      roleIncomplete:
+        'Each role needs a name (at least 2 characters) and at least one permission before saving.',
       roleName: 'Role name',
       rolePlaceholder: 'e.g. Project Manager',
       removeRole: 'Remove role',

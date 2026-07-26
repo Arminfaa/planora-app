@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { useForm, Controller } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
@@ -25,14 +25,13 @@ import { Input } from '@/shared/components/ui/Input';
 import { getApiErrorMessage } from '@/lib/api';
 import { queryKeys, STALE_TIME } from '@/lib/query-keys';
 import { AppModal } from '@/shared/components/ui/AppModal';
+import { useLocale } from '@/i18n/LocaleProvider';
 
-const schema = z.object({
-  name: z.string().min(2, 'Name must be at least 2 characters').max(100),
-  description: z.string().max(500).optional(),
-  permissionMode: z.enum(['DEFAULT', 'CUSTOM']),
-});
-
-type FormData = z.infer<typeof schema>;
+type FormData = {
+  name: string;
+  description?: string;
+  permissionMode: 'DEFAULT' | 'CUSTOM';
+};
 
 const FORM_ID = 'edit-project-form';
 
@@ -51,6 +50,7 @@ export function EditProjectModal({
   onSubmit,
   onRolesUpdated,
 }: EditProjectModalProps) {
+  const { t } = useLocale();
   const queryClient = useQueryClient();
   const [error, setError] = useState('');
   const [originalRoles, setOriginalRoles] = useState<ProjectRoleDefinition[]>(
@@ -61,6 +61,24 @@ export function EditProjectModal({
     { name: 'Member', permissions: [] },
   ]);
   const initialMode = project.permissionMode ?? 'DEFAULT';
+
+  const schema = useMemo(
+    () =>
+      z.object({
+        name: z.string().min(2, t('auth.errors.nameMinLength')).max(100),
+        description: z.string().max(500).optional(),
+        permissionMode: z.enum(['DEFAULT', 'CUSTOM']),
+      }),
+    [t],
+  );
+
+  const roleValidationMessages = useMemo(
+    () => ({
+      empty: t('permissions.builder.addOneRole'),
+      incomplete: t('permissions.builder.roleIncomplete'),
+    }),
+    [t],
+  );
 
   const {
     control,
@@ -115,12 +133,13 @@ export function EditProjectModal({
 
       if (data.permissionMode === 'CUSTOM') {
         try {
-          payload.customRoles = validateCustomRoles(customRoles);
+          payload.customRoles = validateCustomRoles(
+            customRoles,
+            roleValidationMessages,
+          );
         } catch (err) {
           setError(
-            err instanceof Error
-              ? err.message
-              : 'Add at least one custom role with a name and one permission.',
+            err instanceof Error ? err.message : roleValidationMessages.empty,
           );
           return;
         }
@@ -129,7 +148,7 @@ export function EditProjectModal({
 
     if (isEditingCustom && canManageRoles && rolesChanged) {
       try {
-        validateCustomRoles(customRoles);
+        validateCustomRoles(customRoles, roleValidationMessages);
       } catch (err) {
         setError(getApiErrorMessage(err));
         return;
@@ -141,7 +160,12 @@ export function EditProjectModal({
 
       if (isEditingCustom && canManageRoles && rolesChanged) {
         try {
-          await syncCustomRoles(project.id, originalRoles, customRoles);
+          await syncCustomRoles(
+            project.id,
+            originalRoles,
+            customRoles,
+            roleValidationMessages,
+          );
           const refreshed = await queryClient.fetchQuery({
             queryKey: queryKeys.projects.roles(project.id),
             queryFn: () => projectService.listRoles(project.id),
@@ -161,19 +185,19 @@ export function EditProjectModal({
 
   return (
     <AppModal
-      title="Edit Project"
+      title={t('projects.editProject')}
       onClose={onClose}
       width={672}
       footer={
         <>
-          <Button onClick={onClose}>Cancel</Button>
+          <Button onClick={onClose}>{t('common.cancel')}</Button>
           <Button
             type="primary"
             htmlType="submit"
             form={FORM_ID}
             loading={isSubmitting}
           >
-            Save
+            {t('common.save')}
           </Button>
         </>
       }
@@ -194,7 +218,7 @@ export function EditProjectModal({
           control={control}
           render={({ field }) => (
             <Input
-              label="Project Name"
+              label={t('dashboard.createProjectForm.nameLabel')}
               error={errors.name?.message}
               value={field.value ?? ''}
               onChange={field.onChange}
@@ -209,7 +233,7 @@ export function EditProjectModal({
           control={control}
           render={({ field }) => (
             <Input
-              label="Description (optional)"
+              label={t('dashboard.createProjectForm.descriptionOptional')}
               error={errors.description?.message}
               value={field.value ?? ''}
               onChange={field.onChange}
@@ -221,7 +245,9 @@ export function EditProjectModal({
         />
 
         <div className="space-y-2">
-          <p className="text-sm font-medium text-gray-700">Access model</p>
+          <p className="text-sm font-medium text-gray-700">
+            {t('dashboard.createProjectForm.accessModel')}
+          </p>
           <Controller
             name="permissionMode"
             control={control}
@@ -235,10 +261,10 @@ export function EditProjectModal({
                   <Radio value="DEFAULT" className="mt-1" />
                   <span>
                     <span className="block text-sm font-medium text-gray-900">
-                      Default
+                      {t('dashboard.createProjectForm.defaultOption')}
                     </span>
                     <span className="block text-xs text-gray-500">
-                      Owner, Admin, Member
+                      {t('dashboard.createProjectForm.defaultOptionHint')}
                     </span>
                   </span>
                 </label>
@@ -246,10 +272,10 @@ export function EditProjectModal({
                   <Radio value="CUSTOM" className="mt-1" />
                   <span>
                     <span className="block text-sm font-medium text-gray-900">
-                      Custom
+                      {t('dashboard.createProjectForm.customOption')}
                     </span>
                     <span className="block text-xs text-gray-500">
-                      Define your own roles
+                      {t('dashboard.createProjectForm.customOptionHint')}
                     </span>
                   </span>
                 </label>
@@ -260,19 +286,20 @@ export function EditProjectModal({
 
         {permissionMode === 'DEFAULT' && !isSwitchingToDefault && (
           <div className="rounded-lg bg-gray-50 px-4 py-3 text-xs text-gray-600">
-            <p className="font-medium text-gray-800">Default roles</p>
+            <p className="font-medium text-gray-800">
+              {t('dashboard.createProjectForm.defaultRolesTitle')}
+            </p>
             <ul className="mt-2 list-inside list-disc space-y-1">
-              <li>Owner — full access including edit/delete project</li>
-              <li>Admin — full access except edit/delete project</li>
-              <li>Member — board tasks, columns, background</li>
+              <li>{t('permissions.defaultRoleOwner')}</li>
+              <li>{t('permissions.defaultRoleAdmin')}</li>
+              <li>{t('permissions.defaultRoleMember')}</li>
             </ul>
           </div>
         )}
 
         {isSwitchingToDefault && (
           <div className="rounded-lg border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-900">
-            Switching to default roles will remove all custom role definitions.
-            Members will keep their Admin or Member access level.
+            {t('projects.switchToDefaultWarning')}
           </div>
         )}
 
@@ -282,11 +309,10 @@ export function EditProjectModal({
 
         {isEditingCustom && !canManageRoles && originalRoles.length > 0 && (
           <div className="rounded-lg bg-gray-50 px-4 py-3 text-xs text-gray-600">
-            <p className="font-medium text-gray-800">Custom roles</p>
-            <p className="mt-1">
-              View role permissions in the Roles & Permissions section on the
-              project page.
+            <p className="font-medium text-gray-800">
+              {t('permissions.customRoles')}
             </p>
+            <p className="mt-1">{t('projects.customRolesReadOnlyHint')}</p>
           </div>
         )}
 

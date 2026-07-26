@@ -31,7 +31,9 @@ export function ProjectBackupPanel({
     setMessage('');
     setIsExporting(true);
     try {
-      await projectService.downloadBackup(projectId, projectSlug);
+      await projectService.downloadBackup(projectId, projectSlug, {
+        fallbackErrorMessage: t('projects.exportBackupFailed'),
+      });
       setMessage(t('projects.exportBackupSuccess'));
     } catch (err) {
       setError(getApiErrorMessage(err));

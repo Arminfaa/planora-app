@@ -479,6 +479,10 @@ export const faMessages = {
     saveRoles: 'ذخیره نقش‌ها',
     settingsTitle: 'تنظیمات پروژه',
     editProject: 'ویرایش پروژه',
+    switchToDefaultWarning:
+      'با سوییچ به نقش‌های پیش‌فرض، تمام تعاریف نقش سفارشی حذف می‌شوند. اعضا سطح دسترسی مدیر یا عضو خود را حفظ می‌کنند.',
+    customRolesReadOnlyHint:
+      'مجوزهای نقش را در بخش نقش‌ها و مجوزها در صفحه پروژه ببینید.',
     overview: 'نمای کلی',
     allTasks: 'همه وظایف',
     team: 'تیم',
@@ -514,6 +518,7 @@ export const faMessages = {
     exportBackup: 'تهیه نسخه پشتیبان',
     exportingBackup: 'در حال تهیه نسخه پشتیبان…',
     exportBackupSuccess: 'نسخه پشتیبان دانلود شد',
+    exportBackupFailed: 'دانلود نسخه پشتیبان ناموفق بود',
     importBackup: 'بازیابی نسخه پشتیبان',
     importingBackup: 'در حال بازیابی نسخه پشتیبان…',
     importBackupSuccess:
@@ -1306,6 +1311,8 @@ export const faMessages = {
       title: 'نقش‌های سفارشی',
       addRole: 'افزودن نقش',
       addOneRole: 'حداقل یک نقش با مجوزها اضافه کنید.',
+      roleIncomplete:
+        'هر نقش باید نام (حداقل ۲ کاراکتر) و حداقل یک مجوز داشته باشد.',
       roleName: 'نام نقش',
       rolePlaceholder: 'مثلاً مدیر پروژه',
       removeRole: 'حذف نقش',

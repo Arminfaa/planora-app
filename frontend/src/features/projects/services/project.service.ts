@@ -150,7 +150,14 @@ export const projectService = {
     return data.data;
   },
 
-  async downloadBackup(projectId: string, projectSlug: string): Promise<void> {
+  async downloadBackup(
+    projectId: string,
+    projectSlug: string,
+    options?: { fallbackErrorMessage?: string },
+  ): Promise<void> {
+    const fallbackMessage =
+      options?.fallbackErrorMessage ?? 'Failed to download backup';
+
     try {
       const response = await api.get<Blob>(`/projects/${projectId}/backup`, {
         responseType: 'blob',
@@ -171,15 +178,12 @@ export const projectService = {
         const text = await data.text();
         try {
           const parsed = JSON.parse(text) as { message?: string };
-          throw Object.assign(
-            new Error(parsed.message || 'Failed to download backup'),
-            {
-              response: { data: parsed },
-            },
-          );
+          throw Object.assign(new Error(parsed.message || fallbackMessage), {
+            response: { data: parsed },
+          });
         } catch (inner) {
           if (inner instanceof SyntaxError) {
-            throw new Error(text || 'Failed to download backup');
+            throw new Error(text || fallbackMessage);
           }
           throw inner;
         }
