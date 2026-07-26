@@ -1,7 +1,7 @@
 'use client';
 
 import { useCallback, useEffect, useState } from 'react';
-import { Button } from 'antd';
+import { Button, Tooltip } from 'antd';
 import type { BoardTask } from '@/features/board/types';
 import { attachmentService } from '../services/attachment.service';
 import type { TaskAttachment } from '../types';
@@ -261,6 +261,9 @@ export function TaskAttachmentsPreviewModal({
               {links.map((attachment) => {
                 const isWebLink = isWebAttachmentUrl(attachment.url);
                 const pathCopied = copiedPathId === attachment.id;
+                const subtitle = isWebLink
+                  ? `${t('attachments.linkLabel')} · ${attachment.url}`
+                  : `${t('attachments.folderPathLabel')} · ${attachment.url}`;
 
                 if (isWebLink) {
                   return (
@@ -271,13 +274,17 @@ export function TaskAttachmentsPreviewModal({
                         rel="noreferrer"
                         className="flex items-center justify-between gap-3 px-3 py-2.5 transition hover:bg-gray-50"
                       >
-                        <div className="min-w-0">
-                          <p className="truncate text-sm text-gray-900">
-                            {attachment.filename}
-                          </p>
-                          <p className="truncate text-xs text-gray-500">
-                            {t('attachments.linkLabel')} · {attachment.url}
-                          </p>
+                        <div className="min-w-0 flex-1">
+                          <Tooltip title={attachment.url}>
+                            <p className="truncate text-sm text-gray-900">
+                              {attachment.filename}
+                            </p>
+                          </Tooltip>
+                          <Tooltip title={attachment.url}>
+                            <p className="truncate text-xs text-gray-500">
+                              {subtitle}
+                            </p>
+                          </Tooltip>
                         </div>
                         <span className="shrink-0 text-xs text-primary-600">
                           {t('attachments.open')}
@@ -296,13 +303,17 @@ export function TaskAttachmentsPreviewModal({
                       }
                       className="flex w-full items-center justify-between gap-3 px-3 py-2.5 text-start transition hover:bg-gray-50"
                     >
-                      <div className="min-w-0">
-                        <p className="truncate text-sm text-gray-900">
-                          {attachment.filename}
-                        </p>
-                        <p className="truncate text-xs text-gray-500">
-                          {t('attachments.folderPathLabel')} · {attachment.url}
-                        </p>
+                      <div className="min-w-0 flex-1">
+                        <Tooltip title={attachment.url}>
+                          <p className="truncate text-sm text-gray-900">
+                            {attachment.filename}
+                          </p>
+                        </Tooltip>
+                        <Tooltip title={attachment.url}>
+                          <p className="truncate text-xs text-gray-500">
+                            {subtitle}
+                          </p>
+                        </Tooltip>
                       </div>
                       <span className="shrink-0 text-xs text-primary-600">
                         {pathCopied

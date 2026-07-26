@@ -8,7 +8,7 @@ import {
   useRef,
   useState,
 } from 'react';
-import { Dropdown } from 'antd';
+import { Dropdown, Tooltip } from 'antd';
 import type { MenuProps } from 'antd';
 import { attachmentService } from '../services/attachment.service';
 import type { TaskAttachment } from '../types';
@@ -416,41 +416,53 @@ export const TaskAttachments = forwardRef<
                       />
                     </a>
                   ) : isWebLink ? (
-                    <a
-                      href={assetUrl}
-                      target="_blank"
-                      rel="noreferrer"
-                      className="text-sm font-medium text-primary-600 hover:text-primary-700"
-                    >
-                      {attachment.filename}
-                    </a>
+                    <Tooltip title={attachment.url}>
+                      <a
+                        href={assetUrl}
+                        target="_blank"
+                        rel="noreferrer"
+                        className="block max-w-full truncate text-sm font-medium text-primary-600 hover:text-primary-700"
+                      >
+                        {attachment.filename}
+                      </a>
+                    </Tooltip>
                   ) : isFolderPath ? (
-                    <button
-                      type="button"
-                      onClick={() =>
-                        void handleCopyPath(attachment.id, attachment.url)
-                      }
-                      className="text-start text-sm font-medium text-primary-600 hover:text-primary-700"
-                    >
-                      {attachment.filename}
-                    </button>
+                    <Tooltip title={attachment.url}>
+                      <button
+                        type="button"
+                        onClick={() =>
+                          void handleCopyPath(attachment.id, attachment.url)
+                        }
+                        className="block max-w-full truncate text-start text-sm font-medium text-primary-600 hover:text-primary-700"
+                      >
+                        {attachment.filename}
+                      </button>
+                    </Tooltip>
                   ) : (
-                    <a
-                      href={assetUrl}
-                      target="_blank"
-                      rel="noreferrer"
-                      className="text-sm font-medium text-primary-600 hover:text-primary-700"
-                    >
-                      {attachment.filename}
-                    </a>
+                    <Tooltip title={attachment.filename}>
+                      <a
+                        href={assetUrl}
+                        target="_blank"
+                        rel="noreferrer"
+                        className="block max-w-full truncate text-sm font-medium text-primary-600 hover:text-primary-700"
+                      >
+                        {attachment.filename}
+                      </a>
+                    </Tooltip>
                   )}
-                  <p className="mt-1 truncate text-xs text-gray-500">
-                    {isFolderPath
-                      ? `${t('attachments.folderPathLabel')} · ${attachment.url}`
-                      : isLink
-                        ? `${t('attachments.linkLabel')} · ${attachment.url}`
-                        : `${attachment.filename} · ${formatFileSize(attachment.size)}`}
-                  </p>
+                  {isLink ? (
+                    <Tooltip title={attachment.url}>
+                      <p className="mt-1 max-w-full truncate text-xs text-gray-500">
+                        {isFolderPath
+                          ? `${t('attachments.folderPathLabel')} · ${attachment.url}`
+                          : `${t('attachments.linkLabel')} · ${attachment.url}`}
+                      </p>
+                    </Tooltip>
+                  ) : (
+                    <p className="mt-1 truncate text-xs text-gray-500">
+                      {attachment.filename} · {formatFileSize(attachment.size)}
+                    </p>
+                  )}
                   {isFolderPath && (
                     <button
                       type="button"
