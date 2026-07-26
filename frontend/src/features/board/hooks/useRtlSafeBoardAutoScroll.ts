@@ -6,8 +6,6 @@ import { useDndMonitor } from '@dnd-kit/core';
 
 /** Absolute edge zone in px — ratio zones fire immediately on full-width mobile cards. */
 const EDGE_ZONE_PX = 44;
-/** Pointer must move this far from drag-start before that direction can auto-scroll. */
-const INTENT_PX = 10;
 const ACCELERATION = 5;
 const INTERVAL_MS = 16;
 
@@ -16,8 +14,10 @@ const INTERVAL_MS = 16;
  * In RTL, modern browsers use negative scrollLeft (0 at inline-start / right,
  * -max at inline-end / left), so left-edge scrolling never runs.
  *
- * Uses pointer X (not the dragged card rect) plus move-intent, so activating
- * drag on a full-width mobile task does not shake the board.
+ * Scrolls only while the pointer is actually inside an edge zone, using the
+ * pointer's live clientX (never dnd-kit's cumulative drag delta, which keeps
+ * drifting after the board itself scrolls and would never let scrolling stop
+ * when the finger returns to the middle).
  */
 function getHorizontalScrollAvailability(element: HTMLElement) {
   const maxScroll = Math.max(0, element.scrollWidth - element.clientWidth);
@@ -69,12 +69,7 @@ function getClientXFromEvent(event: Event): number | null {
   return null;
 }
 
-function scrollBoardForPointer(
-  element: HTMLElement,
-  pointerX: number,
-  intentLeft: boolean,
-  intentRight: boolean,
-) {
+function scrollBoardForPointer(element: HTMLElement, pointerX: number) {
   const containerRect = element.getBoundingClientRect();
   const { canScrollTowardLeft, canScrollTowardRight } =
     getHorizontalScrollAvailability(element);
@@ -82,7 +77,7 @@ function scrollBoardForPointer(
   const nearLeft = pointerX <= containerRect.left + EDGE_ZONE_PX;
   const nearRight = pointerX >= containerRect.right - EDGE_ZONE_PX;
 
-  if (nearLeft && intentLeft && canScrollTowardLeft) {
+  if (nearLeft && canScrollTowardLeft) {
     const distance = Math.min(
       EDGE_ZONE_PX,
       containerRect.left + EDGE_ZONE_PX - pointerX,
@@ -92,7 +87,7 @@ function scrollBoardForPointer(
     return;
   }
 
-  if (nearRight && intentRight && canScrollTowardRight) {
+  if (nearRight && canScrollTowardRight) {
     const distance = Math.min(
       EDGE_ZONE_PX,
       pointerX - (containerRect.right - EDGE_ZONE_PX),
@@ -100,6 +95,7 @@ function scrollBoardForPointer(
     const speed = ACCELERATION * Math.max(0.25, distance / EDGE_ZONE_PX);
     element.scrollBy(speed, 0);
   }
+  // Pointer is in the middle zone: no scrollBy call, so scrolling stops.
 }
 
 export function useRtlSafeBoardAutoScroll(
@@ -107,9 +103,6 @@ export function useRtlSafeBoardAutoScroll(
 ) {
   const stateRef = useRef({
     pointerX: null as number | null,
-    startX: null as number | null,
-    intentLeft: false,
-    intentRight: false,
     listening: false,
     intervalId: null as ReturnType<typeof setInterval> | null,
   });
@@ -117,43 +110,20 @@ export function useRtlSafeBoardAutoScroll(
   const scrollRefLatest = useRef(scrollRef);
   scrollRefLatest.current = scrollRef;
 
-  const updatePointer = (clientX: number) => {
-    const state = stateRef.current;
-    state.pointerX = clientX;
-
-    if (state.startX == null) {
-      state.startX = clientX;
-      return;
-    }
-
-    if (clientX <= state.startX - INTENT_PX) {
-      state.intentLeft = true;
-    }
-    if (clientX >= state.startX + INTENT_PX) {
-      state.intentRight = true;
-    }
-  };
-
   const onWindowPointerMove = useRef((event: PointerEvent) => {
-    updatePointer(event.clientX);
+    stateRef.current.pointerX = event.clientX;
   }).current;
 
   const onWindowTouchMove = useRef((event: TouchEvent) => {
     const touch = event.touches[0];
-    if (touch) updatePointer(touch.clientX);
+    if (touch) stateRef.current.pointerX = touch.clientX;
   }).current;
 
   const tick = useRef(() => {
     const state = stateRef.current;
     const element = scrollRefLatest.current.current;
-    if (!element || state.pointerX == null || state.startX == null) return;
-
-    scrollBoardForPointer(
-      element,
-      state.pointerX,
-      state.intentLeft,
-      state.intentRight,
-    );
+    if (!element || state.pointerX == null) return;
+    scrollBoardForPointer(element, state.pointerX);
   }).current;
 
   const clearPointerListeners = () => {
@@ -182,29 +152,15 @@ export function useRtlSafeBoardAutoScroll(
     }
     clearPointerListeners();
     state.pointerX = null;
-    state.startX = null;
-    state.intentLeft = false;
-    state.intentRight = false;
   };
 
   useDndMonitor({
     onDragStart(event) {
       const state = stateRef.current;
-      const fromActivator = getClientXFromEvent(event.activatorEvent);
-      state.startX = fromActivator;
-      state.pointerX = fromActivator;
-      state.intentLeft = false;
-      state.intentRight = false;
+      state.pointerX = getClientXFromEvent(event.activatorEvent);
       ensurePointerListeners();
       if (state.intervalId == null) {
         state.intervalId = setInterval(tick, INTERVAL_MS);
-      }
-    },
-    onDragMove(event) {
-      const state = stateRef.current;
-      // Fallback when window listeners miss an update
-      if (state.startX != null && event.delta) {
-        updatePointer(state.startX + event.delta.x);
       }
     },
     onDragEnd: clear,
