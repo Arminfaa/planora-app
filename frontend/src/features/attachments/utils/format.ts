@@ -26,3 +26,8 @@ export function getFileKind(mimeType: string, filename: string): FileKind {
   }
   return 'file';
 }
+
+/** True for http(s) links that browsers can open directly. */
+export function isWebAttachmentUrl(url: string): boolean {
+  return /^https?:\/\//i.test(url.trim());
+}

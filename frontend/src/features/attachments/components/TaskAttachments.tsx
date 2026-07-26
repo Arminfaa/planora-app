@@ -18,9 +18,10 @@ import { TrashIcon } from '@/shared/components/icons/TrashIcon';
 import { IconActionButton } from '@/shared/components/ui/IconActionButton';
 import { Input } from '@/shared/components/ui/Input';
 import { getApiErrorMessage } from '@/lib/api';
+import { copyText } from '@/lib/copyText';
 import { getAssetUrl, isImageAttachment } from '@/lib/assets';
 import { AssetImage } from '@/shared/components/ui/AssetImage';
-import { formatFileSize } from '../utils/format';
+import { formatFileSize, isWebAttachmentUrl } from '../utils/format';
 
 export interface TaskAttachmentsHandle {
   persist: () => Promise<void>;
@@ -93,6 +94,7 @@ export const TaskAttachments = forwardRef<
   const [showLinkInput, setShowLinkInput] = useState(false);
   const [linkValue, setLinkValue] = useState('');
   const [linkError, setLinkError] = useState('');
+  const [copiedPathId, setCopiedPathId] = useState<string | null>(null);
 
   const loadAttachments = useCallback(async () => {
     setIsLoading(true);
@@ -240,6 +242,15 @@ export const TaskAttachments = forwardRef<
     }
   };
 
+  const handleCopyPath = async (attachmentId: string, path: string) => {
+    const ok = await copyText(path);
+    if (!ok) return;
+    setCopiedPathId(attachmentId);
+    window.setTimeout(() => {
+      setCopiedPathId((current) => (current === attachmentId ? null : current));
+    }, 2000);
+  };
+
   const handleDelete = async (attachmentId: string) => {
     if (!confirm(t('attachments.deleteConfirm'))) return;
 
@@ -367,12 +378,15 @@ export const TaskAttachments = forwardRef<
         <div className="space-y-2">
           {visibleAttachments.map((attachment) => {
             const isLink = attachment.type === 'LINK';
+            const isWebLink = isLink && isWebAttachmentUrl(attachment.url);
+            const isFolderPath = isLink && !isWebLink;
             const assetUrl = isLink
               ? attachment.url
               : (attachment.previewUrl ?? getAssetUrl(attachment.url));
             const isImage =
               !isLink &&
               isImageAttachment(attachment.type, attachment.mimeType);
+            const pathCopied = copiedPathId === attachment.id;
 
             return (
               <div
@@ -401,6 +415,25 @@ export const TaskAttachments = forwardRef<
                         }}
                       />
                     </a>
+                  ) : isWebLink ? (
+                    <a
+                      href={assetUrl}
+                      target="_blank"
+                      rel="noreferrer"
+                      className="text-sm font-medium text-primary-600 hover:text-primary-700"
+                    >
+                      {attachment.filename}
+                    </a>
+                  ) : isFolderPath ? (
+                    <button
+                      type="button"
+                      onClick={() =>
+                        void handleCopyPath(attachment.id, attachment.url)
+                      }
+                      className="text-start text-sm font-medium text-primary-600 hover:text-primary-700"
+                    >
+                      {attachment.filename}
+                    </button>
                   ) : (
                     <a
                       href={assetUrl}
@@ -412,10 +445,25 @@ export const TaskAttachments = forwardRef<
                     </a>
                   )}
                   <p className="mt-1 truncate text-xs text-gray-500">
-                    {isLink
-                      ? `${t('attachments.linkLabel')} · ${attachment.url}`
-                      : `${attachment.filename} · ${formatFileSize(attachment.size)}`}
+                    {isFolderPath
+                      ? `${t('attachments.folderPathLabel')} · ${attachment.url}`
+                      : isLink
+                        ? `${t('attachments.linkLabel')} · ${attachment.url}`
+                        : `${attachment.filename} · ${formatFileSize(attachment.size)}`}
                   </p>
+                  {isFolderPath && (
+                    <button
+                      type="button"
+                      onClick={() =>
+                        void handleCopyPath(attachment.id, attachment.url)
+                      }
+                      className="mt-1.5 text-xs font-medium text-primary-600 hover:text-primary-700"
+                    >
+                      {pathCopied
+                        ? t('attachments.pathCopied')
+                        : t('attachments.copyPath')}
+                    </button>
+                  )}
                 </div>
                 <IconActionButton
                   label={t('common.delete')}

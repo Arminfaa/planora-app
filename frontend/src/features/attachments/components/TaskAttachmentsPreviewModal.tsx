@@ -5,10 +5,15 @@ import { Button } from 'antd';
 import type { BoardTask } from '@/features/board/types';
 import { attachmentService } from '../services/attachment.service';
 import type { TaskAttachment } from '../types';
-import { formatFileSize, getFileKind } from '../utils/format';
+import {
+  formatFileSize,
+  getFileKind,
+  isWebAttachmentUrl,
+} from '../utils/format';
 import { useLocale } from '@/i18n/LocaleProvider';
 import { LoadingSpinner } from '@/shared/components/feedback/LoadingSpinner';
 import { getApiErrorMessage } from '@/lib/api';
+import { copyText } from '@/lib/copyText';
 import { getAssetUrl, isImageAttachment } from '@/lib/assets';
 import { AssetImage } from '@/shared/components/ui/AssetImage';
 import { AppModal } from '@/shared/components/ui/AppModal';
@@ -27,6 +32,7 @@ export function TaskAttachmentsPreviewModal({
   const [error, setError] = useState('');
   const [isLoading, setIsLoading] = useState(true);
   const [activeImageIndex, setActiveImageIndex] = useState(0);
+  const [copiedPathId, setCopiedPathId] = useState<string | null>(null);
 
   const loadAttachments = useCallback(async () => {
     setIsLoading(true);
@@ -54,6 +60,15 @@ export function TaskAttachmentsPreviewModal({
       item.type !== 'LINK' && !isImageAttachment(item.type, item.mimeType),
   );
   const links = attachments.filter((item) => item.type === 'LINK');
+
+  const handleCopyPath = async (attachmentId: string, path: string) => {
+    const ok = await copyText(path);
+    if (!ok) return;
+    setCopiedPathId(attachmentId);
+    window.setTimeout(() => {
+      setCopiedPathId((current) => (current === attachmentId ? null : current));
+    }, 2000);
+  };
 
   const activeImage = images[activeImageIndex];
   const activeImageUrl = activeImage ? getAssetUrl(activeImage.url) : '';
@@ -244,28 +259,57 @@ export function TaskAttachmentsPreviewModal({
           {links.length > 0 && (
             <ul className="divide-y divide-gray-100 rounded-xl border border-gray-100">
               {links.map((attachment) => {
-                const assetUrl = attachment.url;
+                const isWebLink = isWebAttachmentUrl(attachment.url);
+                const pathCopied = copiedPathId === attachment.id;
+
+                if (isWebLink) {
+                  return (
+                    <li key={attachment.id}>
+                      <a
+                        href={attachment.url}
+                        target="_blank"
+                        rel="noreferrer"
+                        className="flex items-center justify-between gap-3 px-3 py-2.5 transition hover:bg-gray-50"
+                      >
+                        <div className="min-w-0">
+                          <p className="truncate text-sm text-gray-900">
+                            {attachment.filename}
+                          </p>
+                          <p className="truncate text-xs text-gray-500">
+                            {t('attachments.linkLabel')} · {attachment.url}
+                          </p>
+                        </div>
+                        <span className="shrink-0 text-xs text-primary-600">
+                          {t('attachments.open')}
+                        </span>
+                      </a>
+                    </li>
+                  );
+                }
 
                 return (
                   <li key={attachment.id}>
-                    <a
-                      href={assetUrl}
-                      target="_blank"
-                      rel="noreferrer"
-                      className="flex items-center justify-between gap-3 px-3 py-2.5 transition hover:bg-gray-50"
+                    <button
+                      type="button"
+                      onClick={() =>
+                        void handleCopyPath(attachment.id, attachment.url)
+                      }
+                      className="flex w-full items-center justify-between gap-3 px-3 py-2.5 text-start transition hover:bg-gray-50"
                     >
                       <div className="min-w-0">
                         <p className="truncate text-sm text-gray-900">
                           {attachment.filename}
                         </p>
                         <p className="truncate text-xs text-gray-500">
-                          {t('attachments.linkLabel')} · {attachment.url}
+                          {t('attachments.folderPathLabel')} · {attachment.url}
                         </p>
                       </div>
                       <span className="shrink-0 text-xs text-primary-600">
-                        {t('attachments.open')}
+                        {pathCopied
+                          ? t('attachments.pathCopied')
+                          : t('attachments.copyPath')}
                       </span>
-                    </a>
+                    </button>
                   </li>
                 );
               })}
