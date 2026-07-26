@@ -188,7 +188,12 @@ export const projectService = {
     }
   },
 
-  async importBackup(file: File): Promise<ProjectBackupImportResult> {
+  async importBackup(
+    file: File,
+    options?: {
+      onUploadProgress?: (percent: number) => void;
+    },
+  ): Promise<ProjectBackupImportResult> {
     const formData = new FormData();
     formData.append('file', file);
 
@@ -197,6 +202,18 @@ export const projectService = {
     >('/projects/backup/import', formData, {
       headers: { 'Content-Type': 'multipart/form-data' },
       timeout: 300_000,
+      onUploadProgress: (event) => {
+        if (!options?.onUploadProgress) return;
+        if (!event.total || event.total <= 0) {
+          options.onUploadProgress(0);
+          return;
+        }
+        const percent = Math.min(
+          100,
+          Math.round((event.loaded / event.total) * 100),
+        );
+        options.onUploadProgress(percent);
+      },
     });
     return data.data;
   },

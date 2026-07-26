@@ -424,7 +424,7 @@ export const enMessages = {
     manageWorkspaces: '{count} projects · manage your workspaces',
     manageWorkspacesSingular: '1 project · manage your workspaces',
     importBackup: 'Restore backup',
-    importingBackup: 'Restoring…',
+    importingBackup: 'Restoring backup…',
     importBackupSuccess:
       'Project “{name}” restored ({boards} boards, {tasks} tasks, {members} members).',
     createProjectForm: {
@@ -507,21 +507,24 @@ export const enMessages = {
     projectDetails: 'Project details',
     projectDetailsHint:
       'Update the project name, description, and permission mode.',
-    backupTitle: 'Backup & restore',
+    backupTitle: 'Backup',
     backupHint:
       'Download a full project archive (boards, tasks, members, and files). Users in the backup can sign in later with their existing credentials.',
     backupSecurityNote:
       'This file contains account password hashes. Store it securely and share only with trusted admins.',
-    exportBackup: 'Download backup',
-    exportingBackup: 'Preparing backup…',
+    exportBackup: 'Create backup',
+    exportingBackup: 'Creating backup…',
     exportBackupSuccess: 'Backup downloaded',
-    importBackup: 'Restore from backup',
-    importingBackup: 'Restoring…',
+    importBackup: 'Restore backup',
+    importingBackup: 'Restoring backup…',
     importBackupSuccess:
       'Project “{name}” restored ({boards} boards, {tasks} tasks, {members} members).',
     importBackupHint:
       'Creates a new project from a .planora file. Existing users are linked by email; new users are created so they can sign in without re-registering.',
     chooseBackupFile: 'Choose .planora file',
+    backupUploadProgress: 'Uploading file…',
+    backupRestoreProgress: 'Restoring data…',
+    backupRestoreComplete: 'Restore complete',
     noTeamPermission: 'You do not have permission to view the project team.',
     deleteProjectNamed:
       'Delete project "{name}"? All boards, columns, and tasks will be removed.',

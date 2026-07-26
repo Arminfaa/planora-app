@@ -1,10 +1,10 @@
 'use client';
 
-import { useRef, useState } from 'react';
-import { useRouter } from 'next/navigation';
+import { useState } from 'react';
 import { getApiErrorMessage } from '@/lib/api';
 import { useLocale } from '@/i18n/LocaleProvider';
 import { projectService } from '../services/project.service';
+import { ImportBackupModal } from './ImportBackupModal';
 
 interface ProjectBackupPanelProps {
   projectId: string;
@@ -12,7 +12,6 @@ interface ProjectBackupPanelProps {
   canExport: boolean;
   /** When true, also show restore (creates a new project). */
   canImport?: boolean;
-  onImported?: () => void;
 }
 
 export function ProjectBackupPanel({
@@ -20,13 +19,10 @@ export function ProjectBackupPanel({
   projectSlug,
   canExport,
   canImport = false,
-  onImported,
 }: ProjectBackupPanelProps) {
   const { t } = useLocale();
-  const router = useRouter();
-  const fileInputRef = useRef<HTMLInputElement>(null);
   const [isExporting, setIsExporting] = useState(false);
-  const [isImporting, setIsImporting] = useState(false);
+  const [showImportModal, setShowImportModal] = useState(false);
   const [message, setMessage] = useState('');
   const [error, setError] = useState('');
 
@@ -41,33 +37,6 @@ export function ProjectBackupPanel({
       setError(getApiErrorMessage(err));
     } finally {
       setIsExporting(false);
-    }
-  };
-
-  const handleImportFile = async (file: File | undefined) => {
-    if (!file) return;
-    setError('');
-    setMessage('');
-    setIsImporting(true);
-    try {
-      const result = await projectService.importBackup(file);
-      setMessage(
-        t('projects.importBackupSuccess', {
-          name: result.projectName,
-          boards: result.boards,
-          tasks: result.tasks,
-          members: result.members,
-        }),
-      );
-      onImported?.();
-      router.push(`/dashboard/projects/${result.projectSlug}`);
-    } catch (err) {
-      setError(getApiErrorMessage(err));
-    } finally {
-      setIsImporting(false);
-      if (fileInputRef.current) {
-        fileInputRef.current.value = '';
-      }
     }
   };
 
@@ -111,27 +80,13 @@ export function ProjectBackupPanel({
         ) : null}
 
         {canImport ? (
-          <>
-            <input
-              ref={fileInputRef}
-              type="file"
-              accept=".planora,application/octet-stream,application/gzip,application/json"
-              className="hidden"
-              onChange={(event) => {
-                void handleImportFile(event.target.files?.[0]);
-              }}
-            />
-            <button
-              type="button"
-              disabled={isImporting}
-              onClick={() => fileInputRef.current?.click()}
-              className="inline-flex items-center rounded-xl bg-primary-600 px-4 py-2.5 text-sm font-medium text-white shadow-sm transition hover:bg-primary-700 disabled:cursor-not-allowed disabled:opacity-60"
-            >
-              {isImporting
-                ? t('projects.importingBackup')
-                : t('projects.importBackup')}
-            </button>
-          </>
+          <button
+            type="button"
+            onClick={() => setShowImportModal(true)}
+            className="inline-flex items-center rounded-xl bg-primary-600 px-4 py-2.5 text-sm font-medium text-white shadow-sm transition hover:bg-primary-700"
+          >
+            {t('projects.importBackup')}
+          </button>
         ) : null}
       </div>
 
@@ -139,6 +94,13 @@ export function ProjectBackupPanel({
         <p className="mt-3 text-xs text-gray-500">
           {t('projects.importBackupHint')}
         </p>
+      ) : null}
+
+      {showImportModal ? (
+        <ImportBackupModal
+          open={showImportModal}
+          onClose={() => setShowImportModal(false)}
+        />
       ) : null}
     </section>
   );
