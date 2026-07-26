@@ -107,8 +107,11 @@ export interface BackupAttachment {
   filename: string;
   mimeType: string;
   size: number;
-  type: 'IMAGE' | 'FILE';
+  type: 'IMAGE' | 'FILE' | 'LINK';
+  /** Present for file/image attachments; empty for link attachments. */
   fileKey: string;
+  /** Original URL for link attachments (and optional for files). */
+  url?: string;
   createdAt: string;
 }
 
@@ -142,8 +145,9 @@ export interface BackupGroupAttachment {
   filename: string;
   mimeType: string;
   size: number;
-  type: 'IMAGE' | 'FILE';
+  type: 'IMAGE' | 'FILE' | 'LINK';
   fileKey: string;
+  url?: string;
   createdAt: string;
 }
 

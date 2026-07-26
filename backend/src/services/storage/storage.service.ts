@@ -19,7 +19,7 @@ export interface StoredFile {
   url: string;
   mimeType: string;
   size: number;
-  type: AttachmentType;
+  type: 'IMAGE' | 'FILE';
   storageKey: string;
   storageProvider: 'local' | 'cloudinary';
 }

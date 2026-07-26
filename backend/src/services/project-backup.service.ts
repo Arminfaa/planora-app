@@ -315,6 +315,21 @@ export class ProjectBackupService {
 
     const backupAttachments = [];
     for (const attachment of attachments) {
+      if (attachment.type === 'LINK') {
+        backupAttachments.push({
+          id: attachment.id,
+          taskId: attachment.taskId,
+          filename: attachment.filename,
+          mimeType: attachment.mimeType,
+          size: attachment.size,
+          type: attachment.type,
+          fileKey: '',
+          url: attachment.url,
+          createdAt: requiredIso(attachment.createdAt),
+        });
+        continue;
+      }
+
       const key = fileKey('attachments', attachment.id);
       const bytes = await readStoredBytes({
         url: attachment.url,
@@ -822,6 +837,23 @@ export class ProjectBackupService {
     for (const attachment of archive.attachments ?? []) {
       const taskId = taskIdMap.get(attachment.taskId);
       if (!taskId) continue;
+
+      if (attachment.type === 'LINK') {
+        if (!attachment.url) continue;
+        await prisma.attachment.create({
+          data: {
+            taskId,
+            filename: attachment.filename,
+            url: attachment.url,
+            mimeType: attachment.mimeType || 'text/uri-list',
+            size: attachment.size ?? 0,
+            type: AttachmentType.LINK,
+            createdAt: requiredDate(attachment.createdAt),
+          },
+        });
+        continue;
+      }
+
       const restored = await restoreFile(attachment.fileKey);
       if (!restored) continue;
 
