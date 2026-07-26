@@ -78,10 +78,7 @@ function KanbanBoardHorizontalAutoScroll({
 }: {
   scrollRef: RefObject<HTMLElement | null>;
 }) {
-  useRtlSafeBoardAutoScroll(scrollRef, {
-    threshold: BOARD_AUTO_SCROLL.threshold.x,
-    acceleration: BOARD_AUTO_SCROLL.acceleration,
-  });
+  useRtlSafeBoardAutoScroll(scrollRef);
   return null;
 }
 

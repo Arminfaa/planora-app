@@ -4,20 +4,20 @@ import { useEffect, useRef } from 'react';
 import type { RefObject } from 'react';
 import { useDndMonitor } from '@dnd-kit/core';
 
-const DEFAULT_THRESHOLD = 0.12;
-const DEFAULT_ACCELERATION = 12;
-const INTERVAL_MS = 5;
-
-type DragRect = {
-  left: number;
-  right: number;
-};
+/** Absolute edge zone in px — ratio zones fire immediately on full-width mobile cards. */
+const EDGE_ZONE_PX = 44;
+/** Pointer must move this far from drag-start before that direction can auto-scroll. */
+const INTENT_PX = 10;
+const ACCELERATION = 5;
+const INTERVAL_MS = 16;
 
 /**
  * dnd-kit's built-in auto-scroll assumes LTR scrollLeft bounds (0…max).
  * In RTL, modern browsers use negative scrollLeft (0 at inline-start / right,
- * -max at inline-end / left), so `isLeft` stays true and left-edge scrolling
- * never runs. This hook scrolls `.kanban-board-scroll` with correct RTL edges.
+ * -max at inline-end / left), so left-edge scrolling never runs.
+ *
+ * Uses pointer X (not the dragged card rect) plus move-intent, so activating
+ * drag on a full-width mobile task does not shake the board.
  */
 function getHorizontalScrollAvailability(element: HTMLElement) {
   const maxScroll = Math.max(0, element.scrollWidth - element.clientWidth);
@@ -35,7 +35,6 @@ function getHorizontalScrollAvailability(element: HTMLElement) {
     };
   }
 
-  // Negative scrollLeft model (Chrome, Safari, modern Firefox)
   if (scrollLeft < 0) {
     return {
       canScrollTowardLeft: scrollLeft > -maxScroll + 1,
@@ -43,7 +42,6 @@ function getHorizontalScrollAvailability(element: HTMLElement) {
     };
   }
 
-  // At inline-start (scrollLeft === 0), or legacy positive RTL (0…max from start→end)
   if (scrollLeft === 0) {
     return {
       canScrollTowardLeft: true,
@@ -57,94 +55,161 @@ function getHorizontalScrollAvailability(element: HTMLElement) {
   };
 }
 
-function scrollBoardForDragRect(
+function getClientXFromEvent(event: Event): number | null {
+  if ('touches' in event) {
+    const touchEvent = event as TouchEvent;
+    const touch = touchEvent.touches[0] ?? touchEvent.changedTouches[0];
+    return touch?.clientX ?? null;
+  }
+
+  if ('clientX' in event && typeof (event as MouseEvent).clientX === 'number') {
+    return (event as MouseEvent).clientX;
+  }
+
+  return null;
+}
+
+function scrollBoardForPointer(
   element: HTMLElement,
-  dragRect: DragRect,
-  thresholdRatio: number,
-  acceleration: number,
+  pointerX: number,
+  intentLeft: boolean,
+  intentRight: boolean,
 ) {
   const containerRect = element.getBoundingClientRect();
-  const thresholdWidth = containerRect.width * thresholdRatio;
-  if (thresholdWidth <= 0) return;
-
   const { canScrollTowardLeft, canScrollTowardRight } =
     getHorizontalScrollAvailability(element);
 
-  if (
-    canScrollTowardRight &&
-    dragRect.right >= containerRect.right - thresholdWidth
-  ) {
+  const nearLeft = pointerX <= containerRect.left + EDGE_ZONE_PX;
+  const nearRight = pointerX >= containerRect.right - EDGE_ZONE_PX;
+
+  if (nearLeft && intentLeft && canScrollTowardLeft) {
     const distance = Math.min(
-      thresholdWidth,
-      dragRect.right - (containerRect.right - thresholdWidth),
+      EDGE_ZONE_PX,
+      containerRect.left + EDGE_ZONE_PX - pointerX,
     );
-    const speed = acceleration * Math.max(0.2, distance / thresholdWidth);
-    element.scrollBy(speed, 0);
+    const speed = ACCELERATION * Math.max(0.25, distance / EDGE_ZONE_PX);
+    element.scrollBy(-speed, 0);
     return;
   }
 
-  if (
-    canScrollTowardLeft &&
-    dragRect.left <= containerRect.left + thresholdWidth
-  ) {
+  if (nearRight && intentRight && canScrollTowardRight) {
     const distance = Math.min(
-      thresholdWidth,
-      containerRect.left + thresholdWidth - dragRect.left,
+      EDGE_ZONE_PX,
+      pointerX - (containerRect.right - EDGE_ZONE_PX),
     );
-    const speed = acceleration * Math.max(0.2, distance / thresholdWidth);
-    element.scrollBy(-speed, 0);
+    const speed = ACCELERATION * Math.max(0.25, distance / EDGE_ZONE_PX);
+    element.scrollBy(speed, 0);
   }
 }
 
 export function useRtlSafeBoardAutoScroll(
   scrollRef: RefObject<HTMLElement | null>,
-  options?: { threshold?: number; acceleration?: number },
 ) {
-  const threshold = options?.threshold ?? DEFAULT_THRESHOLD;
-  const acceleration = options?.acceleration ?? DEFAULT_ACCELERATION;
-  const dragRectRef = useRef<DragRect | null>(null);
-  const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
+  const stateRef = useRef({
+    pointerX: null as number | null,
+    startX: null as number | null,
+    intentLeft: false,
+    intentRight: false,
+    listening: false,
+    intervalId: null as ReturnType<typeof setInterval> | null,
+  });
 
-  const clear = () => {
-    if (intervalRef.current != null) {
-      clearInterval(intervalRef.current);
-      intervalRef.current = null;
+  const scrollRefLatest = useRef(scrollRef);
+  scrollRefLatest.current = scrollRef;
+
+  const updatePointer = (clientX: number) => {
+    const state = stateRef.current;
+    state.pointerX = clientX;
+
+    if (state.startX == null) {
+      state.startX = clientX;
+      return;
     }
-    dragRectRef.current = null;
+
+    if (clientX <= state.startX - INTENT_PX) {
+      state.intentLeft = true;
+    }
+    if (clientX >= state.startX + INTENT_PX) {
+      state.intentRight = true;
+    }
   };
 
-  const tick = () => {
-    const element = scrollRef.current;
-    const dragRect = dragRectRef.current;
-    if (!element || !dragRect) return;
-    scrollBoardForDragRect(element, dragRect, threshold, acceleration);
+  const onWindowPointerMove = useRef((event: PointerEvent) => {
+    updatePointer(event.clientX);
+  }).current;
+
+  const onWindowTouchMove = useRef((event: TouchEvent) => {
+    const touch = event.touches[0];
+    if (touch) updatePointer(touch.clientX);
+  }).current;
+
+  const tick = useRef(() => {
+    const state = stateRef.current;
+    const element = scrollRefLatest.current.current;
+    if (!element || state.pointerX == null || state.startX == null) return;
+
+    scrollBoardForPointer(
+      element,
+      state.pointerX,
+      state.intentLeft,
+      state.intentRight,
+    );
+  }).current;
+
+  const clearPointerListeners = () => {
+    const state = stateRef.current;
+    if (!state.listening) return;
+    state.listening = false;
+    window.removeEventListener('pointermove', onWindowPointerMove);
+    window.removeEventListener('touchmove', onWindowTouchMove);
+  };
+
+  const ensurePointerListeners = () => {
+    const state = stateRef.current;
+    if (state.listening) return;
+    state.listening = true;
+    window.addEventListener('pointermove', onWindowPointerMove, {
+      passive: true,
+    });
+    window.addEventListener('touchmove', onWindowTouchMove, { passive: true });
+  };
+
+  const clear = () => {
+    const state = stateRef.current;
+    if (state.intervalId != null) {
+      clearInterval(state.intervalId);
+      state.intervalId = null;
+    }
+    clearPointerListeners();
+    state.pointerX = null;
+    state.startX = null;
+    state.intentLeft = false;
+    state.intentRight = false;
   };
 
   useDndMonitor({
     onDragStart(event) {
-      const initial = event.active.rect.current.initial;
-      if (initial) {
-        dragRectRef.current = {
-          left: initial.left,
-          right: initial.right,
-        };
-      }
-      if (intervalRef.current == null) {
-        intervalRef.current = setInterval(tick, INTERVAL_MS);
+      const state = stateRef.current;
+      const fromActivator = getClientXFromEvent(event.activatorEvent);
+      state.startX = fromActivator;
+      state.pointerX = fromActivator;
+      state.intentLeft = false;
+      state.intentRight = false;
+      ensurePointerListeners();
+      if (state.intervalId == null) {
+        state.intervalId = setInterval(tick, INTERVAL_MS);
       }
     },
     onDragMove(event) {
-      const translated = event.active.rect.current.translated;
-      if (translated) {
-        dragRectRef.current = {
-          left: translated.left,
-          right: translated.right,
-        };
+      const state = stateRef.current;
+      // Fallback when window listeners miss an update
+      if (state.startX != null && event.delta) {
+        updatePointer(state.startX + event.delta.x);
       }
     },
     onDragEnd: clear,
     onDragCancel: clear,
   });
 
-  useEffect(() => clear, []);
+  useEffect(() => () => clear(), []);
 }
