@@ -95,7 +95,7 @@ export async function storeBackupBuffer(input: {
 export async function removeStoredFile(
   storageKey: string,
   storageProvider: 'local' | 'cloudinary',
-  attachmentType?: 'IMAGE' | 'FILE',
+  attachmentType?: 'IMAGE' | 'FILE' | 'LINK',
 ): Promise<void> {
   if (storageProvider === 'cloudinary') {
     await deleteFromCloudinary(

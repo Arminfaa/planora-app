@@ -19,5 +19,6 @@ export function getAssetUrl(url: string): string {
 }
 
 export function isImageAttachment(type: string, mimeType: string): boolean {
+  if (type === 'LINK') return false;
   return type === 'IMAGE' || mimeType.startsWith('image/');
 }

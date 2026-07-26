@@ -8,12 +8,15 @@ import {
   useRef,
   useState,
 } from 'react';
+import { Dropdown } from 'antd';
+import type { MenuProps } from 'antd';
 import { attachmentService } from '../services/attachment.service';
 import type { TaskAttachment } from '../types';
 import { useLocale } from '@/i18n/LocaleProvider';
 import { PlusIcon } from '@/shared/components/icons/PlusIcon';
 import { TrashIcon } from '@/shared/components/icons/TrashIcon';
 import { IconActionButton } from '@/shared/components/ui/IconActionButton';
+import { Input } from '@/shared/components/ui/Input';
 import { getApiErrorMessage } from '@/lib/api';
 import { getAssetUrl, isImageAttachment } from '@/lib/assets';
 import { AssetImage } from '@/shared/components/ui/AssetImage';
@@ -49,6 +52,33 @@ function inferAttachmentType(mimeType: string): TaskAttachment['type'] {
   return mimeType.startsWith('image/') ? 'IMAGE' : 'FILE';
 }
 
+function normalizeLinkUrl(raw: string): string {
+  return raw.trim();
+}
+
+function isValidLinkValue(value: string): boolean {
+  if (!value) return false;
+  if (!/^https?:\/\//i.test(value)) return true;
+
+  try {
+    const parsed = new URL(value);
+    return parsed.protocol === 'http:' || parsed.protocol === 'https:';
+  } catch {
+    return false;
+  }
+}
+
+function deriveLinkFilename(url: string): string {
+  try {
+    const parsed = new URL(url);
+    const path =
+      parsed.pathname && parsed.pathname !== '/' ? parsed.pathname : '';
+    return `${parsed.hostname}${path}`.slice(0, 255);
+  } catch {
+    return url.slice(0, 255);
+  }
+}
+
 export const TaskAttachments = forwardRef<
   TaskAttachmentsHandle,
   TaskAttachmentsProps
@@ -60,6 +90,9 @@ export const TaskAttachments = forwardRef<
   const [error, setError] = useState('');
   const [isLoading, setIsLoading] = useState(true);
   const [isUploading, setIsUploading] = useState(false);
+  const [showLinkInput, setShowLinkInput] = useState(false);
+  const [linkValue, setLinkValue] = useState('');
+  const [linkError, setLinkError] = useState('');
 
   const loadAttachments = useCallback(async () => {
     setIsLoading(true);
@@ -98,7 +131,9 @@ export const TaskAttachments = forwardRef<
         );
         const created = attachments.filter(
           (attachment) =>
-            attachment.isNew && !attachment.isDeleted && attachment.file,
+            attachment.isNew &&
+            !attachment.isDeleted &&
+            (attachment.file || attachment.type === 'LINK'),
         );
 
         for (const attachment of deleted) {
@@ -107,6 +142,12 @@ export const TaskAttachments = forwardRef<
         for (const attachment of created) {
           if (attachment.file) {
             await attachmentService.upload(taskId, attachment.file);
+          } else if (attachment.type === 'LINK') {
+            await attachmentService.createLink(
+              taskId,
+              attachment.url,
+              attachment.filename,
+            );
           }
         }
       },
@@ -158,6 +199,47 @@ export const TaskAttachments = forwardRef<
     }
   };
 
+  const handleAddLink = async () => {
+    const url = normalizeLinkUrl(linkValue);
+    if (!isValidLinkValue(url)) {
+      setLinkError(t('attachments.linkInvalid'));
+      return;
+    }
+
+    setLinkError('');
+    setError('');
+
+    if (isDraft) {
+      setAttachments((current) => [
+        ...current,
+        {
+          id: createTempAttachmentId(),
+          filename: deriveLinkFilename(url),
+          url,
+          mimeType: 'text/uri-list',
+          size: 0,
+          type: 'LINK',
+          isNew: true,
+        },
+      ]);
+      setLinkValue('');
+      setShowLinkInput(false);
+      return;
+    }
+
+    setIsUploading(true);
+    try {
+      await attachmentService.createLink(taskId, url);
+      setLinkValue('');
+      setShowLinkInput(false);
+      await loadAttachments();
+    } catch (err) {
+      setError(getApiErrorMessage(err));
+    } finally {
+      setIsUploading(false);
+    }
+  };
+
   const handleDelete = async (attachmentId: string) => {
     if (!confirm(t('attachments.deleteConfirm'))) return;
 
@@ -186,6 +268,24 @@ export const TaskAttachments = forwardRef<
     }
   };
 
+  const menuItems: MenuProps['items'] = [
+    { key: 'file', label: t('attachments.addFile') },
+    { key: 'link', label: t('attachments.addLink') },
+  ];
+
+  const onMenuClick: MenuProps['onClick'] = ({ key }) => {
+    if (key === 'file') {
+      setShowLinkInput(false);
+      setLinkError('');
+      inputRef.current?.click();
+      return;
+    }
+    if (key === 'link') {
+      setShowLinkInput((current) => !current);
+      setLinkError('');
+    }
+  };
+
   return (
     <div className="space-y-3">
       <div className="flex items-center justify-between gap-2">
@@ -203,16 +303,51 @@ export const TaskAttachments = forwardRef<
               if (file) void handleUpload(file);
             }}
           />
-          <IconActionButton
-            label={t('attachments.upload')}
-            tone="primary"
+          <Dropdown
+            menu={{ items: menuItems, onClick: onMenuClick }}
+            trigger={['click']}
+            placement="bottomRight"
             disabled={isUploading}
-            onClick={() => inputRef.current?.click()}
           >
-            <PlusIcon className="h-4 w-4" />
-          </IconActionButton>
+            <span className="inline-flex">
+              <IconActionButton
+                label={t('attachments.add')}
+                tone="primary"
+                disabled={isUploading}
+              >
+                <PlusIcon className="h-4 w-4" />
+              </IconActionButton>
+            </span>
+          </Dropdown>
         </div>
       </div>
+
+      {showLinkInput && (
+        <div className="flex items-start gap-2">
+          <div className="min-w-0 flex-1">
+            <Input
+              value={linkValue}
+              onChange={(event) => {
+                setLinkValue(event.target.value);
+                if (linkError) setLinkError('');
+              }}
+              onPressEnter={() => void handleAddLink()}
+              placeholder={t('attachments.linkPlaceholder')}
+              error={linkError || undefined}
+              disabled={isUploading}
+              autoFocus
+            />
+          </div>
+          <button
+            type="button"
+            disabled={isUploading || !linkValue.trim()}
+            onClick={() => void handleAddLink()}
+            className="mt-0.5 shrink-0 rounded-lg bg-primary-600 px-3 py-1.5 text-sm font-medium text-white transition hover:bg-primary-700 disabled:cursor-not-allowed disabled:opacity-40"
+          >
+            {t('attachments.linkAdd')}
+          </button>
+        </div>
+      )}
 
       {error && (
         <div className="rounded-lg bg-red-50 px-3 py-2 text-sm text-red-700">
@@ -231,12 +366,13 @@ export const TaskAttachments = forwardRef<
       ) : (
         <div className="space-y-2">
           {visibleAttachments.map((attachment) => {
-            const assetUrl =
-              attachment.previewUrl ?? getAssetUrl(attachment.url);
-            const isImage = isImageAttachment(
-              attachment.type,
-              attachment.mimeType,
-            );
+            const isLink = attachment.type === 'LINK';
+            const assetUrl = isLink
+              ? attachment.url
+              : (attachment.previewUrl ?? getAssetUrl(attachment.url));
+            const isImage =
+              !isLink &&
+              isImageAttachment(attachment.type, attachment.mimeType);
 
             return (
               <div
@@ -276,7 +412,9 @@ export const TaskAttachments = forwardRef<
                     </a>
                   )}
                   <p className="mt-1 truncate text-xs text-gray-500">
-                    {attachment.filename} · {formatFileSize(attachment.size)}
+                    {isLink
+                      ? `${t('attachments.linkLabel')} · ${attachment.url}`
+                      : `${attachment.filename} · ${formatFileSize(attachment.size)}`}
                   </p>
                 </div>
                 <IconActionButton

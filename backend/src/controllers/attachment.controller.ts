@@ -10,6 +10,7 @@ import {
 } from '../utils/project-group-activity';
 import { getParam } from '../utils/params';
 import { uploadMiddleware } from '../middlewares/upload.middleware';
+import type { CreateLinkAttachmentInput } from '../validators/attachment.validator';
 
 export const listTaskAttachments = asyncHandler(
   async (req: AuthenticatedRequest, res: Response) => {
@@ -48,6 +49,25 @@ export const uploadTaskAttachment = [
     ApiResponse.success(res, attachment, 'Attachment uploaded', 201);
   }),
 ];
+
+export const createLinkTaskAttachment = asyncHandler(
+  async (req: AuthenticatedRequest, res: Response) => {
+    const taskId = getParam(req.params, 'id');
+    const attachment = await attachmentService.createLink(
+      req.user!.userId,
+      taskId,
+      req.body as CreateLinkAttachmentInput,
+    );
+
+    void projectGroupActivityService.logTaskActivityByTaskId(
+      req.user!.userId,
+      taskId,
+      [buildAttachmentUploadedChange(attachment.filename)],
+    );
+
+    ApiResponse.success(res, attachment, 'Link attachment created', 201);
+  },
+);
 
 export const deleteTaskAttachment = asyncHandler(
   async (req: AuthenticatedRequest, res: Response) => {

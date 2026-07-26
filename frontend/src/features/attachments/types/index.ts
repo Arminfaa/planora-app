@@ -1,4 +1,4 @@
-export type AttachmentType = 'IMAGE' | 'FILE';
+export type AttachmentType = 'IMAGE' | 'FILE' | 'LINK';
 
 export interface TaskAttachment {
   id: string;

@@ -24,6 +24,18 @@ export const attachmentService = {
     return data.data;
   },
 
+  async createLink(
+    taskId: string,
+    url: string,
+    filename?: string,
+  ): Promise<TaskAttachment> {
+    const { data } = await api.post<ApiSuccessResponse<TaskAttachment>>(
+      `/tasks/${taskId}/attachments/link`,
+      { url, filename },
+    );
+    return data.data;
+  },
+
   async remove(taskId: string, attachmentId: string): Promise<void> {
     await api.delete(`/tasks/${taskId}/attachments/${attachmentId}`);
   },

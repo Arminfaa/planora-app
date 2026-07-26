@@ -1,8 +1,10 @@
+import { AttachmentType } from '@prisma/client';
 import { ApiError } from '../utils/ApiError';
 import { attachmentRepository } from '../repositories/attachment.repository';
 import { boardRepository } from '../repositories/board.repository';
 import { columnRepository } from '../repositories/column.repository';
 import { taskRepository } from '../repositories/task.repository';
+import type { CreateLinkAttachmentInput } from '../validators/attachment.validator';
 import { projectAccessService } from './project-access.service';
 import {
   removeStoredFile,
@@ -23,13 +25,35 @@ function serializeAttachment(attachment: {
   return {
     id: attachment.id,
     filename: attachment.filename,
-    url: serializeAttachmentUrl(attachment.url),
+    url:
+      attachment.type === 'LINK'
+        ? attachment.url
+        : serializeAttachmentUrl(attachment.url),
     mimeType: attachment.mimeType,
     size: attachment.size,
     type: attachment.type,
     taskId: attachment.taskId,
     createdAt: attachment.createdAt.toISOString(),
   };
+}
+
+function normalizeAttachmentUrl(raw: string): string {
+  return raw.trim();
+}
+
+function deriveLinkFilename(url: string, filename?: string): string {
+  if (filename?.trim()) {
+    return filename.trim();
+  }
+
+  try {
+    const parsed = new URL(url);
+    const path =
+      parsed.pathname && parsed.pathname !== '/' ? parsed.pathname : '';
+    return `${parsed.hostname}${path}`.slice(0, 255);
+  } catch {
+    return url.slice(0, 255);
+  }
 }
 
 export class AttachmentService {
@@ -83,6 +107,44 @@ export class AttachmentService {
       taskId,
       storageKey: stored.storageKey,
       storageProvider: stored.storageProvider,
+    });
+
+    return serializeAttachment(attachment);
+  }
+
+  async createLink(
+    userId: string,
+    taskId: string,
+    input: CreateLinkAttachmentInput,
+  ) {
+    const projectId = await this.resolveProjectIdFromTask(taskId);
+    await projectAccessService.ensurePermission(
+      userId,
+      projectId,
+      'attachment.upload',
+    );
+
+    const url = normalizeAttachmentUrl(input.url);
+    if (!url) {
+      throw new ApiError(400, 'URL is required');
+    }
+
+    // Only enforce URL shape for explicit http(s) values; share paths stay as-is.
+    if (/^https?:\/\//i.test(url)) {
+      try {
+        new URL(url);
+      } catch {
+        throw new ApiError(400, 'Invalid URL');
+      }
+    }
+
+    const attachment = await attachmentRepository.create({
+      filename: deriveLinkFilename(url, input.filename),
+      url,
+      mimeType: 'text/uri-list',
+      size: 0,
+      type: AttachmentType.LINK,
+      taskId,
     });
 
     return serializeAttachment(attachment);

@@ -30,6 +30,7 @@ enum TaskPriority {
 enum AttachmentType {
   IMAGE
   FILE
+  LINK
 }
 
 enum ProjectGroupMessageType {

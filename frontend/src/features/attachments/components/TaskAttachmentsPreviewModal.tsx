@@ -50,8 +50,10 @@ export function TaskAttachmentsPreviewModal({
     isImageAttachment(item.type, item.mimeType),
   );
   const files = attachments.filter(
-    (item) => !isImageAttachment(item.type, item.mimeType),
+    (item) =>
+      item.type !== 'LINK' && !isImageAttachment(item.type, item.mimeType),
   );
+  const links = attachments.filter((item) => item.type === 'LINK');
 
   const activeImage = images[activeImageIndex];
   const activeImageUrl = activeImage ? getAssetUrl(activeImage.url) : '';
@@ -227,6 +229,37 @@ export function TaskAttachmentsPreviewModal({
                         <p className="text-xs text-gray-500">
                           {kind.toUpperCase()} ·{' '}
                           {formatFileSize(attachment.size)}
+                        </p>
+                      </div>
+                      <span className="shrink-0 text-xs text-primary-600">
+                        {t('attachments.open')}
+                      </span>
+                    </a>
+                  </li>
+                );
+              })}
+            </ul>
+          )}
+
+          {links.length > 0 && (
+            <ul className="divide-y divide-gray-100 rounded-xl border border-gray-100">
+              {links.map((attachment) => {
+                const assetUrl = attachment.url;
+
+                return (
+                  <li key={attachment.id}>
+                    <a
+                      href={assetUrl}
+                      target="_blank"
+                      rel="noreferrer"
+                      className="flex items-center justify-between gap-3 px-3 py-2.5 transition hover:bg-gray-50"
+                    >
+                      <div className="min-w-0">
+                        <p className="truncate text-sm text-gray-900">
+                          {attachment.filename}
+                        </p>
+                        <p className="truncate text-xs text-gray-500">
+                          {t('attachments.linkLabel')} · {attachment.url}
                         </p>
                       </div>
                       <span className="shrink-0 text-xs text-primary-600">
