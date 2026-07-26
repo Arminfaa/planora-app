@@ -33,7 +33,7 @@ export const metadata: Metadata = {
     title: BRAND_NAME,
   },
   icons: {
-    apple: '/planora-logo.webp',
+    apple: '/pwa-icon-192.png',
   },
 };
 
