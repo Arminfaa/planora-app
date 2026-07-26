@@ -6,7 +6,7 @@ import { useDndMonitor } from '@dnd-kit/core';
 
 /** Absolute edge zone in px — ratio zones fire immediately on full-width mobile cards. */
 const EDGE_ZONE_PX = 44;
-const ACCELERATION = 5;
+const ACCELERATION = 6;
 const INTERVAL_MS = 16;
 
 /**
