@@ -638,6 +638,8 @@ export const enMessages = {
     deleteBoard: 'Delete board',
     createBoard: 'Create board',
     boardName: 'Board name',
+    completed: 'Completed',
+    markAsCompleted: 'Mark as completed',
     export: 'Export',
     exportExcel: 'Export to Excel',
     importExcel: 'Import from Excel',

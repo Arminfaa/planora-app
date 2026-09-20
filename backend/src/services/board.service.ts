@@ -147,6 +147,8 @@ export class BoardService {
       slug,
       projectId,
       position: input.position,
+      color: input.color ?? undefined,
+      isCompleted: input.isCompleted,
     });
   }
 
@@ -157,7 +159,10 @@ export class BoardService {
     }
 
     const permission =
-      input.position !== undefined && input.name === undefined
+      input.position !== undefined &&
+      input.name === undefined &&
+      input.color === undefined &&
+      input.isCompleted === undefined
         ? 'board.reorder'
         : 'board.edit';
     await projectAccessService.ensurePermission(userId, projectId, permission);
@@ -175,6 +180,14 @@ export class BoardService {
 
     if (input.position !== undefined) {
       updateData.position = input.position;
+    }
+
+    if (input.color !== undefined) {
+      updateData.color = input.color;
+    }
+
+    if (input.isCompleted !== undefined) {
+      updateData.isCompleted = input.isCompleted;
     }
 
     return boardRepository.update(boardId, updateData);

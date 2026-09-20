@@ -29,6 +29,8 @@ export interface BackupBoard {
   name: string;
   slug: string;
   position: number;
+  color: string | null;
+  isCompleted: boolean;
   backgroundUrl: string | null;
   backgroundStorageKey: string | null;
   backgroundStorageProvider: string | null;

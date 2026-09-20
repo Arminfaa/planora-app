@@ -21,6 +21,11 @@ export const boardProjectSlugParamSchema = z.object({
   boardSlug: z.union([objectIdSchema, slugSchema]),
 });
 
+const boardColorSchema = z
+  .string()
+  .regex(/^#[0-9A-Fa-f]{6}$/, 'Color must be a valid hex code')
+  .nullable();
+
 export const createBoardSchema = z.object({
   name: z
     .string()
@@ -28,6 +33,8 @@ export const createBoardSchema = z.object({
     .max(100)
     .transform(sanitizeString),
   position: z.coerce.number().int().min(0).optional(),
+  color: boardColorSchema.optional(),
+  isCompleted: z.boolean().optional(),
 });
 
 export const updateBoardSchema = createBoardSchema.partial();

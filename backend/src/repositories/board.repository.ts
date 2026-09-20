@@ -134,6 +134,8 @@ export class BoardRepository extends BaseRepository {
     slug: string;
     projectId: string;
     position?: number;
+    color?: string | null;
+    isCompleted?: boolean;
   }): Promise<Board> {
     return this.db.board.create({ data });
   }
@@ -143,6 +145,8 @@ export class BoardRepository extends BaseRepository {
     slug: string;
     projectId: string;
     position?: number;
+    color?: string | null;
+    isCompleted?: boolean;
   }): Promise<Board> {
     return this.db.$transaction(async (tx) => {
       const board = await tx.board.create({ data });

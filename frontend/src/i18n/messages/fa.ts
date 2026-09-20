@@ -639,6 +639,8 @@ export const faMessages = {
     deleteBoard: 'حذف برد',
     createBoard: 'ایجاد برد',
     boardName: 'نام برد',
+    completed: 'تکمیل شده',
+    markAsCompleted: 'علامت‌گذاری به‌عنوان تکمیل‌شده',
     export: 'خروجی',
     exportExcel: 'خروجی به اکسل',
     importExcel: 'ورود از اکسل',

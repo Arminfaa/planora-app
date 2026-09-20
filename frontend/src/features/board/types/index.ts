@@ -53,6 +53,8 @@ export interface Board {
   slug: string;
   projectId: string;
   position: number;
+  color?: string | null;
+  isCompleted?: boolean;
   backgroundUrl?: string | null;
   createdAt: string;
   updatedAt: string;
@@ -63,11 +65,15 @@ export interface Board {
 export interface CreateBoardInput {
   name: string;
   position?: number;
+  color?: string | null;
+  isCompleted?: boolean;
 }
 
 export interface UpdateBoardInput {
   name?: string;
   position?: number;
+  color?: string | null;
+  isCompleted?: boolean;
 }
 
 export interface CreateColumnInput {
@@ -91,4 +97,15 @@ export const COLUMN_COLOR_OPTIONS = [
   '#8B5CF6',
   '#06B6D4',
   '#EC4899',
+] as const;
+
+export const BOARD_COLOR_OPTIONS = [
+  '#6366F1',
+  '#8B5CF6',
+  '#3B82F6',
+  '#10B981',
+  '#F59E0B',
+  '#EC4899',
+  '#EF4444',
+  '#06B6D4',
 ] as const;

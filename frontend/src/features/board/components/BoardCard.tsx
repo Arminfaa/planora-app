@@ -2,24 +2,8 @@
 
 import Link from 'next/link';
 import type { Board } from '../types';
+import { getBoardAccentColor } from '../utils/boardAccentColor';
 import { useLocale } from '@/i18n/LocaleProvider';
-
-const accentColors = [
-  '#6366F1',
-  '#8B5CF6',
-  '#3B82F6',
-  '#10B981',
-  '#F59E0B',
-  '#EC4899',
-];
-
-function getAccentColor(id: string): string {
-  let hash = 0;
-  for (let i = 0; i < id.length; i++) {
-    hash = id.charCodeAt(i) + ((hash << 5) - hash);
-  }
-  return accentColors[Math.abs(hash) % accentColors.length];
-}
 
 interface BoardCardProps {
   board: Board;
@@ -40,7 +24,8 @@ export function BoardCard({
 }: BoardCardProps) {
   const { t } = useLocale();
   const columnCount = board._count?.columns ?? 0;
-  const accent = getAccentColor(board.id);
+  const accent = getBoardAccentColor(board.id, board.color);
+  const isCompleted = Boolean(board.isCompleted);
 
   return (
     <div className="group overflow-hidden rounded-xl border border-gray-200/80 bg-white shadow-sm transition hover:border-primary-200 hover:shadow-md">
@@ -50,9 +35,16 @@ export function BoardCard({
           href={`/dashboard/projects/${projectSlug}/boards/${board.slug}`}
           className="min-w-0 flex-1"
         >
-          <h3 className="font-semibold text-gray-900 transition group-hover:text-primary-700">
-            {board.name}
-          </h3>
+          <div className="flex flex-wrap items-center gap-2">
+            <h3 className="font-semibold text-gray-900 transition group-hover:text-primary-700">
+              {board.name}
+            </h3>
+            {isCompleted && (
+              <span className="inline-flex items-center rounded-full bg-emerald-50 px-2 py-0.5 text-[11px] font-medium text-emerald-700 ring-1 ring-inset ring-emerald-600/20">
+                {t('board.completed')}
+              </span>
+            )}
+          </div>
           <p className="mt-2 text-xs text-gray-500">
             {columnCount === 1
               ? t('board.columnCount', { count: columnCount })

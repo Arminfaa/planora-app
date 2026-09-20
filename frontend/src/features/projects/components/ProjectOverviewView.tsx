@@ -77,14 +77,22 @@ export function ProjectOverviewView() {
 
   const handleUpdateBoard = async (
     boardId: string,
-    data: { name?: string },
+    data: { name?: string; color?: string | null; isCompleted?: boolean },
   ) => {
     setActionError('');
     const updated = await updateBoard(boardId, data);
 
-    if (editingBoard?.id === boardId && updated?.slug) {
+    if (editingBoard?.id === boardId && updated) {
       setEditingBoard((prev) =>
-        prev ? { ...prev, name: updated.name, slug: updated.slug } : prev,
+        prev
+          ? {
+              ...prev,
+              name: updated.name,
+              slug: updated.slug,
+              color: updated.color,
+              isCompleted: updated.isCompleted,
+            }
+          : prev,
       );
     }
   };

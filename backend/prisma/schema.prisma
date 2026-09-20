@@ -228,6 +228,8 @@ model Board {
   slug                      String
   projectId                 String   @db.ObjectId
   position                  Int      @default(0)
+  color                     String?
+  isCompleted               Boolean  @default(false)
   backgroundUrl             String?
   backgroundStorageKey      String?
   backgroundStorageProvider String?
