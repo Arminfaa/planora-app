@@ -24,8 +24,8 @@ export function BoardCard({
 }: BoardCardProps) {
   const { t } = useLocale();
   const columnCount = board._count?.columns ?? 0;
-  const accent = getBoardAccentColor(board.id, board.color);
   const isCompleted = Boolean(board.isCompleted);
+  const accent = getBoardAccentColor(board.id, board.color, isCompleted);
 
   return (
     <div className="group overflow-hidden rounded-xl border border-gray-200/80 bg-white shadow-sm transition hover:border-primary-200 hover:shadow-md">

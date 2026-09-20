@@ -128,6 +128,8 @@ function serializeBoardSummary(board: Record<string, unknown>) {
     slug: String(board.slug ?? ''),
     projectId: String(board.projectId),
     position: Number(board.position),
+    color: (board.color as string | null | undefined) ?? null,
+    isCompleted: Boolean(board.isCompleted),
     backgroundUrl: board.backgroundUrl
       ? serializeAttachmentUrl(String(board.backgroundUrl))
       : null,

@@ -1,8 +1,12 @@
 import { ApiError } from '../utils/ApiError';
 import { toSlug } from '../utils/slug';
-import type { Prisma } from '@prisma/client';
+import type { Board, Prisma } from '@prisma/client';
 import { boardRepository } from '../repositories/board.repository';
 import { projectRepository } from '../repositories/project.repository';
+import {
+  notifyBoardMetaEvent,
+  notifyProjectBoardEvent,
+} from '../utils/board-events';
 import { permissionService } from './permission.service';
 import { projectAccessService } from './project-access.service';
 import { removeStoredFile, storeUploadedFile } from './storage/storage.service';
@@ -13,6 +17,7 @@ import type {
 } from '../validators/board.validator';
 
 const OBJECT_ID_PATTERN = /^[0-9a-fA-F]{24}$/;
+export const BOARD_COMPLETED_COLOR = '#10B981';
 
 export class BoardService {
   private async resolveProjectId(idOrSlug: string): Promise<string> {
@@ -76,7 +81,73 @@ export class BoardService {
       projectId,
       'board.view',
     );
-    return boardRepository.findByProject(projectId);
+    const boards = await boardRepository.findByProject(projectId);
+    const completionStats =
+      await boardRepository.countTaskCompletionByProject(projectId);
+
+    return boards.map((board) => {
+      const stats = completionStats.get(board.id) ?? {
+        total: 0,
+        completed: 0,
+        incomplete: 0,
+      };
+      return {
+        ...board,
+        taskCount: stats.total,
+        incompleteTaskCount: stats.incomplete,
+      };
+    });
+  }
+
+  /**
+   * Keep board completion in sync with its tasks:
+   * - all tasks completed (and at least one exists) → mark completed + green
+   * - any incomplete task → clear completed flag
+   */
+  async syncCompletionFromTasks(
+    boardId: string,
+    userId?: string,
+  ): Promise<Board | null> {
+    const board = await boardRepository.findMetaById(boardId);
+    if (!board) return null;
+
+    const { total, incomplete } =
+      await boardRepository.countTaskCompletion(boardId);
+    const shouldComplete = total > 0 && incomplete === 0;
+
+    const updateData: Prisma.BoardUpdateInput = {};
+
+    if (shouldComplete) {
+      if (!board.isCompleted) {
+        updateData.isCompleted = true;
+      }
+      if (board.color !== BOARD_COMPLETED_COLOR) {
+        updateData.color = BOARD_COMPLETED_COLOR;
+      }
+    } else if (board.isCompleted) {
+      updateData.isCompleted = false;
+    }
+
+    if (Object.keys(updateData).length === 0) {
+      return null;
+    }
+
+    const updated = await boardRepository.update(boardId, updateData);
+
+    if (userId) {
+      notifyProjectBoardEvent(userId, 'board:updated', {
+        projectId: updated.projectId,
+        boardId: updated.id,
+        payload: { board: updated },
+      });
+      notifyBoardMetaEvent(
+        userId,
+        updated.id,
+        updated as unknown as Record<string, unknown>,
+      );
+    }
+
+    return updated;
   }
 
   private async sanitizeBoardTasks(
@@ -182,12 +253,16 @@ export class BoardService {
       updateData.position = input.position;
     }
 
-    if (input.color !== undefined) {
+    if (input.isCompleted === true) {
+      updateData.isCompleted = true;
+      updateData.color = BOARD_COMPLETED_COLOR;
+    } else if (input.isCompleted === false) {
+      updateData.isCompleted = false;
+      if (input.color !== undefined) {
+        updateData.color = input.color;
+      }
+    } else if (input.color !== undefined) {
       updateData.color = input.color;
-    }
-
-    if (input.isCompleted !== undefined) {
-      updateData.isCompleted = input.isCompleted;
     }
 
     return boardRepository.update(boardId, updateData);

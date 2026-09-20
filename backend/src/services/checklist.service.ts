@@ -3,6 +3,7 @@ import { boardRepository } from '../repositories/board.repository';
 import { columnRepository } from '../repositories/column.repository';
 import { checklistRepository } from '../repositories/checklist.repository';
 import { taskRepository } from '../repositories/task.repository';
+import { boardService } from './board.service';
 import { projectAccessService } from './project-access.service';
 import {
   computeChecklistProgress,
@@ -40,6 +41,14 @@ export class ChecklistService {
       throw new ApiError(404, 'Task not found');
     }
     return task;
+  }
+
+  private async syncBoardFromTask(
+    task: { boardId?: string | null } | null | undefined,
+    userId: string,
+  ) {
+    if (!task?.boardId) return;
+    await boardService.syncCompletionFromTasks(task.boardId, userId);
   }
 
   private async syncTaskProgressFromChecklist(taskId: string) {
@@ -116,6 +125,7 @@ export class ChecklistService {
     );
 
     const task = await this.syncTaskProgressFromChecklist(taskId);
+    await this.syncBoardFromTask(task, userId);
     return { item, task };
   }
 
@@ -168,6 +178,7 @@ export class ChecklistService {
 
     const updated = await checklistRepository.update(itemId, payload);
     const task = await this.syncTaskProgressFromChecklist(taskId);
+    await this.syncBoardFromTask(task, userId);
 
     return {
       item: updated,
@@ -187,6 +198,7 @@ export class ChecklistService {
 
     await checklistRepository.delete(itemId);
     const task = await this.syncTaskProgressFromChecklist(taskId);
+    await this.syncBoardFromTask(task, userId);
 
     return {
       task,

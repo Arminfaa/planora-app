@@ -640,6 +640,10 @@ export const enMessages = {
     boardName: 'Board name',
     completed: 'Completed',
     markAsCompleted: 'Mark as completed',
+    completeWithIncompleteConfirm:
+      'This board still has {count} incomplete task. Mark it as completed anyway?',
+    completeWithIncompleteConfirmPlural:
+      'This board still has {count} incomplete tasks. Mark it as completed anyway?',
     export: 'Export',
     exportExcel: 'Export to Excel',
     importExcel: 'Import from Excel',

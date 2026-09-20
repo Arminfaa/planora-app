@@ -8,6 +8,7 @@ import { taskRepository } from '../repositories/task.repository';
 import { checklistRepository } from '../repositories/checklist.repository';
 import { labelRepository } from '../repositories/label.repository';
 import { taskDependencyRepository } from '../repositories/task-dependency.repository';
+import { boardService } from './board.service';
 import { projectAccessService } from './project-access.service';
 import { projectMemberService } from './project-member.service';
 import { serializeGanttTask } from '../utils/gantt-serializer';
@@ -29,6 +30,10 @@ import type {
 } from '../validators/task.validator';
 
 export class TaskService {
+  private async syncBoardCompletion(boardId: string, userId: string) {
+    await boardService.syncCompletionFromTasks(boardId, userId);
+  }
+
   private async generateUniqueSlug(
     boardId: string,
     title: string,
@@ -222,6 +227,8 @@ export class TaskService {
       createdById: userId,
     });
 
+    await this.syncBoardCompletion(boardId, userId);
+
     return { task, columnId, createdUnspecified, unspecifiedColumn };
   }
 
@@ -244,7 +251,7 @@ export class TaskService {
 
     const slug = await this.generateUniqueSlug(boardId, input.title);
 
-    return taskRepository.create({
+    const task = await taskRepository.create({
       title: input.title,
       slug,
       description: input.description,
@@ -257,6 +264,10 @@ export class TaskService {
       assigneeIds: input.assigneeIds,
       createdById: userId,
     });
+
+    await this.syncBoardCompletion(boardId, userId);
+
+    return task;
   }
 
   async update(userId: string, taskId: string, input: UpdateTaskInput) {
@@ -365,19 +376,23 @@ export class TaskService {
         if (!updated) {
           throw new ApiError(404, 'Task not found');
         }
+        await this.syncBoardCompletion(existing.boardId, userId);
         return updated;
       }
 
+      await this.syncBoardCompletion(existing.boardId, userId);
       return movedTask;
     }
 
     const updatePayload = await this.withUpdatedSlug(existing, normalizedInput);
-    return taskRepository.update(taskId, {
+    const updated = await taskRepository.update(taskId, {
       ...updatePayload,
       ...(autoCompleteSuppressed !== undefined
         ? { autoCompleteSuppressed }
         : {}),
     });
+    await this.syncBoardCompletion(existing.boardId, userId);
+    return updated;
   }
 
   async bulkMoveToColumn(
@@ -486,6 +501,7 @@ export class TaskService {
       for (const taskId of uniqueIds) {
         await taskRepository.delete(taskId);
       }
+      await this.syncBoardCompletion(boardId, userId);
       return existing;
     }
 
@@ -605,7 +621,9 @@ export class TaskService {
       await this.update(userId, taskId, patch);
     }
 
-    return taskRepository.findByIds(uniqueIds);
+    const tasks = await taskRepository.findByIds(uniqueIds);
+    await this.syncBoardCompletion(boardId, userId);
+    return tasks;
   }
 
   async delete(userId: string, taskId: string) {
@@ -615,7 +633,11 @@ export class TaskService {
       projectId,
       'task.delete',
     );
+    const existing = await taskRepository.findById(taskId);
     await taskRepository.delete(taskId);
+    if (existing?.boardId) {
+      await this.syncBoardCompletion(existing.boardId, userId);
+    }
   }
 
   async listGanttByProject(userId: string, projectIdOrSlug: string) {

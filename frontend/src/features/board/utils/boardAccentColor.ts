@@ -1,9 +1,11 @@
-import { BOARD_COLOR_OPTIONS } from '../types';
+import { BOARD_COLOR_OPTIONS, BOARD_COMPLETED_COLOR } from '../types';
 
 export function getBoardAccentColor(
   boardId: string,
   color?: string | null,
+  isCompleted?: boolean,
 ): string {
+  if (isCompleted) return BOARD_COMPLETED_COLOR;
   if (color) return color;
 
   let hash = 0;

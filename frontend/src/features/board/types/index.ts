@@ -60,6 +60,8 @@ export interface Board {
   updatedAt: string;
   columns?: BoardColumn[];
   _count?: { columns: number };
+  taskCount?: number;
+  incompleteTaskCount?: number;
 }
 
 export interface CreateBoardInput {
@@ -98,6 +100,8 @@ export const COLUMN_COLOR_OPTIONS = [
   '#06B6D4',
   '#EC4899',
 ] as const;
+
+export const BOARD_COMPLETED_COLOR = '#10B981';
 
 export const BOARD_COLOR_OPTIONS = [
   '#6366F1',

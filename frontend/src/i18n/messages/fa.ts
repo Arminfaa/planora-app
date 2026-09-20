@@ -641,6 +641,10 @@ export const faMessages = {
     boardName: 'نام برد',
     completed: 'تکمیل شده',
     markAsCompleted: 'علامت‌گذاری به‌عنوان تکمیل‌شده',
+    completeWithIncompleteConfirm:
+      'این برد هنوز {count} تسک تکمیل‌نشده دارد. با این حال به‌عنوان تکمیل‌شده علامت بخورد؟',
+    completeWithIncompleteConfirmPlural:
+      'این برد هنوز {count} تسک تکمیل‌نشده دارد. با این حال به‌عنوان تکمیل‌شده علامت بخورد؟',
     export: 'خروجی',
     exportExcel: 'خروجی به اکسل',
     importExcel: 'ورود از اکسل',

@@ -105,6 +105,85 @@ export class BoardRepository extends BaseRepository {
     });
   }
 
+  async countTaskCompletion(boardId: string): Promise<{
+    total: number;
+    completed: number;
+    incomplete: number;
+  }> {
+    const [total, completed] = await Promise.all([
+      this.db.task.count({ where: { boardId } }),
+      this.db.task.count({ where: { boardId, isCompleted: true } }),
+    ]);
+
+    return {
+      total,
+      completed,
+      incomplete: total - completed,
+    };
+  }
+
+  async countTaskCompletionByProject(projectId: string): Promise<
+    Map<string, { total: number; completed: number; incomplete: number }>
+  > {
+    const boards = await this.db.board.findMany({
+      where: { projectId },
+      select: { id: true },
+    });
+    const boardIds = boards.map((board) => board.id);
+    const stats = new Map<
+      string,
+      { total: number; completed: number; incomplete: number }
+    >();
+
+    for (const boardId of boardIds) {
+      stats.set(boardId, { total: 0, completed: 0, incomplete: 0 });
+    }
+
+    if (boardIds.length === 0) return stats;
+
+    const grouped = await this.db.task.groupBy({
+      by: ['boardId', 'isCompleted'],
+      where: { boardId: { in: boardIds } },
+      _count: { _all: true },
+    });
+
+    for (const row of grouped) {
+      const current = stats.get(row.boardId) ?? {
+        total: 0,
+        completed: 0,
+        incomplete: 0,
+      };
+      const count = row._count._all;
+      current.total += count;
+      if (row.isCompleted) {
+        current.completed += count;
+      } else {
+        current.incomplete += count;
+      }
+      stats.set(row.boardId, current);
+    }
+
+    return stats;
+  }
+
+  async findMetaById(id: string) {
+    return this.db.board.findUnique({
+      where: { id },
+      select: {
+        id: true,
+        name: true,
+        slug: true,
+        projectId: true,
+        position: true,
+        color: true,
+        isCompleted: true,
+        backgroundUrl: true,
+        createdAt: true,
+        updatedAt: true,
+      },
+    });
+  }
+
   async findByProjectWithColumns(projectId: string) {
     return this.db.board.findMany({
       where: { projectId },

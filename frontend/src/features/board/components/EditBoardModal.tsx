@@ -7,6 +7,7 @@ import { z } from 'zod';
 import { Button, Switch } from 'antd';
 import {
   BOARD_COLOR_OPTIONS,
+  BOARD_COMPLETED_COLOR,
   type Board,
   type UpdateBoardInput,
 } from '../types';
@@ -61,7 +62,7 @@ export function EditBoardModal({
     resolver: zodResolver(schema),
     defaultValues: {
       name: board.name,
-      color: getBoardAccentColor(board.id, board.color),
+      color: getBoardAccentColor(board.id, board.color, board.isCompleted),
       isCompleted: Boolean(board.isCompleted),
     },
   });
@@ -71,17 +72,34 @@ export function EditBoardModal({
   useEffect(() => {
     reset({
       name: board.name,
-      color: getBoardAccentColor(board.id, board.color),
+      color: getBoardAccentColor(board.id, board.color, board.isCompleted),
       isCompleted: Boolean(board.isCompleted),
     });
   }, [board.id, board.name, board.color, board.isCompleted, reset]);
 
   const handleFormSubmit = async (data: FormData) => {
     setError('');
+
+    const markingCompleted = data.isCompleted && !board.isCompleted;
+    const incompleteCount = board.incompleteTaskCount ?? 0;
+
+    if (markingCompleted && incompleteCount > 0) {
+      const confirmed = confirm(
+        incompleteCount === 1
+          ? t('board.completeWithIncompleteConfirm', {
+              count: incompleteCount,
+            })
+          : t('board.completeWithIncompleteConfirmPlural', {
+              count: incompleteCount,
+            }),
+      );
+      if (!confirmed) return;
+    }
+
     try {
       await onSubmit(board.id, {
         name: data.name,
-        color: data.color,
+        color: data.isCompleted ? BOARD_COMPLETED_COLOR : data.color,
         isCompleted: data.isCompleted,
       });
       onClose();
@@ -161,7 +179,12 @@ export function EditBoardModal({
               <span>{t('board.markAsCompleted')}</span>
               <Switch
                 checked={field.value}
-                onChange={field.onChange}
+                onChange={(checked) => {
+                  field.onChange(checked);
+                  if (checked) {
+                    setValue('color', BOARD_COMPLETED_COLOR);
+                  }
+                }}
                 aria-label={t('board.markAsCompleted')}
               />
             </label>
