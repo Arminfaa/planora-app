@@ -15,7 +15,8 @@ export type BulkOperationMode =
   | 'checklist'
   | 'delete'
   | 'export'
-  | 'exportText';
+  | 'exportText'
+  | 'merge';
 
 export type BulkTaskAction =
   | { type: 'move'; columnId: string }

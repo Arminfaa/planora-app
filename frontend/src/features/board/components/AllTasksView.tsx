@@ -55,6 +55,7 @@ import {
 } from './AllTasksBulkToolbar';
 import { AllTasksPageHeader } from './AllTasksPageHeader';
 import { AllTasksSearchBar } from './AllTasksSearchBar';
+import { MergeSimilarTasksModal } from './MergeSimilarTasksModal';
 import { WorkReportModal } from './WorkReportModal';
 import { VirtualizedWindowList } from '@/shared/components/VirtualizedWindowList';
 
@@ -102,6 +103,7 @@ export function AllTasksView({
   const [showFilterModal, setShowFilterModal] = useState(false);
   const [showCreateModal, setShowCreateModal] = useState(false);
   const [showImportModal, setShowImportModal] = useState(false);
+  const [showMergeModal, setShowMergeModal] = useState(false);
   const [viewTask, setViewTask] = useState<BoardTask | null>(null);
   const [editTask, setEditTask] = useState<BoardTask | null>(null);
   const [selectionMode, setSelectionMode] = useState<BulkOperationMode | null>(
@@ -122,6 +124,7 @@ export function AllTasksView({
   const canCreateTasks = can('task.create');
   const canEditTasks = can('task.edit');
   const canDeleteTasks = can('task.delete');
+  const canMergeSimilar = canEditTasks && canDeleteTasks;
   const canViewTasks = can('task.view');
   const canMoveTasks = can('task.move');
   const canCreateLabels = can('label.create');
@@ -288,11 +291,52 @@ export function AllTasksView({
 
   const enterSelectionMode = useCallback(
     (mode: BulkOperationMode) => {
+      if (mode === 'merge') {
+        setShowMergeModal(true);
+        setActionError('');
+        return;
+      }
       setSelectionMode(mode);
       clearSelection();
       setActionError('');
     },
     [clearSelection],
+  );
+
+  const handleMergeTasks = useCallback(
+    async (input: {
+      targetTaskId: string;
+      sourceTaskIds: string[];
+      mergeChecklists: boolean;
+    }) => {
+      await taskService.mergeTasks(project.id, input);
+      await loadData({ silent: true });
+    },
+    [loadData, project.id],
+  );
+
+  const handleMergeDeleteSources = useCallback(
+    async (sourceTaskIds: string[]) => {
+      const selectedTasks = tasks.filter((task) =>
+        sourceTaskIds.includes(task.id),
+      );
+      const byBoard = new Map<string, string[]>();
+      for (const task of selectedTasks) {
+        const taskBoardId = getTaskBoardId(task) ?? board?.id;
+        if (!taskBoardId) continue;
+        const current = byBoard.get(taskBoardId) ?? [];
+        current.push(task.id);
+        byBoard.set(taskBoardId, current);
+      }
+      for (const [taskBoardId, taskIds] of byBoard) {
+        await taskService.bulkAction(taskBoardId, {
+          taskIds,
+          action: { type: 'delete' },
+        });
+      }
+      await loadData({ silent: true });
+    },
+    [board?.id, loadData, tasks],
   );
 
   const handleBulkAction = useCallback(
@@ -662,6 +706,7 @@ export function AllTasksView({
         canEditTasks={canEditTasks}
         canAssignLabels={canAssignLabels}
         canDeleteTasks={canDeleteTasks}
+        canMergeSimilar={canMergeSimilar}
         onCreate={() => setShowCreateModal(true)}
         onImport={() => setShowImportModal(true)}
         onSelectOperation={enterSelectionMode}
@@ -984,6 +1029,17 @@ export function AllTasksView({
           filters={filters}
           onChange={setFilters}
           onClose={() => setShowFilterModal(false)}
+        />
+      )}
+
+      {showMergeModal && (
+        <MergeSimilarTasksModal
+          tasks={tasks}
+          canMerge={canMergeSimilar}
+          canDelete={canDeleteTasks}
+          onClose={() => setShowMergeModal(false)}
+          onMerge={handleMergeTasks}
+          onDeleteSources={handleMergeDeleteSources}
         />
       )}
 

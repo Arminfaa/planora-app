@@ -13,6 +13,7 @@ import {
   getProjectProgress,
   getProjectTasks,
   listProjects,
+  mergeProjectTasks,
   updateProject,
 } from '../../controllers/project.controller';
 import {
@@ -55,6 +56,7 @@ import {
   updateWorkingWeekdaysSchema,
   workingCalendarParamsSchema,
 } from '../../validators/working-calendar.validator';
+import { mergeTasksSchema } from '../../validators/task.validator';
 
 const router = Router();
 
@@ -115,6 +117,12 @@ router.get(
 );
 router.get('/:id/gantt', validateParams(projectParamsSchema), getProjectGantt);
 router.get('/:id/tasks', validateParams(projectParamsSchema), getProjectTasks);
+router.post(
+  '/:id/tasks/merge',
+  validateParams(projectParamsSchema),
+  validateBody(mergeTasksSchema),
+  mergeProjectTasks,
+);
 router.get(
   '/:id/dependencies',
   validateParams(projectDependencyParamsSchema),

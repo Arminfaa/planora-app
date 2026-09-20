@@ -129,3 +129,11 @@ export type CreateBoardTaskInput = z.infer<typeof createBoardTaskSchema>;
 export type UpdateTaskInput = z.infer<typeof updateTaskSchema>;
 export type BulkMoveTasksInput = z.infer<typeof bulkMoveTasksSchema>;
 export type BulkTaskActionInput = z.infer<typeof bulkTaskActionSchema>;
+
+export const mergeTasksSchema = z.object({
+  targetTaskId: objectIdSchema,
+  sourceTaskIds: z.array(objectIdSchema).min(1).max(100),
+  mergeChecklists: z.boolean().default(false),
+});
+
+export type MergeTasksInput = z.infer<typeof mergeTasksSchema>;

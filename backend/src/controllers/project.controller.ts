@@ -3,12 +3,14 @@ import type { AuthenticatedRequest } from '../types';
 import { projectService } from '../services/project.service';
 import { ApiResponse } from '../utils/ApiResponse';
 import { asyncHandler } from '../utils/asyncHandler';
+import { notifyBoardTaskEvent } from '../utils/board-events';
 import { getParam } from '../utils/params';
 import type {
   CreateProjectInput,
   UpdateProjectInput,
 } from '../validators/project.validator';
 import { taskService } from '../services/task.service';
+import type { MergeTasksInput } from '../validators/task.validator';
 import type { PaginationQuery } from '../utils/pagination';
 
 export const getPermissionCatalog = asyncHandler(
@@ -63,6 +65,39 @@ export const getProjectTasks = asyncHandler(
       getParam(req.params, 'id'),
     );
     ApiResponse.success(res, result, 'Project tasks retrieved');
+  },
+);
+
+export const mergeProjectTasks = asyncHandler(
+  async (req: AuthenticatedRequest, res: Response) => {
+    const projectId = getParam(req.params, 'id');
+    const result = await taskService.mergeTasks(
+      req.user!.userId,
+      projectId,
+      req.body as MergeTasksInput,
+    );
+
+    await notifyBoardTaskEvent(req.user!.userId, 'task:updated', {
+      columnId: result.target.columnId,
+      taskId: result.target.id,
+      payload: { task: result.target },
+    });
+
+    for (const source of result.deletedSources) {
+      await notifyBoardTaskEvent(req.user!.userId, 'task:deleted', {
+        columnId: source.columnId,
+        taskId: source.id,
+        payload: {
+          task: {
+            id: source.id,
+            slug: source.slug,
+            title: source.title,
+          },
+        },
+      });
+    }
+
+    ApiResponse.success(res, result.target, 'Tasks merged');
   },
 );
 

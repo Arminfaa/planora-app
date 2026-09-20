@@ -22,6 +22,7 @@ interface AllTasksPageHeaderProps {
   canEditTasks: boolean;
   canAssignLabels: boolean;
   canDeleteTasks: boolean;
+  canMergeSimilar?: boolean;
   onCreate: () => void;
   onImport: () => void;
   onSelectOperation: (mode: BulkOperationMode) => void;
@@ -80,6 +81,7 @@ export function AllTasksPageHeader({
   canEditTasks,
   canAssignLabels,
   canDeleteTasks,
+  canMergeSimilar = false,
   onCreate,
   onImport,
   onSelectOperation,
@@ -145,6 +147,7 @@ export function AllTasksPageHeader({
             canEditTasks={canEditTasks}
             canAssignLabels={canAssignLabels}
             canDeleteTasks={canDeleteTasks}
+            canMergeSimilar={canMergeSimilar}
             activeMode={selectionMode}
             onSelect={onSelectOperation}
           />

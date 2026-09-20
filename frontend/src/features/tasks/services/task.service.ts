@@ -81,4 +81,19 @@ export const taskService = {
     );
     return data.data;
   },
+
+  async mergeTasks(
+    projectId: string,
+    input: {
+      targetTaskId: string;
+      sourceTaskIds: string[];
+      mergeChecklists: boolean;
+    },
+  ): Promise<BoardTask> {
+    const { data } = await api.post<ApiSuccessResponse<BoardTask>>(
+      `/projects/${projectId}/tasks/merge`,
+      input,
+    );
+    return data.data;
+  },
 };

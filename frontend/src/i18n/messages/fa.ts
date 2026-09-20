@@ -754,6 +754,7 @@ export const faMessages = {
       labels: 'برچسب‌ها',
       checklist: 'چک‌لیست',
       danger: 'منطقه خطر',
+      merge: 'ادغام',
     },
     bulkOps: {
       move: 'تغییر ستون',
@@ -771,6 +772,23 @@ export const faMessages = {
       delete: 'حذف تسک‌ها',
       export: 'خروجی اکسل',
       exportText: 'خروجی متن گزارش کار',
+      merge: 'یافتن مشابه / ادغام',
+    },
+    merge: {
+      title: 'ادغام تسک‌های مشابه',
+      subtitle:
+        'تسک‌هایی با عنوان شبیه را گروه‌بندی کنید، یکی را نگه دارید و بقیه را حذف کنید.',
+      groupsLabel: 'گروه‌های مشابه',
+      pickTasks: 'تسک‌های این گروه را انتخاب کنید',
+      keep: 'نگه دار',
+      keepTarget: 'این تسک را نگه دار',
+      mergeChecklists: 'چک‌لیست‌ها هم داخل تسک نگه‌داشته‌شده ادغام شوند',
+      mergeAction: 'ادغام',
+      deleteSources: 'حذف تکراری‌ها ({count})',
+      deleteSourcesConfirm:
+        '{count} تسک تکراری حذف شود و مقصد انتخاب‌شده بماند؟ این عمل قابل بازگشت نیست.',
+      noGroups: 'در این لیست گروه تسک مشابهی پیدا نشد.',
+      hint: 'پس از ادغام {sources} تسک حذف می‌شوند.',
     },
     bulkDeleteConfirm:
       '{count} تسک انتخاب‌شده حذف شود؟ این عمل قابل بازگشت نیست.',

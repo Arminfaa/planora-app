@@ -27,9 +27,19 @@ export class ChecklistRepository extends BaseRepository {
     title: string,
     position: number,
     weight = DEFAULT_CHECKLIST_WEIGHT,
+    extras?: { isDone?: boolean; completedAt?: Date | null },
   ) {
     return this.db.taskChecklistItem.create({
-      data: { taskId, title, position, weight },
+      data: {
+        taskId,
+        title,
+        position,
+        weight,
+        ...(extras?.isDone !== undefined ? { isDone: extras.isDone } : {}),
+        ...(extras?.completedAt !== undefined
+          ? { completedAt: extras.completedAt }
+          : {}),
+      },
     });
   }
 

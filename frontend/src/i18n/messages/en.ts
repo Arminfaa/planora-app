@@ -752,6 +752,7 @@ export const enMessages = {
       labels: 'Labels',
       checklist: 'Checklist',
       danger: 'Danger zone',
+      merge: 'Merge',
     },
     bulkOps: {
       move: 'Change column',
@@ -769,6 +770,22 @@ export const enMessages = {
       delete: 'Delete tasks',
       export: 'Export Excel',
       exportText: 'Export text report',
+      merge: 'Find similar / Merge',
+    },
+    merge: {
+      title: 'Merge similar tasks',
+      subtitle: 'Group tasks with similar titles, then keep one and remove the rest.',
+      groupsLabel: 'Similar groups',
+      pickTasks: 'Select tasks in this group',
+      keep: 'Keep',
+      keepTarget: 'Keep this task',
+      mergeChecklists: 'Also merge checklists into the kept task',
+      mergeAction: 'Merge',
+      deleteSources: 'Delete duplicates ({count})',
+      deleteSourcesConfirm:
+        'Delete {count} duplicate task(s) and keep the selected target? This cannot be undone.',
+      noGroups: 'No similar task groups found in this list.',
+      hint: '{sources} task(s) will be removed after merge.',
     },
     bulkDeleteConfirm:
       'Delete {count} selected task(s)? This cannot be undone.',

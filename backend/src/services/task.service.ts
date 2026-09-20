@@ -26,8 +26,21 @@ import type {
   BulkTaskActionInput,
   CreateBoardTaskInput,
   CreateTaskInput,
+  MergeTasksInput,
   UpdateTaskInput,
 } from '../validators/task.validator';
+
+function normalizeChecklistTitle(title: string): string {
+  return title
+    .trim()
+    .toLowerCase()
+    .replace(/[\u200c\u200f\u202a-\u202e]/g, '')
+    .replace(/[يى]/g, 'ی')
+    .replace(/[ك]/g, 'ک')
+    .replace(/[^\p{L}\p{N}\s]+/gu, ' ')
+    .replace(/\s+/g, ' ')
+    .trim();
+}
 
 export class TaskService {
   private async syncBoardCompletion(boardId: string, userId: string) {
@@ -624,6 +637,149 @@ export class TaskService {
     const tasks = await taskRepository.findByIds(uniqueIds);
     await this.syncBoardCompletion(boardId, userId);
     return tasks;
+  }
+
+  async mergeTasks(
+    userId: string,
+    projectIdOrSlug: string,
+    input: MergeTasksInput,
+  ) {
+    const projectId =
+      await projectMemberService.resolveProjectId(projectIdOrSlug);
+
+    await projectAccessService.ensurePermission(userId, projectId, 'task.edit');
+    await projectAccessService.ensurePermission(
+      userId,
+      projectId,
+      'task.delete',
+    );
+
+    const sourceIds = [
+      ...new Set(
+        input.sourceTaskIds.filter((id) => id !== input.targetTaskId),
+      ),
+    ];
+    if (sourceIds.length === 0) {
+      throw new ApiError(400, 'At least one source task is required');
+    }
+
+    const target = await taskRepository.findById(input.targetTaskId);
+    if (!target) {
+      throw new ApiError(404, 'Target task not found');
+    }
+
+    const targetProjectId = await this.resolveProjectIdFromTask(target.id);
+    if (targetProjectId !== projectId) {
+      throw new ApiError(400, 'Target task does not belong to this project');
+    }
+
+    const sources = await taskRepository.findByIds(sourceIds);
+    if (sources.length !== sourceIds.length) {
+      throw new ApiError(404, 'Some source tasks were not found');
+    }
+
+    for (const source of sources) {
+      const sourceProjectId = await this.resolveProjectIdFromTask(source.id);
+      if (sourceProjectId !== projectId) {
+        throw new ApiError(
+          400,
+          'All source tasks must belong to this project',
+        );
+      }
+    }
+
+    if (input.mergeChecklists) {
+      const targetItems = await checklistRepository.findByTask(target.id);
+      const existingTitles = new Set(
+        targetItems.map((item) => normalizeChecklistTitle(item.title)),
+      );
+
+      for (const source of sources) {
+        const sourceItems = await checklistRepository.findByTask(source.id);
+        for (const item of sourceItems) {
+          const key = normalizeChecklistTitle(item.title);
+          if (!key || existingTitles.has(key)) continue;
+
+          const position = await checklistRepository.getNextPosition(target.id);
+          await checklistRepository.create(
+            target.id,
+            item.title,
+            position,
+            normalizeChecklistWeight(item.weight),
+            {
+              isDone: item.isDone,
+              completedAt: item.completedAt ?? null,
+            },
+          );
+          existingTitles.add(key);
+        }
+      }
+
+      const mergedItems = await checklistRepository.findByTask(target.id);
+      if (mergedItems.length > 0) {
+        const progress = computeChecklistProgress(mergedItems);
+        const allDone = mergedItems.every((item) => item.isDone);
+        await taskRepository.update(target.id, {
+          progress: target.isCompleted || allDone ? 100 : progress,
+          ...(allDone && !target.isCompleted
+            ? {
+                isCompleted: true,
+                completeDate: target.completeDate ?? new Date(),
+                autoCompleteSuppressed: false,
+              }
+            : {}),
+        });
+      }
+    }
+
+    const assigneeIds = new Set(target.assigneeIds ?? []);
+    for (const source of sources) {
+      for (const assigneeId of source.assigneeIds ?? []) {
+        assigneeIds.add(assigneeId);
+      }
+    }
+    await taskRepository.update(target.id, {
+      assigneeIds: [...assigneeIds],
+    });
+
+    const targetLabelIds = new Set(
+      (target.labels ?? []).map(
+        (entry: { label: { id: string } }) => entry.label.id,
+      ),
+    );
+    for (const source of sources) {
+      for (const entry of source.labels ?? []) {
+        const labelId = (entry as { label: { id: string } }).label.id;
+        if (targetLabelIds.has(labelId)) continue;
+        await labelRepository.assignToTask(target.id, labelId);
+        targetLabelIds.add(labelId);
+      }
+    }
+
+    const deletedSources = sources.map((source) => ({
+      id: source.id,
+      slug: source.slug,
+      title: source.title,
+      columnId: source.columnId,
+      boardId: source.boardId,
+    }));
+
+    const affectedBoardIds = new Set<string>([target.boardId]);
+    for (const source of sources) {
+      affectedBoardIds.add(source.boardId);
+      await taskRepository.delete(source.id);
+    }
+
+    for (const boardId of affectedBoardIds) {
+      await this.syncBoardCompletion(boardId, userId);
+    }
+
+    const updatedTarget = await taskRepository.findById(target.id);
+    if (!updatedTarget) {
+      throw new ApiError(404, 'Target task not found');
+    }
+
+    return { target: updatedTarget, deletedSources };
   }
 
   async delete(userId: string, taskId: string) {

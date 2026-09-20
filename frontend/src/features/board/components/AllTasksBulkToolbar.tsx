@@ -561,6 +561,7 @@ interface OperationsMenuProps {
   canEditTasks: boolean;
   canAssignLabels: boolean;
   canDeleteTasks: boolean;
+  canMergeSimilar?: boolean;
   activeMode?: BulkOperationMode | null;
   disabled?: boolean;
   onSelect: (mode: BulkOperationMode) => void;
@@ -590,6 +591,7 @@ export function AllTasksOperationsMenu({
   canEditTasks,
   canAssignLabels,
   canDeleteTasks,
+  canMergeSimilar = false,
   activeMode = null,
   disabled,
   onSelect,
@@ -597,6 +599,14 @@ export function AllTasksOperationsMenu({
   const { t } = useLocale();
 
   const groups: NonNullable<MenuProps['items']> = [];
+
+  if (canMergeSimilar) {
+    groups.push({
+      type: 'group',
+      label: t('board.bulkGroups.merge'),
+      children: [{ key: 'merge', label: t('board.bulkOps.merge') }],
+    });
+  }
 
   if (canMoveTasks) {
     groups.push({
