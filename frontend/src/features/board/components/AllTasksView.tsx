@@ -977,7 +977,6 @@ export function AllTasksView({
                       <LabelBadges labels={labels} className="mt-2" />
                       <TaskChecklistPreview
                         items={task.checklistItems}
-                        totalCount={task._count?.checklistItems}
                         interactive={!showSelection && canViewTasks}
                         onToggleItem={
                           !showSelection && canViewTasks

@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { forwardRef, useCallback, useImperativeHandle, useState } from 'react';
 import { Checkbox } from 'antd';
 import type { TaskChecklistItem } from '@/features/tasks/types';
 import { checklistService } from '@/features/tasks/services/checklist.service';
@@ -38,6 +38,10 @@ interface TaskChecklistEditorProps {
   canManage?: boolean;
 }
 
+export interface TaskChecklistEditorHandle {
+  commitPendingItem: () => DraftChecklistItem[];
+}
+
 const WEIGHT_OPTIONS = Array.from(
   { length: MAX_CHECKLIST_WEIGHT - MIN_CHECKLIST_WEIGHT + 1 },
   (_, index) => {
@@ -56,15 +60,45 @@ function toDraftItems(items: ChecklistItem[]): DraftChecklistItem[] {
   }));
 }
 
-export function TaskChecklistEditor({
-  taskId,
-  items,
-  onChange,
-  onItemsChange,
-  canToggle = true,
-  canEdit,
-  canManage = true,
-}: TaskChecklistEditorProps) {
+function appendPendingDraftItem(
+  items: ChecklistItem[],
+  title: string,
+  weight: number,
+): DraftChecklistItem[] | null {
+  const trimmed = title.trim();
+  if (!trimmed) return null;
+
+  const drafts = toDraftItems(items);
+  const nextPosition =
+    drafts.reduce((max, item) => Math.max(max, item.position), -1) + 1;
+
+  return [
+    ...drafts,
+    {
+      id: createTempChecklistId(),
+      title: trimmed,
+      isDone: false,
+      weight: normalizeChecklistWeight(weight),
+      position: nextPosition,
+    },
+  ];
+}
+
+export const TaskChecklistEditor = forwardRef<
+  TaskChecklistEditorHandle,
+  TaskChecklistEditorProps
+>(function TaskChecklistEditor(
+  {
+    taskId,
+    items,
+    onChange,
+    onItemsChange,
+    canToggle = true,
+    canEdit,
+    canManage = true,
+  },
+  ref,
+) {
   const { t } = useLocale();
   const canEditItems = canEdit ?? canManage;
   const isDraft = typeof onItemsChange === 'function';
@@ -81,6 +115,27 @@ export function TaskChecklistEditor({
     onItemsChange?.(next);
   };
 
+  const commitPendingDraft = useCallback((): DraftChecklistItem[] => {
+    const current = toDraftItems(items);
+    if (!canManage || !isDraft) return current;
+
+    const next = appendPendingDraftItem(items, newTitle, Number(newWeight));
+    if (!next) return current;
+
+    onItemsChange?.(next);
+    setNewTitle('');
+    setNewWeight(String(DEFAULT_CHECKLIST_WEIGHT));
+    return next;
+  }, [canManage, isDraft, items, newTitle, newWeight, onItemsChange]);
+
+  useImperativeHandle(
+    ref,
+    () => ({
+      commitPendingItem: commitPendingDraft,
+    }),
+    [commitPendingDraft],
+  );
+
   const handleAdd = async () => {
     const title = newTitle.trim();
     if (!title || !canManage) return;
@@ -88,20 +143,7 @@ export function TaskChecklistEditor({
     setError('');
 
     if (isDraft) {
-      const nextPosition =
-        sortedItems.reduce((max, item) => Math.max(max, item.position), -1) + 1;
-      updateDraft([
-        ...toDraftItems(items),
-        {
-          id: createTempChecklistId(),
-          title,
-          isDone: false,
-          weight: normalizeChecklistWeight(Number(newWeight)),
-          position: nextPosition,
-        },
-      ]);
-      setNewTitle('');
-      setNewWeight(String(DEFAULT_CHECKLIST_WEIGHT));
+      commitPendingDraft();
       return;
     }
 
@@ -420,4 +462,4 @@ export function TaskChecklistEditor({
       )}
     </div>
   );
-}
+});

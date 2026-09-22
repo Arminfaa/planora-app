@@ -1,6 +1,7 @@
 'use client';
 
 import { Button } from 'antd';
+import { useEffect, useState } from 'react';
 import type { BoardColumn, BoardTask } from '../types';
 import type { ProjectMember } from '@/features/projects/types';
 import { LabelBadges } from '@/features/labels/components/LabelBadges';
@@ -8,6 +9,7 @@ import { TaskComments } from '@/features/comments/components/TaskComments';
 import { TaskAttachments } from '@/features/attachments/components/TaskAttachments';
 import { normalizeTaskLabels } from '@/features/labels/types';
 import { getTaskAssignees, getPriorityStyles } from '@/features/tasks/types';
+import { checklistService } from '@/features/tasks/services/checklist.service';
 import {
   formatCompleteDate,
   formatDueDate,
@@ -47,7 +49,27 @@ export function TaskViewModal({
     columns.find((column) => column.id === task.columnId)?.name ??
     t('common.emDash');
 
-  const checklistItems = task.checklistItems ?? [];
+  const [checklistItems, setChecklistItems] = useState(
+    () => task.checklistItems ?? [],
+  );
+
+  useEffect(() => {
+    setChecklistItems(task.checklistItems ?? []);
+
+    const loaded = task.checklistItems?.length ?? 0;
+    const total = task._count?.checklistItems ?? loaded;
+    if (total <= loaded) return;
+
+    let cancelled = false;
+    void checklistService.list(task.id).then((items) => {
+      if (!cancelled) setChecklistItems(items);
+    });
+
+    return () => {
+      cancelled = true;
+    };
+  }, [task.id, task.checklistItems, task._count?.checklistItems]);
+
   const progressPercent = getTaskProgressDisplay(task);
 
   return (

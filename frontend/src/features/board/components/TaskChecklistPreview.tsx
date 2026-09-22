@@ -3,25 +3,18 @@
 import { Checkbox } from 'antd';
 import { useEffect, useState } from 'react';
 import type { TaskChecklistItem } from '@/features/tasks/types';
-import { useLocale } from '@/i18n/LocaleProvider';
 
 interface TaskChecklistPreviewProps {
   items?: TaskChecklistItem[];
-  /** Total checklist size when `items` is only a preview slice. */
-  totalCount?: number;
-  maxItems?: number;
   interactive?: boolean;
   onToggleItem?: (itemId: string, isDone: boolean) => void | Promise<void>;
 }
 
 export function TaskChecklistPreview({
   items = [],
-  totalCount,
-  maxItems = 5,
   interactive = false,
   onToggleItem,
 }: TaskChecklistPreviewProps) {
-  const { t } = useLocale();
   const [localItems, setLocalItems] = useState(items);
 
   useEffect(() => {
@@ -31,9 +24,6 @@ export function TaskChecklistPreview({
   if (localItems.length === 0) return null;
 
   const sorted = [...localItems].sort((a, b) => a.position - b.position);
-  const visible = sorted.slice(0, maxItems);
-  const resolvedTotal = Math.max(totalCount ?? sorted.length, sorted.length);
-  const hiddenCount = resolvedTotal - visible.length;
 
   const handleToggle = (item: TaskChecklistItem, checked: boolean) => {
     if (!interactive || !onToggleItem) return;
@@ -55,7 +45,7 @@ export function TaskChecklistPreview({
       onClick={(event) => event.stopPropagation()}
       onPointerDown={(event) => event.stopPropagation()}
     >
-      {visible.map((item) => (
+      {sorted.map((item) => (
         <li
           key={item.id}
           className="flex items-start gap-1.5 text-xs text-gray-600"
@@ -81,11 +71,6 @@ export function TaskChecklistPreview({
           </span>
         </li>
       ))}
-      {hiddenCount > 0 && (
-        <li className="text-xs text-gray-400">
-          {t('tasks.checklistMore', { count: hiddenCount })}
-        </li>
-      )}
     </ul>
   );
 }

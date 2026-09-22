@@ -14,7 +14,6 @@ export class BoardRepository extends BaseRepository {
   }
 
   async findById(id: string) {
-    // Card payload: omit description and only preview the first checklist items.
     const board = await this.db.board.findUnique({
       where: { id },
       include: {
@@ -48,7 +47,6 @@ export class BoardRepository extends BaseRepository {
                 },
                 checklistItems: {
                   orderBy: { position: 'asc' },
-                  take: 5,
                   select: {
                     id: true,
                     title: true,

@@ -25,6 +25,7 @@ import {
 } from '@/features/labels/types/draft';
 import { syncLabelDraft } from '@/features/labels/utils/syncTaskLabels';
 import { taskService } from '@/features/tasks/services/task.service';
+import { checklistService } from '@/features/tasks/services/checklist.service';
 import {
   getTaskAssignees,
   PRIORITY_OPTIONS,
@@ -44,7 +45,10 @@ import { DateInput } from '@/shared/components/ui/DateInput';
 import { getApiErrorMessage } from '@/lib/api';
 import { AppModal } from '@/shared/components/ui/AppModal';
 import { MemberMultiSelect } from './MemberMultiSelect';
-import { TaskChecklistEditor } from './TaskChecklistEditor';
+import {
+  TaskChecklistEditor,
+  type TaskChecklistEditorHandle,
+} from './TaskChecklistEditor';
 import { TaskDependenciesEditor } from '@/features/gantt/components/TaskDependenciesEditor';
 
 type FormData = {
@@ -127,11 +131,15 @@ export function TaskModal({
   const [draftChecklist, setDraftChecklist] = useState<DraftChecklistItem[]>(
     () => toDraftChecklistItems(task),
   );
+  const [originalChecklist, setOriginalChecklist] = useState(
+    () => task.checklistItems ?? [],
+  );
   const [labelDraft, setLabelDraft] = useState<LabelDraftState>(() =>
     createLabelDraftState([], normalizeTaskLabels(task.labels)),
   );
   const commentsRef = useRef<TaskCommentsHandle>(null);
   const attachmentsRef = useRef<TaskAttachmentsHandle>(null);
+  const checklistRef = useRef<TaskChecklistEditorHandle>(null);
   const labelDraftTaskIdRef = useRef<string | null>(null);
   const { labels: projectLabels, refetch: refetchLabels } =
     useProjectLabels(projectId);
@@ -146,10 +154,6 @@ export function TaskModal({
   const originalLabels = useMemo(
     () => normalizeTaskLabels(task.labels),
     [task.labels],
-  );
-  const originalChecklist = useMemo(
-    () => task.checklistItems ?? [],
-    [task.checklistItems],
   );
 
   const schema = useMemo(
@@ -203,11 +207,39 @@ export function TaskModal({
     const nextChecklist = toDraftChecklistItems(task);
     setAssigneeIds(getTaskAssignees(task).map((assignee) => assignee.id));
     setDraftChecklist(nextChecklist);
+    setOriginalChecklist(task.checklistItems ?? []);
     reset(getTaskFormValues(task, nextChecklist));
     labelDraftTaskIdRef.current = null;
     // Seed draft state once per opened task; ignore later board refreshes.
     // eslint-disable-next-line react-hooks/exhaustive-deps -- intentionally keyed by task.id
   }, [reset, task.id]);
+
+  useEffect(() => {
+    const loaded = task.checklistItems?.length ?? 0;
+    const total = task._count?.checklistItems ?? loaded;
+    if (total <= loaded) return;
+
+    let cancelled = false;
+    void checklistService.list(task.id).then((items) => {
+      if (cancelled) return;
+      setOriginalChecklist(items);
+      setDraftChecklist(
+        items.map((item, index) => ({
+          id: item.id,
+          title: item.title,
+          isDone: Boolean(item.isDone),
+          weight: item.weight,
+          position: item.position ?? index,
+        })),
+      );
+    });
+
+    return () => {
+      cancelled = true;
+    };
+    // Load the full checklist once per opened task if the board payload was truncated.
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- intentionally keyed by task.id
+  }, [task.id]);
 
   useEffect(() => {
     if (labelDraftTaskIdRef.current !== task.id) {
@@ -257,8 +289,10 @@ export function TaskModal({
         ? data.parentTaskId
         : null;
       const currentParentTaskId = task.parentTaskId ?? null;
+      const nextChecklist =
+        checklistRef.current?.commitPendingItem() ?? draftChecklist;
       const checklistDriven =
-        Boolean(task.isCompleted) || draftChecklist.length > 0;
+        Boolean(task.isCompleted) || nextChecklist.length > 0;
       const currentProgress = task.isCompleted ? 100 : (task.progress ?? 0);
 
       await taskService.update(task.id, {
@@ -282,7 +316,7 @@ export function TaskModal({
           : undefined,
       });
 
-      await syncChecklistItems(task.id, originalChecklist, draftChecklist);
+      await syncChecklistItems(task.id, originalChecklist, nextChecklist);
       await syncLabelDraft(projectId, task.id, originalLabels, labelDraft);
       await commentsRef.current?.persist();
       await attachmentsRef.current?.persist();
@@ -496,6 +530,7 @@ export function TaskModal({
         />
 
         <TaskChecklistEditor
+          ref={checklistRef}
           items={draftChecklist}
           onItemsChange={setDraftChecklist}
         />
